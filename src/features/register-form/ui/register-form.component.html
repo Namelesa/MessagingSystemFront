@@ -1,0 +1,94 @@
+<form (ngSubmit)="onSubmit()" #form="ngForm">
+  <app-input
+    [(ngModel)]="formData.firstName"
+    name="firstName"
+    [required]="true"
+    placeholder="First Name"
+    [errors]="getFieldErrors('firstName')"
+  ></app-input>
+
+  <app-input
+    [(ngModel)]="formData.lastName"
+    name="lastName"
+    [required]="true"
+    placeholder="Last Name"
+    [errors]="getFieldErrors('lastName')"
+  ></app-input>
+
+  <app-input
+    [(ngModel)]="formData.login"
+    name="login"
+    [required]="true"
+    placeholder="Login"
+    [errors]="getFieldErrors('login')"
+  ></app-input>
+
+  <app-input
+    [(ngModel)]="formData.email"
+    name="email"
+    [required]="true"
+    type="email"
+    placeholder="Email"
+    [errors]="getFieldErrors('email')"
+  ></app-input>
+
+  <app-input
+    [(ngModel)]="formData.nickName"
+    name="nickName"
+    [required]="true"
+    placeholder="Nick Name"
+    [errors]="getFieldErrors('nickName')"
+  ></app-input>
+
+  <app-input
+    [type]="passwordVisible ? 'text' : 'password'"
+    [placeholder]="'Password'"
+    [required]="true"
+    [(ngModel)]="formData.password"
+    [name]="'password'"
+    (ngModelChange)="onPasswordInput($event)"
+    [hasSuffix]="true"
+    [errors]="getFieldErrors('password')"
+  >
+    <button
+      type="button"
+      (click)="togglePasswordVisibility()"
+      class="absolute right-3 top-3 bottom-3 flex items-center text-gray-500 hover:text-gray-700 focus:outline-none z-10"
+    >
+      <lucide-icon [img]="EyeIcon" *ngIf="!passwordVisible" size="20"></lucide-icon>
+      <lucide-icon [img]="EyeOffIcon" *ngIf="passwordVisible" size="20"></lucide-icon>
+    </button>
+  </app-input>
+
+  <input
+    #fileInput
+    (change)="onFileChange($event)"
+    type="file"
+    accept="image/*"
+    name="image"
+    class="hidden"
+  />
+  
+  <button
+    type="button"
+    (click)="fileInput.click()"
+    class="w-full px-4 py-3 rounded-lg text-left mb-4
+           bg-gray-100 dark:bg-gray-800 
+           text-gray-600 dark:text-gray-400 
+           border border-gray-300 dark:border-gray-700 
+           hover:bg-gray-200 dark:hover:bg-gray-700 
+           hover:border-gray-400 dark:hover:border-gray-600
+           focus:outline-none focus:ring-2 focus:ring-blue-500 
+           transition-all duration-300"
+  >
+    Upload Avatar
+  </button>
+
+  <app-button
+    type="submit"
+    [disabled]="isSubmitting"
+  >
+    Sign up
+  </app-button>
+
+</form>

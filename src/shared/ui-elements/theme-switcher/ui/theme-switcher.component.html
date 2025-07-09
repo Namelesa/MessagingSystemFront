@@ -1,0 +1,17 @@
+<button 
+  (click)="toggleTheme()"
+  class="fixed top-6 right-6 w-14 h-14 bg-white dark:bg-gray-800 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center group border border-gray-200 dark:border-gray-600 hover:scale-110"
+>
+  <span 
+    *ngIf="!isDark" 
+    class="text-2xl transition-transform duration-300 group-hover:rotate-180"
+  >
+    🌙
+  </span>
+  <span 
+    *ngIf="isDark" 
+    class="text-2xl transition-transform duration-300 group-hover:rotate-180"
+  >
+    ☀️
+  </span>
+</button>
