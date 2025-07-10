@@ -4,13 +4,13 @@ import { validateLoginForm } from '../model/validate-login';
 import { LoginContract } from '../../../entities/user/api/login-contract';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common'; 
-import { ButtonComponent, InputComponent } from '../../../shared/ui-elements';
+import { ButtonComponent, InputComponent, ToastService, ToastComponent } from '../../../shared/ui-elements';
 import {LucideAngularModule, Eye, EyeOff, FolderIcon } from 'lucide-angular';
 
 @Component({
   selector: 'app-login-form',
   standalone: true,
-  imports: [FormsModule, CommonModule, ButtonComponent, InputComponent, LucideAngularModule],
+  imports: [FormsModule, CommonModule, ButtonComponent, InputComponent, LucideAngularModule, ToastComponent],
   templateUrl: './login-form.component.html',
 })
 export class LoginFormComponent {
@@ -18,6 +18,14 @@ export class LoginFormComponent {
   readonly EyeIcon = Eye;
   readonly EyeOffIcon = EyeOff;
   readonly FolderIcon = FolderIcon;
+
+  toastMessage: string | null = null;
+  toastType: 'success' | 'error' = 'success';
+
+  passwordVisible = false;
+
+  errors: string[] = [];
+  isSubmitting = false;
 
   formData: LoginContract = {
     login: '',
@@ -28,12 +36,8 @@ export class LoginFormComponent {
   @Output() passwordVisibleChange = new EventEmitter<boolean>();
   @Output() passwordLengthChange = new EventEmitter<number>();
 
-  passwordVisible = false;
 
-  errors: string[] = [];
-  isSubmitting = false;
-
-  constructor(private loginapi: LoginApi) {}
+  constructor(private loginapi: LoginApi, private toastService: ToastService) {}
 
   onPasswordInput(value: string) {
     this.formData.password = value;
@@ -53,35 +57,13 @@ export class LoginFormComponent {
   
     this.loginapi.loginUser(this.formData).subscribe({
       next: (result) => {
-        console.log('✅ Login success:', result);
-
-        if (result && typeof result === 'object') {
-          if ('success' in result && !result.success) {
-            this.errors = [result.message || 'Login failed.'];
-          } else {
-            alert(result.message || 'Login successful!');
-          }
-        } else {
-          alert('Login successful!');
+        if (result.message != 'True') {
+          this.toastService.show('Login failed. Please try again.', 'error');
         }
-  
         this.isSubmitting = false;
       },
-  
-      error: (errorResponse) => {
-        console.error('❌ Login error:', errorResponse);
-  
-        if (errorResponse.error?.errors) {
-          this.errors = Object.entries(errorResponse.error.errors)
-            .flatMap(([field, messages]: [string, any]) =>
-              (messages as string[]).map(msg => `${field}: ${msg}`)
-            );
-        } else if (errorResponse.error?.message) {
-          this.errors = [errorResponse.error.message];
-        } else {
-          this.errors = ['Login failed. Please try again later.'];
-        }
-  
+      error: () => {
+        this.toastService.show('An error occurred. Please try again later.', 'error');
         this.isSubmitting = false;
       }
     });

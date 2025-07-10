@@ -1,0 +1,14 @@
+<div
+  *ngIf="visible"
+  class="fixed top-4 left-4 px-5 py-3 rounded-2xl font-medium text-sm
+         text-white
+         bg-gradient-to-r
+         transition-all duration-300
+         animate-slide-in"
+  [ngClass]="{
+    'from-green-500 to-emerald-600 dark:from-green-500 dark:to-emerald-700': type === 'success',
+    'from-red-500 to-pink-600 dark:from-red-500 dark:to-pink-700': type === 'error'
+  }"
+>
+  {{ message }}
+</div>

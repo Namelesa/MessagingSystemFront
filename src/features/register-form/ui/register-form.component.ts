@@ -1,16 +1,18 @@
-import { Component, Output, EventEmitter } from '@angular/core';
+import { Component, Output, EventEmitter} from '@angular/core';
 import { RegisterApi } from '../api/register.api';
 import { validateRegisterForm } from '../model/validate-register';
 import { RegisterContract } from '../../../entities/user/api/register-contract';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common'; 
-import { ButtonComponent, InputComponent } from '../../../shared/ui-elements';
+import { ButtonComponent, InputComponent, ToastService, ToastComponent } from '../../../shared/ui-elements';
 import {LucideAngularModule, Eye, EyeOff, FolderIcon } from 'lucide-angular';
+import { Router } from '@angular/router';
+import { HttpErrorResponse } from '@angular/common/http';
 
 @Component({
   selector: 'app-register-form',
   standalone: true,
-  imports: [FormsModule, CommonModule, ButtonComponent, InputComponent, LucideAngularModule],
+  imports: [FormsModule, CommonModule, ButtonComponent, InputComponent, LucideAngularModule, ToastComponent],
   templateUrl: './register-form.component.html',
 })
 export class RegisterFormComponent {
@@ -18,6 +20,14 @@ export class RegisterFormComponent {
   readonly EyeIcon = Eye;
   readonly EyeOffIcon = EyeOff;
   readonly FolderIcon = FolderIcon;
+
+  toastMessage: string | null = null;
+  toastType: 'success' | 'error' = 'success';
+
+  passwordVisible = false;
+
+  errors: string[] = [];
+  isSubmitting = false;
 
   formData: RegisterContract = {
     firstName: '',
@@ -32,12 +42,7 @@ export class RegisterFormComponent {
   @Output() passwordVisibleChange = new EventEmitter<boolean>();
   @Output() passwordLengthChange = new EventEmitter<number>();
 
-  passwordVisible = false;
-
-  errors: string[] = [];
-  isSubmitting = false;
-
-  constructor(private registerApi: RegisterApi) {}
+  constructor(private registerApi: RegisterApi, private toastService: ToastService, private router: Router) {}
 
   onPasswordInput(value: string) {
     this.formData.password = value;
@@ -57,40 +62,29 @@ export class RegisterFormComponent {
   
     this.registerApi.registerUser(this.formData).subscribe({
       next: (result) => {
-        console.log('✅ Registration success:', result);
-
-        if (result && typeof result === 'object') {
-          if ('success' in result && !result.success) {
-            this.errors = [result.message || 'Registration failed.'];
-          } else {
-            alert(result.message || 'Registration successful!');
-          }
-        } else {
-          alert('Registration successful!');
+        if (result.message == 'User registered and need to confirm email') {
+          this.toastService.show('Registration successful!', 'success');
+          this.resetForm();
+          setTimeout(() => {
+            this.router.navigate(['/login']);
+          }, 3000);
+        }   
+        else {
+          this.toastService.show('Registration failed. Please try again.', 'error');
         }
-  
         this.isSubmitting = false;
       },
-  
-      error: (errorResponse) => {
-        console.error('❌ Registration error:', errorResponse);
-  
-        if (errorResponse.error?.errors) {
-          this.errors = Object.entries(errorResponse.error.errors)
-            .flatMap(([field, messages]: [string, any]) =>
-              (messages as string[]).map(msg => `${field}: ${msg}`)
-            );
-        } else if (errorResponse.error?.message) {
-          this.errors = [errorResponse.error.message];
+      error: (err : HttpErrorResponse) => {
+        if(err.status === 400) {
+          this.toastService.show("A user with these parameters already exists.", 'error');
         } else {
-          this.errors = ['Registration failed. Please try again later.'];
+          this.toastService.show('An unexpected error occurred.', 'error');
         }
-  
         this.isSubmitting = false;
       }
     });
   }
-  
+
   onFileChange(event: Event) {
     const input = event.target as HTMLInputElement;
     if (input.files && input.files.length) {
@@ -117,5 +111,18 @@ export class RegisterFormComponent {
       error.startsWith(`* ${fieldDisplayName}`) || 
       error.startsWith(`${fieldDisplayName}`)
     );
+  }
+
+  private resetForm() {
+    this.formData = {
+      firstName: '',
+      lastName: '',
+      login: '',
+      email: '',
+      nickName: '',
+      password: '',
+      image: undefined,
+    };
+    this.errors = [];
   }
 }
