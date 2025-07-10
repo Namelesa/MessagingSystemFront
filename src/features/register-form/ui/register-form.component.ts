@@ -52,20 +52,45 @@ export class RegisterFormComponent {
   onSubmit() {
     this.errors = validateRegisterForm(this.formData);
     if (this.errors.length > 0) return;
-
+  
     this.isSubmitting = true;
+  
     this.registerApi.registerUser(this.formData).subscribe({
       next: (result) => {
-        alert(result.message);
+        console.log('✅ Registration success:', result);
+
+        if (result && typeof result === 'object') {
+          if ('success' in result && !result.success) {
+            this.errors = [result.message || 'Registration failed.'];
+          } else {
+            alert(result.message || 'Registration successful!');
+          }
+        } else {
+          alert('Registration successful!');
+        }
+  
         this.isSubmitting = false;
       },
-      error: () => {
-        alert('Registration failed');
+  
+      error: (errorResponse) => {
+        console.error('❌ Registration error:', errorResponse);
+  
+        if (errorResponse.error?.errors) {
+          this.errors = Object.entries(errorResponse.error.errors)
+            .flatMap(([field, messages]: [string, any]) =>
+              (messages as string[]).map(msg => `${field}: ${msg}`)
+            );
+        } else if (errorResponse.error?.message) {
+          this.errors = [errorResponse.error.message];
+        } else {
+          this.errors = ['Registration failed. Please try again later.'];
+        }
+  
         this.isSubmitting = false;
       }
     });
   }
-
+  
   onFileChange(event: Event) {
     const input = event.target as HTMLInputElement;
     if (input.files && input.files.length) {
@@ -91,21 +116,6 @@ export class RegisterFormComponent {
     return this.errors.filter(error => 
       error.startsWith(`* ${fieldDisplayName}`) || 
       error.startsWith(`${fieldDisplayName}`)
-    );
-  }
-
-  getGeneralErrors(): string[] {
-    const fieldErrors = [
-      '* First name is required',
-      '* Last name is required', 
-      '* Login is required',
-      '* Email is required',
-      '* NickName is required',
-      '* Password is required'
-    ];
-    
-    return this.errors.filter(error => 
-      !fieldErrors.some(fieldError => error.startsWith(fieldError.substring(0, fieldError.indexOf(' is'))))
     );
   }
 }
