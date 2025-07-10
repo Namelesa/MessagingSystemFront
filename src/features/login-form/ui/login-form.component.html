@@ -1,0 +1,45 @@
+<form (ngSubmit)="onSubmit()" #form="ngForm">
+  <app-input
+    [(ngModel)]="formData.login"
+    name="login"
+    [required]="true"
+    placeholder="Login"
+    [errors]="getFieldErrors('login')"
+  ></app-input>
+
+  <app-input
+    [(ngModel)]="formData.nickName"
+    name="nickName"
+    [required]="true"
+    placeholder="Nick Name"
+    [errors]="getFieldErrors('nickName')"
+  ></app-input>
+
+  <app-input
+    [type]="passwordVisible ? 'text' : 'password'"
+    [placeholder]="'Password'"
+    [required]="true"
+    [(ngModel)]="formData.password"
+    [name]="'password'"
+    (ngModelChange)="onPasswordInput($event)"
+    [hasSuffix]="true"
+    [errors]="getFieldErrors('password')"
+  >
+    <button
+      type="button"
+      (click)="togglePasswordVisibility()"
+      class="absolute right-3 top-3 bottom-3 flex items-center text-gray-500 hover:text-gray-700 focus:outline-none z-10"
+    >
+      <lucide-icon [img]="EyeIcon" *ngIf="!passwordVisible" size="20"></lucide-icon>
+      <lucide-icon [img]="EyeOffIcon" *ngIf="passwordVisible" size="20"></lucide-icon>
+    </button>
+  </app-input>
+
+  <app-button
+    type="submit"
+    [disabled]="isSubmitting"
+  >
+    Sign in
+  </app-button>
+
+</form>
