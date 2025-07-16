@@ -11,7 +11,8 @@ export class LoginApi {
   loginUser(data: LoginContract): Observable<AuthApiResult> {
     return this.http.post<AuthApiResult>(
       `${environment.apiUrl}auth/login`,
-      data
+      data,
+      { withCredentials: true }
     );
   }
 }

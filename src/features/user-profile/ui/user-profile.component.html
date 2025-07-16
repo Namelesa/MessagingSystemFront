@@ -1,0 +1,78 @@
+<div *ngIf="isLoading" class="text-center text-gray-600 dark:text-gray-300">Loading...</div>
+<div *ngIf="hasError" class="text-center text-red-600 dark:text-red-400">Error loading profile</div>
+
+<div *ngIf="userProfile && !isLoading && !hasError" class="max-w-md mx-auto text-gray-900 dark:text-white">
+
+  <div class="flex flex-col items-center mb-8">
+    <div class="w-24 h-24 rounded-full overflow-hidden bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-3xl font-bold uppercase">
+      <ng-container *ngIf="userProfile.image; else initials">
+        <img [src]="userProfile.image" alt="Avatar" class="object-cover w-full h-full" />
+      </ng-container>
+      <ng-template #initials>
+        {{ userProfile.nickName.slice(0, 2) }}
+      </ng-template>
+    </div>
+
+    <h2 class="text-2xl font-semibold mt-4">
+      {{ userProfile.firstName }} {{ userProfile.lastName }}
+    </h2>
+    <p class="text-gray-500 dark:text-gray-400">{{ userProfile.nickName }}</p>
+    <p class="text-green-500 text-sm">Online</p>
+  </div>
+
+  <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md space-y-6 transition-colors duration-300">
+    <h3 class="text-lg font-medium flex items-center gap-2 text-gray-800 dark:text-white">
+      📋 Personal Information
+    </h3>
+
+    <div class="flex justify-between items-center border-b border-gray-200 dark:border-gray-700 pb-2">
+      <span class="text-gray-500 dark:text-gray-400">First Name</span>
+      <div class="flex items-center gap-3">
+        <span>{{ userProfile.firstName }}</span>
+        <button class="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 transition-colors">
+          Edit
+        </button>
+      </div>
+    </div>
+
+    <div class="flex justify-between items-center border-b border-gray-200 dark:border-gray-700 pb-2">
+      <span class="text-gray-500 dark:text-gray-400">Last Name</span>
+      <div class="flex items-center gap-3">
+        <span>{{ userProfile.lastName }}</span>
+        <button class="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 transition-colors">
+          Edit
+        </button>
+      </div>
+    </div>
+
+    <div class="flex justify-between items-center border-b border-gray-200 dark:border-gray-700 pb-2">
+      <span class="text-gray-500 dark:text-gray-400">Login</span>
+      <div class="flex items-center gap-3">
+        <span>{{ userProfile.login }}</span>
+        <button class="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 transition-colors">
+          Edit
+        </button>
+      </div>
+    </div>
+
+    <div class="flex justify-between items-center border-b border-gray-200 dark:border-gray-700 pb-2">
+      <span class="text-gray-500 dark:text-gray-400">Email</span>
+      <div class="flex items-center gap-3">
+        <span>{{ userProfile.email }}</span>
+        <button class="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 transition-colors">
+          Edit
+        </button>
+      </div>
+    </div>
+
+    <div class="flex justify-between items-center pb-2">
+      <span class="text-gray-500 dark:text-gray-400">NickName</span>
+      <div class="flex items-center gap-3">
+        <span>{{ userProfile.nickName }}</span>
+        <button class="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 transition-colors">
+          Edit
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

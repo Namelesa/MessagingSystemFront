@@ -6,6 +6,8 @@ import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common'; 
 import { ButtonComponent, InputComponent, ToastService, ToastComponent } from '../../../shared/ui-elements';
 import {LucideAngularModule, Eye, EyeOff, FolderIcon } from 'lucide-angular';
+import { Router } from '@angular/router';
+import { AuthService } from '../../../entities/user/model/auht.service';
 
 @Component({
   selector: 'app-login-form',
@@ -37,7 +39,11 @@ export class LoginFormComponent {
   @Output() passwordLengthChange = new EventEmitter<number>();
 
 
-  constructor(private loginapi: LoginApi, private toastService: ToastService) {}
+  constructor(
+    private loginapi: LoginApi, 
+    private toastService: ToastService, 
+    private router: Router,
+    private authService: AuthService) {}
 
   onPasswordInput(value: string) {
     this.formData.password = value;
@@ -57,9 +63,14 @@ export class LoginFormComponent {
   
     this.loginapi.loginUser(this.formData).subscribe({
       next: (result) => {
-        if (result.message != 'True') {
+        if (result.message == 'True') {
+          this.authService.setNickName(this.formData.nickName);
+          this.authService.setLoggedIn(true);
+          this.router.navigate(['/profile']);
+        } else {
           this.toastService.show('Login failed. Please try again.', 'error');
         }
+  
         this.isSubmitting = false;
       },
       error: () => {
@@ -68,6 +79,7 @@ export class LoginFormComponent {
       }
     });
   }
+  
   
   getFieldErrors(fieldName: string): string[] {
     const fieldMapping: { [key: string]: string } = {
