@@ -1,9 +1,11 @@
 import { Injectable } from '@angular/core';
-import { BehaviorSubject, Observable, of } from 'rxjs';
-import { catchError, map, tap } from 'rxjs/operators';
+import { BehaviorSubject, Observable, of, from } from 'rxjs';
+import { catchError, map, tap, switchMap } from 'rxjs/operators';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../shared/api-result/urls/api.urls';
 import { ProfileApiResult } from '../../../shared/api-result';
+import { StorageService } from '../../../shared/storage/storage.service';
+import { filter, take } from 'rxjs/operators';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
@@ -15,11 +17,51 @@ export class AuthService {
 
   private nickName: string | null = null; 
   private apiUrl = environment.apiUrl;
+  private readonly storageKey = 'nickName';
 
-  constructor(private http: HttpClient) {}
+  private authInitialized = false;
+  private authInitSubject = new BehaviorSubject<boolean>(false);
 
-  setNickName(nick: string) {
+  constructor(
+    private http: HttpClient,
+    private storageService: StorageService
+  ) {
+    from(this.storageService.get(this.storageKey))
+      .pipe(
+        switchMap((storedNick) => {
+          if (!storedNick) {
+            this.nickName = null;
+            this.authInitialized = true;
+            this.authInitSubject.next(true);
+            return of(false);
+          }
+          this.nickName = storedNick;
+          return this.checkAuth();
+        })
+      )
+      .subscribe({
+        next: () => {
+          this.authInitialized = true;
+          this.authInitSubject.next(true);
+        },
+        error: () => {
+          this.authInitialized = true;
+          this.authInitSubject.next(true);
+        }
+      });
+  }
+
+  waitForAuthInit(): Observable<boolean> {
+    if (this.authInitialized) return of(true);
+    return this.authInitSubject.asObservable().pipe(
+      filter(init => init),
+      take(1)
+    );
+  }
+
+  async setNickName(nick: string) {
     this.nickName = nick;
+    await this.storageService.set(this.storageKey, nick);
   }
 
   getNickName(): string | null {
@@ -52,28 +94,35 @@ export class AuthService {
   }
 
   checkAuth(): Observable<boolean> {
-    if (!this.nickName) return of(false); 
-
-    return this.http.get(`${this.apiUrl}user/profile`, {
+    if (!this.nickName) {
+      return of(false);
+    }
+  
+    return this.http.get<ProfileApiResult>(`${this.apiUrl}user/profile`, {
       withCredentials: true,
       params: { nickName: this.nickName }
     }).pipe(
-      tap(() => this.isLoggedInSubject.next(true)),
+      tap(profile => {
+        this.userProfileSubject.next(profile);
+        this.isLoggedInSubject.next(true);
+      }),
       map(() => true),
       catchError(() => {
+        this.userProfileSubject.next(null);
         this.isLoggedInSubject.next(false);
         return of(false);
       })
     );
   }
-
-  setLoggedIn(status: boolean) {
+  
+  async setLoggedIn(status: boolean) {
     this.isLoggedInSubject.next(status);
     if (!status) {
       this.userProfileSubject.next(null);
       this.nickName = null;
+      await this.storageService.remove(this.storageKey);
     }
-  }
+  }  
 
   getUserAvatarUrl(): string | undefined {
     const profile = this.getCurrentProfile();
