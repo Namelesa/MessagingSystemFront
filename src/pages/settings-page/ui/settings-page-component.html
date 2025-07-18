@@ -1,0 +1,6 @@
+<div class="p-6 max-w-2xl mx-auto">
+  <widgets-settings-widget
+    [settings]="settings"
+    (settingChanged)="onToggle($event.key, $event.value)"
+  />
+</div>
