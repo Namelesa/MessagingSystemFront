@@ -38,7 +38,6 @@ export class LoginFormComponent {
   @Output() passwordVisibleChange = new EventEmitter<boolean>();
   @Output() passwordLengthChange = new EventEmitter<number>();
 
-
   constructor(
     private loginapi: LoginApi, 
     private toastService: ToastService, 
@@ -65,8 +64,18 @@ export class LoginFormComponent {
       next: (result) => {
         if (result.message == 'True') {
           this.authService.setNickName(this.formData.nickName);
-          this.authService.setLoggedIn(true);
-          this.router.navigate(['/profile']);
+          
+          this.authService.getUserProfile().subscribe({
+            next: (profile) => {
+              this.authService.setLoggedIn(true);
+              this.router.navigate(['/profile']);
+            },
+            error: (error) => {
+              console.error('Failed to load user profile:', error);
+              this.authService.setLoggedIn(true);
+              this.router.navigate(['/profile']);
+            }
+          });
         } else {
           this.toastService.show('Login failed. Please try again.', 'error');
         }
@@ -79,7 +88,6 @@ export class LoginFormComponent {
       }
     });
   }
-  
   
   getFieldErrors(fieldName: string): string[] {
     const fieldMapping: { [key: string]: string } = {

@@ -1,0 +1,31 @@
+<a
+  [routerLink]="route"
+  routerLinkActive="!bg-gray-200 !dark:bg-gray-700"
+  [routerLinkActiveOptions]="{ exact: true }"
+  class="w-12 h-12 flex items-center justify-center transition-colors
+         hover:bg-gray-300 dark:hover:bg-gray-600"
+  [ngClass]="{
+    'rounded-xl bg-gray-200 dark:bg-gray-800': !isAvatar,
+    'rounded-full bg-blue-500 text-white dark:bg-blue-600': isAvatar && !avatarUrl,
+    'rounded-full overflow-hidden': isAvatar && avatarUrl
+  }"
+>
+  <ng-container *ngIf="!isAvatar">
+    <ng-container *ngIf="icon">
+        <lucide-icon [name]="icon" size="20"></lucide-icon>
+      </ng-container>
+  </ng-container>
+
+  <ng-container *ngIf="isAvatar">
+    <img 
+      *ngIf="avatarUrl" 
+      [src]="avatarUrl" 
+      [alt]="avatarText"
+      class="w-full h-full object-cover"
+    />
+
+    <span *ngIf="!avatarUrl" class="font-bold text-lg">
+      {{ avatarText }}
+    </span>
+  </ng-container>
+</a>
