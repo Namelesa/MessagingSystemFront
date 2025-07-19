@@ -1,4 +1,3 @@
-// input.component.ts
 import { Component, Input, Output, EventEmitter, forwardRef } from '@angular/core';
 import { FormsModule, ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
 import { CommonModule } from '@angular/common';

@@ -4,5 +4,5 @@ export interface EditUserContract {
     login: string;
     email: string;
     nickName: string;
-    image?: File;
+    imageFile?: File;
 }

@@ -1,77 +1,219 @@
-<div *ngIf="isLoading" class="text-center text-gray-600 dark:text-gray-300">Loading...</div>
-<div *ngIf="hasError" class="text-center text-red-600 dark:text-red-400">Error loading profile</div>
+<app-toast></app-toast>
 
-<div *ngIf="userProfile && !isLoading && !hasError" class="max-w-md mx-auto text-gray-900 dark:text-white">
+<div *ngIf="isLoading" class="text-center text-gray-600 dark:text-gray-300 transition-colors duration-300">
+  Loading...
+</div>
+<div *ngIf="hasError" class="text-center text-red-600 dark:text-red-400 transition-colors duration-300">
+  Error loading profile
+</div>
 
-  <div class="flex flex-col items-center mb-8">
-    <div class="w-24 h-24 rounded-full overflow-hidden bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-3xl font-bold uppercase">
-      <ng-container *ngIf="userProfile.image; else initials">
-        <img [src]="userProfile.image" alt="Avatar" class="object-cover w-full h-full" />
-      </ng-container>
-      <ng-template #initials>
-        {{ userProfile.nickName.slice(0, 2) }}
-      </ng-template>
+<div *ngIf="userProfile && !isLoading && !hasError"
+     class="px-4 py-8 dark:bg-gray-900 text-gray-900 dark:text-white transition-colors duration-300">
+
+  <div class="max-w-3xl mx-auto">
+
+    <div class="flex flex-col items-center pt-12 pb-8">
+      <div class="relative mb-6">
+        <div class="relative w-32 h-32 rounded-full overflow-hidden">
+          <img
+            *ngIf="userProfile.image; else initials"
+            [src]="userProfile.image"
+            alt="Avatar"
+            class="object-cover w-full h-full rounded-full"
+          />
+          <ng-template #initials>
+            <div
+              class="w-full h-full flex items-center justify-center bg-blue-500 dark:bg-blue-600 text-white text-4xl font-bold rounded-full"
+            >
+              {{ userProfile.nickName }}
+            </div>
+          </ng-template>
+        
+          <label
+            *ngIf="isEditing"
+            for="avatarInput"
+            class="absolute inset-0 bg-black bg-opacity-40 dark:bg-opacity-60 rounded-full flex flex-col items-center justify-center
+                   text-white opacity-0 hover:opacity-100 cursor-pointer transition-opacity duration-300"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-8 w-8 mb-1"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M3 7h4l3-3h4l3 3h4v12H3V7z"
+              />
+              <path stroke-linecap="round" stroke-linejoin="round" d="M16 13a4 4 0 01-8 0" />
+            </svg>
+            <span class="text-xs select-none">Change</span>
+          </label>
+          <input
+            type="file"
+            id="avatarInput"
+            (change)="onAvatarChange($event)"
+            accept="image/*"
+            class="hidden"
+          />
+        </div>        
+        <div
+          class="absolute -bottom-2 -right-2 w-8 h-8 bg-gray-700 rounded-full flex items-center justify-center
+                 text-xs text-gray-300 dark:text-gray-400 transition-colors duration-300">
+          📷
+        </div>
+      </div>
+      <p class="text-gray-700 dark:text-gray-300 mb-2 transition-colors duration-300">
+        {{ userProfile.nickName }}
+      </p>
+      <p class="text-green-500 dark:text-green-400 text-sm font-medium transition-colors duration-300">
+        Online
+      </p>
     </div>
 
-    <h2 class="text-2xl font-semibold mt-4">
-      {{ userProfile.firstName }} {{ userProfile.lastName }}
-    </h2>
-    <p class="text-gray-500 dark:text-gray-400">{{ userProfile.nickName }}</p>
-    <p class="text-green-500 text-sm">Online</p>
-  </div>
+    <div
+      class="relative max-w-lg mx-auto px-6 mt-8 bg-white dark:bg-gray-800 rounded-2xl p-6 shadow transition-colors duration-300">
 
-  <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md space-y-6 transition-colors duration-300">
-    <h3 class="text-lg font-medium flex items-center gap-2 text-gray-800 dark:text-white">
-      📋 Personal Information
-    </h3>
+      <h3
+        class="text-xl font-medium flex items-center gap-3 mb-8 text-gray-800 dark:text-white select-none transition-colors duration-300">
+        📋 Personal Information
+        <button
+          type="button"
+          (click)="toggleEdit()"
+          aria-label="Edit profile"
+          *ngIf="!isEditing"
+          class="ml-auto text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-colors duration-200"
+        >
+        ✏️
+        </button>
+      </h3>
 
-    <div class="flex justify-between items-center border-b border-gray-200 dark:border-gray-700 pb-2">
-      <span class="text-gray-500 dark:text-gray-400">First Name</span>
-      <div class="flex items-center gap-3">
-        <span>{{ userProfile.firstName }}</span>
-        <button class="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 transition-colors">
-          Edit
+      <div *ngIf="isEditing"
+           class="absolute top-4 right-4 flex gap-2">
+        <button
+          type="button"
+          (click)="saveChanges()"
+          aria-label="Save"
+          class="text-green-600 hover:text-green-800 dark:text-green-400 dark:hover:text-green-600 transition-colors duration-200"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
+               stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+          </svg>
+        </button>
+        <button
+          type="button"
+          (click)="cancelEdit()"
+          aria-label="Cancel"
+          class="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-600 transition-colors duration-200"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
+               stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+          </svg>
         </button>
       </div>
-    </div>
 
-    <div class="flex justify-between items-center border-b border-gray-200 dark:border-gray-700 pb-2">
-      <span class="text-gray-500 dark:text-gray-400">Last Name</span>
-      <div class="flex items-center gap-3">
-        <span>{{ userProfile.lastName }}</span>
-        <button class="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 transition-colors">
-          Edit
-        </button>
-      </div>
-    </div>
+      <div class="space-y-6">
 
-    <div class="flex justify-between items-center border-b border-gray-200 dark:border-gray-700 pb-2">
-      <span class="text-gray-500 dark:text-gray-400">Login</span>
-      <div class="flex items-center gap-3">
-        <span>{{ userProfile.login }}</span>
-        <button class="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 transition-colors">
-          Edit
-        </button>
-      </div>
-    </div>
+        <div class="flex items-center">
+          <span class="text-gray-500 dark:text-gray-400 w-24 transition-colors duration-300">First Name</span>
+          <div class="flex flex-1 justify-end">
+            <ng-container *ngIf="isEditing; else firstNameView">
+              <app-input
+                [(ngModel)]="editableProfile.firstName"
+                name="firstName"
+                [required]="true"
+                placeholder="First Name"
+                [errors]="getFieldErrors('firstName')"
+                class="max-w-xs"
+              ></app-input>          
+            </ng-container>
+            <ng-template #firstNameView>
+              <span class="text-gray-900 dark:text-white transition-colors duration-300">
+                {{ userProfile.firstName }}
+              </span>
+            </ng-template>
+          </div>
+        </div>
 
-    <div class="flex justify-between items-center border-b border-gray-200 dark:border-gray-700 pb-2">
-      <span class="text-gray-500 dark:text-gray-400">Email</span>
-      <div class="flex items-center gap-3">
-        <span>{{ userProfile.email }}</span>
-        <button class="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 transition-colors">
-          Edit
-        </button>
-      </div>
-    </div>
+        <div class="flex items-center">
+          <span class="text-gray-500 dark:text-gray-400 w-24 transition-colors duration-300">Last Name</span>
+          <div class="flex flex-1 justify-end">
+            <ng-container *ngIf="isEditing; else lastNameView">
+              <app-input
+                [(ngModel)]="editableProfile.lastName"
+                name="lastName"
+                [required]="true"
+                placeholder="Last Name"
+                [errors]="getFieldErrors('lastName')"
+                class="max-w-xs"
+              ></app-input>         
+            </ng-container>
+            <ng-template #lastNameView>
+              <span class="text-gray-900 dark:text-white transition-colors duration-300">
+                {{ userProfile.lastName }}
+              </span>
+            </ng-template>
+          </div>
+        </div>
 
-    <div class="flex justify-between items-center pb-2">
-      <span class="text-gray-500 dark:text-gray-400">NickName</span>
-      <div class="flex items-center gap-3">
-        <span>{{ userProfile.nickName }}</span>
-        <button class="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 transition-colors">
-          Edit
-        </button>
+        <div class="flex items-center">
+          <span class="text-gray-500 dark:text-gray-400 w-24 transition-colors duration-300">NickName</span>
+          <div class="flex flex-1 justify-end">
+            <ng-container *ngIf="isEditing; else nickNameView">
+              <app-input
+                [(ngModel)]="editableProfile.nickName"
+                name="nickName"
+                [required]="true"
+                placeholder="NickName"
+                [errors]="getFieldErrors('nickName')"
+                class="max-w-xs"
+              ></app-input>
+            </ng-container>
+            <ng-template #nickNameView>
+              <span class="text-gray-900 dark:text-white transition-colors duration-300">
+                {{ userProfile.nickName }}
+              </span>
+            </ng-template>
+          </div>
+        </div>
+
+        <div class="flex items-center">
+          <span class="text-gray-500 dark:text-gray-400 w-24 transition-colors duration-300">Email</span>
+          <div class="flex flex-1 justify-end">
+            <ng-container *ngIf="isEditing; else emailView">
+              <app-input
+                [(ngModel)]="editableProfile.email"
+                name="email"
+                [required]="true"
+                placeholder="Email"
+                [errors]="getFieldErrors('email')"
+                type="email"
+                class="max-w-xs"
+              ></app-input>
+            </ng-container>
+            <ng-template #emailView>
+              <span class="text-gray-900 dark:text-white transition-colors duration-300">
+                {{ userProfile.email }}
+              </span>
+            </ng-template>
+          </div>
+        </div>
+        <ng-container *ngIf="!isEditing">
+          <div class="pt-6">
+            <button
+              type="button"
+              (click)="onDeleteAccount()"
+              class="w-full py-3 text-sm font-semibold rounded-xl border border-red-600 text-red-600 
+                     hover:bg-red-600 hover:text-white transition-colors duration-300 dark:border-red-500 dark:text-red-400 dark:hover:bg-red-500">
+              🗑️ Delete Account
+            </button>
+          </div>
+        </ng-container>        
       </div>
     </div>
   </div>
