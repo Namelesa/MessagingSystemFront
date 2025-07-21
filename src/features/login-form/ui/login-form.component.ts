@@ -7,7 +7,7 @@ import { CommonModule } from '@angular/common';
 import { ButtonComponent, InputComponent, ToastService, ToastComponent } from '../../../shared/ui-elements';
 import {LucideAngularModule, Eye, EyeOff, FolderIcon } from 'lucide-angular';
 import { Router } from '@angular/router';
-import { AuthService } from '../../../entities/user/model/auht.service';
+import { AuthService } from '../../../entities/user/api/auht.service';
 
 @Component({
   selector: 'app-login-form',

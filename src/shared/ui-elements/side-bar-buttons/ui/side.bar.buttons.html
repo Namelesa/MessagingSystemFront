@@ -1,11 +1,11 @@
 <a
   [routerLink]="route"
-  routerLinkActive="!bg-gray-200 !dark:bg-gray-700"
+  routerLinkActive="!bg-gray-400 !dark:bg-gray-700"
   [routerLinkActiveOptions]="{ exact: true }"
   class="w-12 h-12 flex items-center justify-center transition-colors
          hover:bg-gray-300 dark:hover:bg-gray-600"
   [ngClass]="{
-    'rounded-xl bg-gray-200 dark:bg-gray-800': !isAvatar,
+    'rounded-xl bg-gray-200 dark:bg-gray-950': !isAvatar,
     'rounded-full bg-blue-500 text-white dark:bg-blue-600': isAvatar && !avatarUrl,
     'rounded-full overflow-hidden': isAvatar && avatarUrl
   }"

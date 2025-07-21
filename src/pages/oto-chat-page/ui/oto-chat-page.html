@@ -1,0 +1,35 @@
+<div class="flex h-screen dark:bg-gray-700 text-white">
+  <app-oto-chat-list
+    [accessToken]="accessToken || ''"
+    (selectChat)="onChatSelected($event.nickname, $event.image)"
+  ></app-oto-chat-list>
+
+  <main class="flex-grow flex flex-col">
+    <div
+    *ngIf="selectedChat"
+    class="min-h-[5rem] px-6 py-3 flex items-center gap-4 border border-white dark:border-transparent bg-gray-100 dark:bg-gray-800 shadow-sm"
+  >
+    <img
+      *ngIf="selectedChatImage"
+      [src]="selectedChatImage"
+      alt="Avatar"
+      class="w-14 h-14 rounded-full object-cover border-2 border-gray-300 dark:border-gray-600"
+    />
+  
+    <div class="flex flex-col justify-center">
+      <span class="text-lg font-semibold text-black truncate dark:text-white">
+        {{ selectedChat }}
+      </span>
+    </div>
+  </div>  
+
+    <div class="flex-grow p-6 overflow-y-auto text-black bg-gray-300 dark:text-white dark:bg-gray-900">
+      <ng-container *ngIf="selectedChat; else noChatSelected">
+        <p>Содержимое выбранного чата появится здесь.</p>
+      </ng-container>
+
+      <ng-template #noChatSelected>
+      </ng-template>
+    </div>
+  </main>
+</div>

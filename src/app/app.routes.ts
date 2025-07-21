@@ -4,6 +4,7 @@ import { LoginPageComponent } from '../pages/login-page';
 import { EmailConfirmedPageComponent } from '../pages/email-confirmation-page';
 import { ProfilePageComponent } from '../pages/user-profile-page';
 import { SettingsPageComponent } from '../pages/settings-page';
+import { OtoChatPageComponent } from '../pages/oto-chat-page';
 import { AuthGuard } from './auth-guard/auth-guard';
 import { MainLayoutComponent } from './layouts/main-layout';
 
@@ -17,6 +18,7 @@ export const routes: Routes = [
     children: [
       { path: 'profile', component: ProfilePageComponent },
       { path: 'settings', component: SettingsPageComponent },
+      { path: 'otoChats', component: OtoChatPageComponent },
     ]
   },
 

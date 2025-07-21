@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { environment, ProfileApiResult, AuthApiResult } from '../../../shared/api-result';
 import { Observable } from 'rxjs';
-import { AuthService } from '../../../entities/user/model/auht.service';
+import { AuthService } from '../../../entities/user/api/auht.service';
 import { EditUserContract } from '../../../entities';
 
 @Injectable({ providedIn: 'root' })

@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { SidebarNavItemComponent } from '../../../shared/ui-elements/side-bar-buttons';
 import { LucideAngularModule } from 'lucide-angular';
-import { AuthService } from '../../../entities/user/model/auht.service';
+import { AuthService } from '../../../entities/user/api/auht.service';
 import { ProfileApiResult } from '../../../shared/api-result';
 import { Subscription } from 'rxjs';
 

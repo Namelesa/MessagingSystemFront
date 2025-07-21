@@ -57,6 +57,7 @@ export class UserProfileComponent implements OnInit {
         this.hasError = true;
         this.isLoading = false;
         this.toastService.show('Can not load user profile', 'error');
+        this.router.navigate(['/login']);
       },
     });
   }
