@@ -43,16 +43,13 @@ export abstract class BaseChatApiService<TChat> {
       this.loadingSubject.next(true);
     });
 
-    // Реалтайм: новые сообщения
     this.connection.on('ReceivePrivateMessage', (message) => {
-      // Добавляем сообщение только если его ещё нет (по messageId)
       const exists = this.messagesSubject.value.some(m => m.messageId === message.messageId);
       if (!exists) {
         this.messagesSubject.next([...this.messagesSubject.value, message]);
       }
     });
 
-    // Реалтайм: обновление чатов
     this.connection.on('UpdateChats', (chats) => {
       this.chatsSubject.next(chats ?? []);
     });
@@ -90,7 +87,7 @@ export abstract class BaseChatApiService<TChat> {
         this.messagesSubject.next(messages ?? []);
       }),
       catchError(err => {
-        console.error('Ошибка загрузки истории чата:', err);
+        console.error('Error loading chat history:', err);
         return of([]);
       })
     );

@@ -37,7 +37,7 @@ import { Observable, Subscription } from 'rxjs';
       </ng-container>
     </div>
     <ng-template #loading>
-      <div class="text-gray-400">Загрузка...</div>
+      <div class="text-gray-400">Loading...</div>
     </ng-template>
   `
 })
@@ -54,7 +54,6 @@ export class OtoChatMessagesComponent implements OnChanges, AfterViewInit, OnDes
   private signalRSub?: Subscription;
 
   ngAfterViewInit() {
-    // Прокручиваем вниз при первой загрузке
     setTimeout(() => this.scrollToBottom(), 0);
   }
 
@@ -82,7 +81,6 @@ export class OtoChatMessagesComponent implements OnChanges, AfterViewInit, OnDes
     this.api.loadChatHistory(this.chatNickName, this.take, this.skip).subscribe(newMsgs => {
       console.log('loadMore: newMsgs', newMsgs);
       if (newMsgs.length < this.take) this.allLoaded = true;
-      // Фильтруем дубли по messageId
       const existingIds = new Set(this.messages.map(m => m.messageId));
       const uniqueNewMsgs = newMsgs.filter(m => !existingIds.has(m.messageId));
       this.messages = [...this.messages, ...uniqueNewMsgs];
@@ -104,7 +102,6 @@ export class OtoChatMessagesComponent implements OnChanges, AfterViewInit, OnDes
       this.allLoaded = false;
       this.loadMore();
 
-      // Подписка на real-time сообщения
       if (this.signalRSub) this.signalRSub.unsubscribe();
       this.signalRSub = this.api.messages$.subscribe(newMsgs => {
         for (const msg of newMsgs) {
@@ -112,7 +109,6 @@ export class OtoChatMessagesComponent implements OnChanges, AfterViewInit, OnDes
             this.messages = [...this.messages, msg];
           }
         }
-        // Сортируем после добавления
         this.messages.sort((a, b) => new Date(a.sentAt).getTime() - new Date(b.sentAt).getTime());
         this.skip = this.messages.length;
       });
@@ -138,8 +134,7 @@ export class OtoChatMessagesComponent implements OnChanges, AfterViewInit, OnDes
     }
     return groups;
   }
-  // Удаляю lastMessages и sortedMessages, сортировка теперь через pipe в шаблоне
-
+  
   constructor(private api: OtoChatApiService) {}
 
   isMyMessage(msg: any): boolean {
