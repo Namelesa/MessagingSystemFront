@@ -1,59 +1,60 @@
-import { Component, Input, Output, EventEmitter, OnInit } from '@angular/core';
-import { Observable } from 'rxjs';
+import { Component, Input, Output, EventEmitter } from '@angular/core';
+import { BaseChatListComponent } from '../../../shared/chats';
 import { OtoChat } from '../../../entities/oto-chats';
 import { OtoChatApiService } from '../api/oto-chat-hub.api';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { ChatListItemComponent, SearchInputComponent } from '../../../shared/chats-ui-elements';
+import { map } from 'rxjs/operators';
 
 @Component({
   selector: 'app-oto-chat-list',
   standalone: true,
-  imports: [CommonModule, FormsModule],
-  templateUrl: './oto-chat-list.component.html',
+  imports: [CommonModule, FormsModule, ChatListItemComponent, SearchInputComponent],
+  templateUrl: './oto-chat.list.component.html',
 })
-export class OtoChatListComponent implements OnInit {
-  chats$!: Observable<OtoChat[]>;
-  loading$!: Observable<boolean>;
-  error$!: Observable<string | null>;
-  selectedNickname?: string;
-  selectedNicknameImage?: string;
-  searchQuery = '';
-  searchResults: string[] = [];
-  image: string = '';
+export class OtoChatListComponent extends BaseChatListComponent<OtoChat> {
+  protected apiService: OtoChatApiService;
 
-  @Input() accessToken!: string;
-  @Output() selectChat = new EventEmitter<{ nickname: string, image: string }>();
+  public image: string | null = null;
 
-  constructor(private otoChatApi: OtoChatApiService) {}
+  @Input() searchPlaceholder = 'Search...';
+  @Input() emptyListText = 'Chats not found ;(';
+  @Input() currentUserNickName!: string;
+  @Input() declare selectedNickname?: string;
+  @Output() chatSelected = new EventEmitter<OtoChat>();
 
-  ngOnInit(): void { 
-      this.otoChatApi.connect();
-      this.chats$ = this.otoChatApi.chats$;
-      this.loading$ = this.otoChatApi.loading$;
-      this.error$ = this.otoChatApi.error$;
+  constructor(private otoChatApi: OtoChatApiService) {
+    super();
+    this.apiService = this.otoChatApi;
   }
 
-  onSelectChat(nickname: string, image: string): void {
-    this.selectedNickname = nickname;
-    this.selectedNicknameImage = image;
-    this.selectChat.emit({ nickname, image });
+  getChatName(chat: OtoChat): string {
+    return chat.nickName;
+  }  
+
+  onChatClick(chat: OtoChat) {
+    this.chatSelected.emit(chat);
   }
 
-  onSearchChange() {
-    if (this.searchQuery.trim()) {
-      console.log('Searching for:', this.searchQuery);
-    } else {
-      this.searchResults = [];
-    }
+  get sortedChats$() {
+    return this.chats$.pipe(
+      map(chats => {
+        if (!chats) return [];
+        return [...chats].sort((a, b) => {
+          if (a.nickName === this.currentUserNickName) return -1;
+          if (b.nickName === this.currentUserNickName) return 1;
+          return 0;
+        });
+      })
+    );
   }
-  
-  clearSearch() {
-    this.searchQuery = '';
-    this.searchResults = [];
+
+  isSavedMessagesChat(chat: OtoChat): boolean {
+    return chat.nickName === this.currentUserNickName;
   }
-  
-  startChat(nickName: string, image: string) {
-    this.clearSearch();
-    this.onSelectChat(nickName, image);
+
+  getChatDisplayName(chat: OtoChat): string {
+    return this.isSavedMessagesChat(chat) ? 'SavedMessage' : chat.nickName;
   }
 }

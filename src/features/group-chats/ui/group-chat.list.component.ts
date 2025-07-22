@@ -1,59 +1,30 @@
-import { Component, Input, Output, EventEmitter, OnInit } from '@angular/core';
-import { Observable } from 'rxjs';
+import { Component, Input } from '@angular/core';
+import { BaseChatListComponent } from '../../../shared/chats/list/base.chat.list';
 import { GroupChat } from '../../../entities/group-chats';
 import { GroupChatApiService } from '../api/group-chat-hub.api';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { ChatListItemComponent, SearchInputComponent } from '../../../shared/chats-ui-elements';
 
 @Component({
   selector: 'app-group-chat-list',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, ChatListItemComponent, SearchInputComponent],
   templateUrl: './group-chat.list.component.html',
 })
-export class GroupChatListComponent implements OnInit {
-  chats$!: Observable<GroupChat[]>;
-  loading$!: Observable<boolean>;
-  error$!: Observable<string | null>;
-  selectedNickname?: string;
-  selectedNicknameImage?: string;
-  searchQuery = '';
-  searchResults: string[] = [];
-  image: string = '';
+export class GroupChatListComponent extends BaseChatListComponent<GroupChat> {
+  protected apiService: GroupChatApiService;
 
-  @Input() accessToken!: string;
-  @Output() selectChat = new EventEmitter<{ nickname: string, image: string }>();
+  public image: string | null = null;
+  @Input() searchPlaceholder = 'Search...';
+  @Input() emptyListText = 'Chats not found ;(';
 
-  constructor(private groupChatApi: GroupChatApiService) {}
-
-  ngOnInit(): void { 
-      this.groupChatApi.connect();
-      this.chats$ = this.groupChatApi.chats$;
-      this.loading$ = this.groupChatApi.loading$;
-      this.error$ = this.groupChatApi.error$;
+  constructor(private groupChatApi: GroupChatApiService) {
+    super();
+    this.apiService = this.groupChatApi;
   }
 
-  onSelectChat(nickname: string, image: string): void {
-    this.selectedNickname = nickname;
-    this.selectedNicknameImage = image;
-    this.selectChat.emit({ nickname, image });
-  }
-
-  onSearchChange() {
-    if (this.searchQuery.trim()) {
-      console.log('Searching for:', this.searchQuery);
-    } else {
-      this.searchResults = [];
-    }
-  }
-  
-  clearSearch() {
-    this.searchQuery = '';
-    this.searchResults = [];
-  }
-  
-  startChat(nickName: string, image: string) {
-    this.clearSearch();
-    this.onSelectChat(nickName, image);
-  }
+  getChatName(chat: GroupChat): string {
+    return chat.groupName;
+  }  
 }

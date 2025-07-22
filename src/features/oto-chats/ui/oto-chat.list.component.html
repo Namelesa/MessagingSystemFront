@@ -43,12 +43,20 @@
         </li>
 
         <shared-chat-list-item
-          *ngFor="let chat of chats$ | async"
-          [name]="getChatName(chat)"
-          [image]="chat.image"
+          *ngFor="let chat of sortedChats$ | async"
+          [name]="getChatDisplayName(chat)"
+          [image]="!isSavedMessagesChat(chat) ? chat.image : ''"
           [active]="selectedNickname === getChatName(chat)"
-          (click)="onSelectChat(getChatName(chat), chat.image)"
-        ></shared-chat-list-item>
+          (click)="onChatClick(chat)"
+        >
+          <ng-container *ngIf="isSavedMessagesChat(chat)" icon>
+            <svg width="40" height="40" fill="none" viewBox="0 0 24 24" stroke="currentColor"
+              class="w-10 h-10 rounded-full mr-3 bg-blue-500 p-2">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M5 5v14l7-7 7 7V5a2 2 0 00-2-2H7a2 2 0 00-2 2z"/>
+            </svg>
+          </ng-container>
+        </shared-chat-list-item>
       </ul>
     </ng-template>
   </ng-template>
