@@ -16,21 +16,30 @@ import { Observable, Subscription } from 'rxjs';
           </span>
         </div>
         <ng-container *ngFor="let msg of group.messages; let i = index">
-          <div class="flex flex-col mb-4" [ngClass]="isMyMessage(msg) ? 'items-end' : 'items-start'">
-            <div
-              class="px-4 py-2 rounded-2xl max-w-[70%] shadow flex flex-col"
-              [ngClass]="{
-                'bg-gradient-to-br from-blue-500 to-blue-700 text-white ml-auto dark:from-blue-400 dark:to-blue-600': isMyMessage(msg),
-                'bg-white text-gray-900 mr-auto dark:bg-gray-700 dark:text-white': !isMyMessage(msg)
-              }"
-            >
-              <span>{{ msg.content }}</span>
-              <span
-                class="text-xs mt-1 text-right"
-                [ngClass]="isMyMessage(msg) ? 'text-white/70' : 'text-gray-400 dark:text-gray-300'"
+          <div class="flex flex-col mb-1 relative" [ngClass]="isMyMessage(msg) ? 'items-end' : 'items-start'">
+            <div class="relative max-w-[75%]">
+              <div
+                class="px-3 py-2 rounded-2xl shadow-sm text-sm min-w-[48px] min-h-[32px]"
+                [ngClass]="isMyMessage(msg)
+                  ? 'ml-auto bg-blue-500 text-white rounded-br-md'
+                  : 'mr-auto bg-gray-200 text-gray-900 dark:bg-gray-700 dark:text-white rounded-bl-md'"
+                style="word-break:break-word;"
               >
-                {{ msg.sentAt | date:'shortTime' }}
-              </span>
+                <div class="whitespace-pre-line break-words">{{ msg.content }}</div>
+                <div class="flex items-center gap-1 mt-1 text-xs justify-end"
+                  [ngClass]="isMyMessage(msg)
+                    ? 'text-blue-200 dark:text-gray-200'
+                    : 'text-gray-500 dark:text-gray-200'">
+                  <span>{{ msg.sentAt | date:'shortTime' }}</span>
+                </div>
+              </div>
+              <!-- Новый SVG хвостик, маленький и плавный -->
+              <svg *ngIf="isMyMessage(msg)" width="12" height="16" viewBox="0 0 12 16" class="absolute bottom-0 right-0 translate-x-1/2" style="z-index:1">
+                <path d="M0,16 Q12,16 6,6 Q5,2 12,0" fill="#3B82F6"/>
+              </svg>
+              <svg *ngIf="!isMyMessage(msg)" width="12" height="16" viewBox="0 0 12 16" class="absolute bottom-0 left-0 -translate-x-1/2 fill-gray-200 dark:fill-gray-700" style="z-index:1">
+                <path d="M12,16 Q0,16 6,6 Q7,2 0,0" />
+              </svg>
             </div>
           </div>
         </ng-container>
