@@ -5,7 +5,7 @@ import { OtoChatApiService } from '../../../features/oto-chats';
 import { FormsModule } from '@angular/forms';
 import { BaseChatPageComponent, ChatLayoutComponent} from '../../../shared/chats';
 import { OtoChat } from '../../../entities/oto-chats';
-import { OtoChatMessagesComponent } from '../../../features/oto-messages/ui/oto-chat-messages.component';
+import { OtoChatMessagesComponent } from '../../../features/oto-messages';
 import { AuthService } from '../../../entities/user/api/auht.service';
 
 @Component({
@@ -28,7 +28,6 @@ export class OtoChatPageComponent extends BaseChatPageComponent {
     this.currentUserNickName = this.authService.getNickName() || '';
   }
 
-  // Исправляю сигнатуру обработчика выбора чата
   onOtoChatSelected(chat: OtoChat) {
     this.selectedChat = chat.nickName;
     this.selectedChatImage = chat.image;

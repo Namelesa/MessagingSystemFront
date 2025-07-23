@@ -76,18 +76,15 @@ export abstract class BaseChatApiService<TChat> {
   public loadChatHistory(withUser: string, take: number, skip: number): Observable<any[]> {
     this.currentChatNickName = withUser;
     if (!this.connection || this.connection.state !== signalR.HubConnectionState.Connected) {
-      console.log('SignalR not connected');
       return of([]);
     }
     return from(
       this.connection.invoke<any[]>(this.loadHistoryMethod, withUser, take, skip)
     ).pipe(
       tap(messages => {
-        console.log('Loaded chat history:', messages);
         this.messagesSubject.next(messages ?? []);
       }),
       catchError(err => {
-        console.error('Error loading chat history:', err);
         return of([]);
       })
     );

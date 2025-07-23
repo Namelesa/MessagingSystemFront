@@ -7,7 +7,7 @@ import { ThemeSwitcherComponent } from '../shared/ui-elements';
   standalone: true,
   imports: [RouterOutlet, ThemeSwitcherComponent],
   template: `
-    <app-theme-switcher class="fixed top-4 right-4 z-50" />
+    <app-theme-switcher class="fixed top-3 right-4 z-50" />
     <router-outlet />
   `
 })

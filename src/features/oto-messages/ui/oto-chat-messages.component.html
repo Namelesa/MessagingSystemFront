@@ -1,0 +1,36 @@
+<div #scrollContainer (scroll)="onScroll()" class="overflow-y-auto h-full relative scroll-smooth">
+    <ng-container *ngFor="let group of groupedMessages">
+      <div class="flex justify-center my-4">
+        <span class="inline-block bg-gray-400 text-white px-3 py-1 rounded-full opacity-80 text-sm dark:bg-gray-500 dark:text-white shadow-md">
+          {{ isToday(group.messages[0].sentAt) ? 'Today' : (group.messages[0].sentAt | date:'d MMMM yyyy') }}
+        </span>
+      </div>
+      <ng-container *ngFor="let msg of group.messages">
+        <div class="flex flex-col mb-1 relative" [ngClass]="isMyMessage(msg) ? 'items-end' : 'items-start'">
+          <div class="relative max-w-[75%]">
+            <div
+              class="px-3 py-2 rounded-2xl shadow-sm text-sm min-w-[48px] min-h-[32px]"
+              [ngClass]="isMyMessage(msg)
+                ? 'ml-auto bg-blue-500 text-white rounded-br-md'
+                : 'mr-auto bg-gray-200 text-gray-900 dark:bg-gray-700 dark:text-white rounded-bl-md'"
+              style="word-break: break-word;"
+            >
+              <div class="whitespace-pre-line break-words">{{ msg.content }}</div>
+              <div class="flex items-center gap-1 mt-1 text-xs justify-end"
+                [ngClass]="isMyMessage(msg)
+                  ? 'text-blue-200 dark:text-gray-200'
+                  : 'text-gray-500 dark:text-gray-200'">
+                <span>{{ msg.sentAt | date:'shortTime' }}</span>
+              </div>
+            </div>
+            <svg *ngIf="isMyMessage(msg)" width="12" height="16" viewBox="0 0 12 16" class="absolute bottom-0 right-0 translate-x-1/2" style="z-index:1">
+              <path d="M0,16 Q12,16 6,6 Q5,2 12,0" fill="#3B82F6"/>
+            </svg>
+            <svg *ngIf="!isMyMessage(msg)" width="12" height="16" viewBox="0 0 12 16" class="absolute bottom-0 left-0 -translate-x-1/2 fill-gray-200 dark:fill-gray-700" style="z-index:1">
+              <path d="M12,16 Q0,16 6,6 Q7,2 0,0" />
+            </svg>
+          </div>
+        </div>
+      </ng-container>
+    </ng-container>
+  </div>
