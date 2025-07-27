@@ -48,6 +48,10 @@ export abstract class BaseChatApiService<TChat> {
       if (!exists) {
         this.messagesSubject.next([...this.messagesSubject.value, message]);
       }
+      this.connection.invoke<TChat[]>(this.methodName).then(chats => {
+        this.chatsSubject.next(chats ?? []);
+      }).catch(err => {
+      });
     });
 
     this.connection.on('UpdateChats', (chats) => {
@@ -58,7 +62,9 @@ export abstract class BaseChatApiService<TChat> {
 
     from(this.connection.start())
       .pipe(
-        switchMap(() => from(this.connection.invoke<TChat[]>(this.methodName))),
+        switchMap(() => {
+          return from(this.connection.invoke<TChat[]>(this.methodName));
+        }),
         tap(chats => {
           this.chatsSubject.next(chats ?? []);
           this.errorSubject.next(null);
@@ -80,6 +86,22 @@ export abstract class BaseChatApiService<TChat> {
     }
     return from(
       this.connection.invoke<any[]>(this.loadHistoryMethod, withUser, take, skip)
+    ).pipe(
+      tap(messages => {
+        this.messagesSubject.next(messages ?? []);
+      }),
+      catchError(err => {
+        return of([]);
+      })
+    );
+  }
+
+  public loadGroupMessageHistory(groupId: string, take: number, skip: number): Observable<any[]> {
+    if (!this.connection || this.connection.state !== signalR.HubConnectionState.Connected) {
+      return of([]);
+    }
+    return from(
+      this.connection.invoke<any[]>(this.loadHistoryMethod, groupId, take, skip)
     ).pipe(
       tap(messages => {
         this.messagesSubject.next(messages ?? []);
