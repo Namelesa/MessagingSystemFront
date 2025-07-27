@@ -170,13 +170,16 @@ export class GroupChatListComponent extends BaseChatListComponent<GroupChat> {
   onSelectGroupChat(nickname: string, image: string | null, groupId?: string) {
     this.selectedNickname = nickname;
     this.image = image;
-  
+
     if (groupId) {
       this.groupChatApi.joinGroup(groupId).then(() => {
-        console.log('Joined group successfully');
+        this.onSelectChat(nickname, image ?? '', groupId); 
       }).catch(err => {
         console.error('Failed to join group', err);
+        this.onSelectChat(nickname, image ?? '', groupId); 
       });
+    } else {
+      this.onSelectChat(nickname, image ?? '', groupId);
     }
   }
   

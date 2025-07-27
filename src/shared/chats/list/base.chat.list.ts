@@ -17,7 +17,7 @@ export abstract class BaseChatListComponent<TChat> implements OnInit {
   searchResults: string[] = [];
 
   @Input() accessToken!: string;
-  @Output() selectChat = new EventEmitter<{ nickname: string; image: string }>();
+  @Output() selectChat = new EventEmitter<{ nickname: string; image: string; groupId?: string }>();
 
   protected abstract apiService: {
     connect(): void;
@@ -33,10 +33,10 @@ export abstract class BaseChatListComponent<TChat> implements OnInit {
     this.error$ = this.apiService.error$;
   }
 
-  onSelectChat(nickname: string, image: string): void {
+  onSelectChat(nickname: string, image: string, groupId?: string): void {
     this.selectedNickname = nickname;
     this.selectedNicknameImage = image;
-    this.selectChat.emit({ nickname, image });
+    this.selectChat.emit({ nickname, image, groupId });
   }
 
   onSearchChange(): void {
@@ -52,8 +52,8 @@ export abstract class BaseChatListComponent<TChat> implements OnInit {
     this.searchResults = [];
   }
 
-  startChat(nickName: string, image: string): void {
+  startChat(nickName: string, image: string, groupId?: string): void {
     this.clearSearch();
-    this.onSelectChat(nickName, image);
+    this.onSelectChat(nickName, image, groupId);
   }
 }

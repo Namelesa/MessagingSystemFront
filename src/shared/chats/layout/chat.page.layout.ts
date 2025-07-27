@@ -1,4 +1,4 @@
-import { Component, Input } from '@angular/core';
+import { Component, Input, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
 @Component({
@@ -10,4 +10,6 @@ import { CommonModule } from '@angular/common';
 export class ChatLayoutComponent {
   @Input() selectedChat?: string;
   @Input() selectedChatImage?: string;
+  @Input() groupId?: string;
+  @Output() headerClick = new EventEmitter<void>();
 }

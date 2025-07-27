@@ -1,17 +1,26 @@
 <app-chat-layout
   [selectedChat]="selectedChat"
   [selectedChatImage]="selectedChatImage"
+  [groupId]="selectedGroupId"
+  (headerClick)="onHeaderClick()"
 >
   <app-group-chat-list
     chat-sidebar
     [accessToken]="accessToken || ''"
-    (selectChat)="onChatSelected($event.nickname, $event.image)"
+    (selectChat)="onChatSelected($event.nickname, $event.image, $event.groupId)"
   ></app-group-chat-list>
 
   <ng-container chat-content>
     <ng-container *ngIf="selectedChat; else noChatSelected">
-      <p>Содержимое выбранного чата появится здесь.</p>
+      <app-group-messages [groupId]="selectedGroupId" />
     </ng-container>
     <ng-template #noChatSelected></ng-template>
   </ng-container>
 </app-chat-layout>
+
+<app-group-info-modal
+  [groupId]="selectedGroupId"
+  [open]="groupInfoModalOpen"
+  (close)="closeGroupInfoModal()"
+  (groupUpdated)="onGroupUpdated()"
+/>

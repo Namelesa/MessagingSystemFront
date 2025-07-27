@@ -1,0 +1,106 @@
+<app-toast></app-toast>
+
+<div *ngIf="open"
+     class="fixed inset-0 z-[99999] flex items-center justify-center"
+     style="backdrop-filter: blur(8px); background: rgba(0,0,0,0.5);"
+     (click)="onClose()">
+  <div
+    class="bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-2xl w-96 max-w-md mx-4 relative z-[100000]"
+    (click)="$event.stopPropagation()">
+
+    <div class="absolute top-4 right-4 flex gap-2" *ngIf="isEditing">
+      <button
+        type="button"
+        (click)="saveChanges()"
+        class="text-green-600 hover:text-green-800 dark:text-green-400 dark:hover:text-green-600 transition">
+        ✔️
+      </button>
+      <button
+        type="button"
+        (click)="cancelEdit()"
+        class="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-600 transition">
+        ❌
+      </button>
+    </div>
+
+    <h2 class="text-2xl font-bold mb-4 text-center">
+      Group Info
+      <button
+        *ngIf="!isEditing"
+        (click)="toggleEdit()"
+        class="ml-auto text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-colors duration-200"
+        aria-label="Edit group info">
+        ✏️
+      </button>
+    </h2>
+
+    <div *ngIf="loading" class="text-center py-4">Loading...</div>
+    <div *ngIf="error && !loading" class="text-red-500 text-center py-4">{{ error }}</div>
+
+    <div *ngIf="groupInfo && !loading && !error">
+      <div class="flex flex-col items-center mb-4 relative">
+        <div class="relative w-20 h-20 rounded-full overflow-hidden">
+          <img
+            *ngIf="groupInfo.image"
+            [src]="groupInfo.image"
+            alt="Group Avatar"
+            class="w-full h-full object-cover border-2 border-gray-300 dark:border-gray-600 rounded-full">
+          <label
+            *ngIf="isEditing"
+            for="groupAvatarInput"
+            class="absolute inset-0 bg-black bg-opacity-40 rounded-full flex items-center justify-center text-white opacity-0 hover:opacity-100 cursor-pointer transition-opacity duration-300">
+            <span class="text-xs select-none">Change</span>
+          </label>
+          <input
+            type="file"
+            id="groupAvatarInput"
+            (change)="onAvatarChange($event)"
+            accept="image/*"
+            class="hidden" />
+        </div>
+      </div>
+
+      <div class="mb-2">
+        <b>Group Name:</b>
+        <ng-container *ngIf="!isEditing; else nameEdit">{{ groupInfo.groupName }}</ng-container>
+        <ng-template #nameEdit>
+          <app-input
+            [(ngModel)]="editableGroup.GroupName"
+            name="groupName"
+            [errors]="getFieldErrors('groupName')"
+            placeholder="Group Name"
+            class="mt-1 w-full">
+          </app-input>
+        </ng-template>
+      </div>
+
+      <div class="mb-2">
+        <b>Description:</b>
+        <ng-container *ngIf="!isEditing; else descriptionEdit">{{ groupInfo.description }}</ng-container>
+        <ng-template #descriptionEdit>
+          <app-input
+            [(ngModel)]="editableGroup.Description"
+            name="description"
+            [errors]="getFieldErrors('description')"
+            placeholder="Group Description"
+            class="mt-1 w-full">
+          </app-input>
+        </ng-template>
+      </div>
+
+      <div class="mb-2" *ngIf="!isEditing">
+        <b>Admin:</b> {{ groupInfo.admin }}
+      </div>
+
+      <div class="mb-2" *ngIf="!isEditing">
+        <b>Members:</b>
+        <ul class="list-disc list-inside text-sm text-gray-700 dark:text-gray-300 mb-2">
+          <li *ngFor="let member of groupInfo.members" class="flex items-center mb-1">
+            <img [src]="member.image" alt="avatar" class="inline w-6 h-6 rounded-full mr-2" />
+            {{ member.nickName }}
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
