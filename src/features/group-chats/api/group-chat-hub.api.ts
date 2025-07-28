@@ -11,8 +11,36 @@ import * as signalR from '@microsoft/signalr';
 
 @Injectable({ providedIn: 'root' })
 export class GroupChatApiService extends BaseChatApiService<GroupChat> {
+  private isConnected = false;
+
   constructor(private http: HttpClient) {
     super(environment.groupChatHubUrl, 'GetAllGroupForUserAsync', 'LoadChatHistoryAsync');
+  }
+
+  connected(): void {
+    if (this.isConnected) return;
+    super.connect();
+    this.isConnected = true;
+
+    this.connection.on('DeleteGroupAsync', (groupId: string) => {
+      this.chatsSubject.next(
+        this.chatsSubject.value.filter(g => g.groupId !== groupId)
+      );
+    });    
+
+    this.connection.on('CreateGroupAsync', (group: GroupChat) => {
+      const currentGroups = this.chatsSubject.value;
+      const updatedGroups = [...currentGroups, group];
+      this.chatsSubject.next(updatedGroups);
+    });
+
+    this.connection.on('EditGroupAsync', (group: GroupChat) => {
+      const currentGroups = this.chatsSubject.value;
+      const updatedGroups = currentGroups.map(g => {
+        return g.groupId === group.groupId ? group : g;
+      });
+      this.chatsSubject.next(updatedGroups);
+    });    
   }
 
   createGroup(data: GroupCreateRequest): Observable<AuthApiResult> {
@@ -46,5 +74,31 @@ export class GroupChatApiService extends BaseChatApiService<GroupChat> {
       return Promise.reject('Connection is not established');
     }
     return this.connection.invoke('JoinGroupAsync', groupId);
+  }
+
+  leaveGroup(groupId: string): Promise<void> {
+    if (!this.connection || this.connection.state !== signalR.HubConnectionState.Connected) {
+      return Promise.reject('Connection is not established');
+    }
+    return this.connection.invoke('LeaveGroupAsync', groupId);
+  }
+
+  async deleteGroup(groupId: string): Promise<void> {
+    if (!this.connection || this.connection.state !== signalR.HubConnectionState.Connected) {
+      return Promise.reject('SignalR connection is not established');
+    }
+    await this.connection.invoke('DeleteGroupAsync', groupId);
+    this.refreshGroups();
+  }  
+
+  public refreshGroups(): void {
+    if (!this.connection || this.connection.state !== signalR.HubConnectionState.Connected) return;
+    this.connection.invoke<GroupChat[]>('GetAllGroupForUserAsync')
+      .then(groups => {
+        this.chatsSubject.next(groups ?? []);
+      })
+      .catch(err => {
+        console.error('Failed to refresh group list:', err);
+      });
   }
 }

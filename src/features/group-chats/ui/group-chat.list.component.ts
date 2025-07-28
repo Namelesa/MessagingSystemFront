@@ -1,4 +1,4 @@
-import { Component, Input } from '@angular/core';
+import { Component, Input, OnInit } from '@angular/core';
 import { BaseChatListComponent } from '../../../shared/chats/list/base.chat.list';
 import { GroupChat } from '../../../entities/group-chats';
 import { GroupChatApiService } from '../api/group-chat-hub.api';
@@ -17,12 +17,13 @@ import { AuthService } from '../../../entities/user/api/auht.service';
   imports: [CommonModule, FormsModule, ChatListItemComponent, SearchInputComponent, InputComponent, ToastComponent],
   templateUrl: './group-chat.list.component.html',
 })
-export class GroupChatListComponent extends BaseChatListComponent<GroupChat> {
+export class GroupChatListComponent extends BaseChatListComponent<GroupChat> implements OnInit {
   protected apiService: GroupChatApiService;
 
   constructor(private groupChatApi: GroupChatApiService, private toastService: ToastService, private authService: AuthService) {
     super();
     this.apiService = this.groupChatApi;
+    this.apiService.connected();
   }
 
   public image: string | null = null;
@@ -114,9 +115,6 @@ export class GroupChatListComponent extends BaseChatListComponent<GroupChat> {
         if (result?.message == null) {
           this.toastService.show('Group created successfully!', 'success');
           this.closeCreateGroupModal();
-          setTimeout(() => {
-            this.apiService.connect();
-          }, 1000);
         } else {
           this.toastService.show('Group creation failed. Server returned unexpected result.', 'error');
         }
@@ -125,6 +123,7 @@ export class GroupChatListComponent extends BaseChatListComponent<GroupChat> {
         if (error.error?.message) {
           this.toastService.show(`Failed to create group: ${error.error.message}`, 'error');
         } else {
+          console.error('Group creation error:', error);
           this.toastService.show('Failed to create group. Please try again.', 'error');
         }
       }
@@ -182,5 +181,4 @@ export class GroupChatListComponent extends BaseChatListComponent<GroupChat> {
       this.onSelectChat(nickname, image ?? '', groupId);
     }
   }
-  
 }

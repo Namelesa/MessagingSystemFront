@@ -27,7 +27,6 @@ export abstract class BaseChatListComponent<TChat> implements OnInit {
   };
 
   ngOnInit(): void {
-    this.apiService.connect();
     this.chats$ = this.apiService.chats$;
     this.loading$ = this.apiService.loading$;
     this.error$ = this.apiService.error$;

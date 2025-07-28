@@ -4,5 +4,5 @@ export interface GroupChat {
     description: string;
     admin: string;
     users: string[];
-    groupId: string;
+    groupId: string | null;
 }

@@ -4,7 +4,8 @@ import {
   OnChanges,
   SimpleChanges,
   Output,
-  EventEmitter
+  EventEmitter,
+  OnInit
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -14,6 +15,7 @@ import { GroupInfoEditData } from '../model/group-info-edit.model';
 import { validateCreateGroupForm } from '../model/validate-group';
 import { InputComponent, ToastComponent, ToastService } from '../../../shared/ui-elements';
 import { GroupChatApiService } from '../../group-chats';
+import { AuthService } from '../../../entities/user/api/auht.service';
 
 @Component({
   selector: 'app-group-info-modal',
@@ -21,13 +23,13 @@ import { GroupChatApiService } from '../../group-chats';
   imports: [CommonModule, FormsModule, InputComponent, ToastComponent],
   templateUrl: './group-info-modal.component.html',
 })
-export class GroupInfoModalComponent implements OnChanges {
+export class GroupInfoModalComponent implements OnChanges, OnInit {
   @Input() groupId?: string;
   @Input() open = false;
   @Output() close = new EventEmitter<void>();
   @Output() groupUpdated = new EventEmitter<void>();
 
-  groupInfo?: GroupInfoData;
+  groupInfo!: GroupInfoData;
   loading = false;
   error: string | null = null;
   hasError = false;
@@ -41,11 +43,23 @@ export class GroupInfoModalComponent implements OnChanges {
   selectedAvatarFile: File | null = null;
   errors: string[] = [];
 
+  currentUserNickname = '';
+
   constructor(
     private groupInfoApi: GroupInfoApiService,
     private toastService: ToastService,
-    private apiService: GroupChatApiService
+    private apiService: GroupChatApiService,
+    private authService: AuthService
   ) {}
+
+  ngOnInit(): void {
+    this.authService.waitForAuthInit().subscribe(() => {
+      const nick = this.authService.getNickName();
+      if (nick) {
+        this.currentUserNickname = nick;
+      }
+    });
+  }  
 
   ngOnChanges(changes: SimpleChanges): void {
     if (this.open && this.groupId) {
@@ -101,15 +115,32 @@ export class GroupInfoModalComponent implements OnChanges {
         this.toastService.show('Group updated successfully', 'success');
         this.close.emit();
         this.groupUpdated.emit();
-        this.groupInfo = res.data;
         this.isEditing = false;
         this.loading = false;
-        this.apiService.connect();
       },
       error: (err) => {
         this.toastService.show(err?.error?.message || 'Failed to update group info.', 'error');
         this.loading = false;
       },
+    });
+  }
+
+  deleteGroupInfo() {
+    if (this.groupInfo?.admin !== this.currentUserNickname) {
+      this.toastService.show('Only the group admin can delete the group.', 'error');
+      return;
+    }
+  
+    this.loading = true;
+
+    this.apiService.deleteGroup(this.groupInfo.groupId).then(res => {
+      this.toastService.show('Group deleted successfully', 'success');
+      this.groupUpdated.emit();
+      this.close.emit();
+      this.loading = false;
+    }).catch(err => {
+      this.toastService.show(err?.message || 'Failed to delete group.', 'error');
+      this.loading = false;
     });
   }
 
