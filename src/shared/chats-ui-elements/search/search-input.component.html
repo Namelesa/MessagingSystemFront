@@ -3,6 +3,7 @@
     <input
       [ngModel]="query"
       (ngModelChange)="queryChange.emit($event)"
+      (focus)="focus.emit()"
       type="text"
       class="w-full rounded-xl pl-10 pr-10 py-2 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-white"
       [placeholder]="placeholder"

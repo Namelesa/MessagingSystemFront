@@ -1,0 +1,31 @@
+<div class="p-4 border border-white dark:border-transparent">
+    <shared-search-input
+      [query]="searchQuery"
+      (queryChange)="onSearchChange($event)"
+      (clear)="onClearSearch()"
+      [placeholder]="'Search...'"
+      (focus)="searchFocus.emit()"
+    ></shared-search-input>
+  </div>
+  
+  <ng-container *ngIf="searchQuery.trim()">
+    <ng-container *ngIf="user$ | async as user; else fallback">
+      <div
+        class="p-2 hover:bg-gray-300 rounded-xl cursor-pointer transition flex items-center gap-2 dark:hover:bg-gray-800"
+        (click)="startChat(user.nickName, user.image)"
+      >
+      <img
+        [src]="user.image"
+        alt="Avatar"
+        class="w-10 h-10 rounded-full object-cover"
+      />
+        <span class="font-medium">{{ user.nickName }}</span>
+      </div>
+    </ng-container>
+    <ng-template #fallback>
+      <div class="flex items-center justify-center p-4 text-gray-500">
+        Not found users ;(
+      </div>
+    </ng-template>
+  </ng-container>
+  

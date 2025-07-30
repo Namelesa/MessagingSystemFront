@@ -5,113 +5,133 @@
   <div
     class="bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-2xl w-96 max-w-md mx-4 relative z-[100000]"
     (click)="$event.stopPropagation()">
+    
     <app-toast></app-toast>
-    <div class="absolute top-4 right-4 flex gap-2" *ngIf="isEditing">
-      <button
-        type="button"
-        (click)="saveChanges()"
-        class="text-green-600 hover:text-green-800 dark:text-green-400 dark:hover:text-green-600 transition">
-        ✔️
-      </button>
-      <button
-        type="button"
-        (click)="cancelEdit()"
-        class="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-600 transition">
-        ❌
-      </button>
-    </div>
+    
+    <app-modal-header
+      [title]="getModalTitle()"
+      [showEditButton]="!isEditing && !isMembersMode"
+      [showSaveButton]="(isEditing && !isMembersMode) || isMembersMode"
+      [showCancelButton]="isEditing || isMembersMode"
+      [saveDisabled]="isMembersMode && selectedUsers.length === 0"
+      (editClick)="toggleEdit()"
+      (saveClick)="handleSave()"
+      (cancelClick)="handleCancel()">
+    </app-modal-header>
 
-    <h2 class="text-2xl font-bold mb-4 text-center">
-      Group Info
-      <button
-        *ngIf="!isEditing"
-        (click)="toggleEdit()"
-        class="ml-auto text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-colors duration-200"
-        aria-label="Edit group info">
-        ✏️
-      </button>
-    </h2>
+    <div *ngIf="loading" class="text-center py-4 mt-16">Loading...</div>
+    <div *ngIf="error && !loading" class="text-red-500 text-center py-4 mt-16">{{ error }}</div>
 
-    <div *ngIf="loading" class="text-center py-4">Loading...</div>
-    <div *ngIf="error && !loading" class="text-red-500 text-center py-4">{{ error }}</div>
+    <div *ngIf="groupInfo && !loading && !error" class="mt-4">
+      
+      <div class="flex justify-center mb-4">
+        <app-avatar
+          [src]="groupInfo.image"
+          alt="Group Avatar"
+          size="md"
+          [editable]="isEditing && !isMembersMode"
+          inputId="groupAvatarInput"
+          (fileChange)="onAvatarChange($event)">
+        </app-avatar>
+      </div>
 
-    <div *ngIf="groupInfo && !loading && !error">
-      <div class="flex flex-col items-center mb-4 relative">
-        <div class="relative w-20 h-20 rounded-full overflow-hidden">
-          <img
-            *ngIf="groupInfo.image"
-            [src]="groupInfo.image"
-            alt="Group Avatar"
-            class="w-full h-full object-cover border-2 border-gray-300 dark:border-gray-600 rounded-full">
-          <label
-            *ngIf="isEditing"
-            for="groupAvatarInput"
-            class="absolute inset-0 bg-black bg-opacity-40 rounded-full flex items-center justify-center text-white opacity-0 hover:opacity-100 cursor-pointer transition-opacity duration-300">
-            <span class="text-xs select-none">Change</span>
-          </label>
-          <input
-            type="file"
-            id="groupAvatarInput"
-            (change)="onAvatarChange($event)"
-            accept="image/*"
-            class="hidden" />
+      <div *ngIf="!isMembersMode">
+        <div class="mb-2">
+          <b>Group Name:</b>
+          <ng-container *ngIf="!isEditing; else nameEdit">{{ groupInfo.groupName }}</ng-container>
+          <ng-template #nameEdit>
+            <app-input
+              [(ngModel)]="editableGroup.GroupName"
+              name="groupName"
+              [errors]="getFieldErrors('groupName')"
+              placeholder="Group Name"
+              class="mt-1 w-full">
+            </app-input>
+          </ng-template>
+        </div>
+
+        <div class="mb-2">
+          <b>Description:</b>
+          <ng-container *ngIf="!isEditing; else descriptionEdit">{{ groupInfo.description }}</ng-container>
+          <ng-template #descriptionEdit>
+            <app-input
+              [(ngModel)]="editableGroup.Description"
+              name="description"
+              [errors]="getFieldErrors('description')"
+              placeholder="Group Description"
+              class="mt-1 w-full">
+            </app-input>
+          </ng-template>
+        </div>
+
+        <div class="mb-2" *ngIf="!isEditing">
+          <b>Admin:</b> {{ groupInfo.admin }}
         </div>
       </div>
 
-      <div class="mb-2">
-        <b>Group Name:</b>
-        <ng-container *ngIf="!isEditing; else nameEdit">{{ groupInfo.groupName }}</ng-container>
-        <ng-template #nameEdit>
-          <app-input
-            [(ngModel)]="editableGroup.GroupName"
-            name="groupName"
-            [errors]="getFieldErrors('groupName')"
-            placeholder="Group Name"
-            class="mt-1 w-full">
-          </app-input>
-        </ng-template>
-      </div>
+<div class="mb-2" *ngIf="!isEditing || isMembersMode">
+  <div class="flex items-center justify-between mb-2">
+    <b>Members:</b>
+    <button
+      *ngIf="!isEditing && !isMembersMode && groupInfo.admin === currentUserNickname"
+      (click)="enterMembersMode()"
+      class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-600 transition text-sm">
+      ➕
+    </button>
+  </div>
 
-      <div class="mb-2">
-        <b>Description:</b>
-        <ng-container *ngIf="!isEditing; else descriptionEdit">{{ groupInfo.description }}</ng-container>
-        <ng-template #descriptionEdit>
-          <app-input
-            [(ngModel)]="editableGroup.Description"
-            name="description"
-            [errors]="getFieldErrors('description')"
-            placeholder="Group Description"
-            class="mt-1 w-full">
-          </app-input>
-        </ng-template>
-      </div>
+  <div *ngIf="isMembersMode" class="mb-3">
+    <input
+      type="text"
+      [(ngModel)]="userSearchQuery"
+      (ngModelChange)="onSearchChange($event)"
+      placeholder="Search users..."
+      class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+    />
 
-      <div class="mb-2" *ngIf="!isEditing">
-        <b>Admin:</b> {{ groupInfo.admin }}
+    <div class="mt-2">
+      <div *ngIf="userSuggestions.length > 0"
+           class="bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg max-h-40 overflow-y-auto shadow-lg">
+        <div *ngFor="let user of userSuggestions"
+             (click)="addUserToSelection(user)"
+             class="px-3 py-2 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-600 flex items-center">
+          <img [src]="user.image" alt="avatar" class="w-6 h-6 rounded-full mr-2" />
+          <span class="text-gray-900 dark:text-white">{{ user.nickName }}</span>
+        </div>
       </div>
-
-      <div class="mb-2" *ngIf="!isEditing">
-        <b>Members:</b>
-        <ul class="list-disc list-inside text-sm text-gray-700 dark:text-gray-300 mb-2">
-          <li *ngFor="let member of groupInfo.members" class="flex items-center mb-1">
-            <img [src]="member.image" alt="avatar" class="inline w-6 h-6 rounded-full mr-2" />
-            {{ member.nickName }}
-          </li>
-        </ul>
+      
+      <div *ngIf="showNotFoundMessage" 
+           class="text-gray-500 dark:text-gray-400 text-sm text-center py-2">
+        User not found ;(
       </div>
     </div>
-    
-    <ng-container *ngIf="isEditing && groupInfo.admin === currentUserNickname">
-      <div class="pt-2">
-        <button
-          type="button"
-          (click)="deleteGroupInfo()"
-          class="w-full py-3 text-sm font-semibold rounded-xl border border-red-600 text-red-600 
-                 hover:bg-red-600 hover:text-white transition-colors duration-300 dark:border-red-500 dark:text-red-400 dark:hover:bg-red-500">
-          🗑️ Delete Group
-        </button>
-      </div>
-    </ng-container>
 
+    <app-selected-users
+      [users]="selectedUsers"
+      (removeUser)="removeUserFromSelection($event)">
+    </app-selected-users>
+  </div>
+
+  <app-user-list
+    *ngIf="groupInfo && groupInfo.members"
+    [users]="groupInfo.members"
+    [adminNickname]="groupInfo.admin"
+    [currentUserNickname]="currentUserNickname"
+    [showRemoveButtons]="isMembersMode"
+    [variant]="isMembersMode ? 'detailed' : 'simple'"
+    (removeUser)="removeUserFromSelection($event)">
+  </app-user-list>
+</div>
+    </div>
+    
+    <div *ngIf="isEditing && !isMembersMode && groupInfo?.admin === currentUserNickname" class="pt-2">
+      <button
+        type="button"
+        (click)="deleteGroupInfo()"
+        class="w-full py-3 text-sm font-semibold rounded-xl border border-red-600 text-red-600 
+               hover:bg-red-600 hover:text-white transition-colors duration-300 dark:border-red-500 dark:text-red-400 dark:hover:bg-red-500">
+        🗑️ Delete Group
+      </button>
+    </div>
   </div>
 </div>

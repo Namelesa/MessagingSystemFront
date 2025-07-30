@@ -10,6 +10,7 @@ import { validateCreateGroupForm } from '../model/validate-group';
 import { GroupCreateRequest } from '../api/group-create';
 import { ToastService, ToastComponent } from '../../../shared/ui-elements';
 import { AuthService } from '../../../entities/user/api/auht.service';
+import { FindUserStore } from '../../search-user/model/search-user-store';
 
 @Component({
   selector: 'app-group-chat-list',
@@ -20,7 +21,12 @@ import { AuthService } from '../../../entities/user/api/auht.service';
 export class GroupChatListComponent extends BaseChatListComponent<GroupChat> implements OnInit {
   protected apiService: GroupChatApiService;
 
-  constructor(private groupChatApi: GroupChatApiService, private toastService: ToastService, private authService: AuthService) {
+  constructor(
+    private groupChatApi: GroupChatApiService, 
+    private toastService: ToastService, 
+    private authService: AuthService,
+    public findUserStore: FindUserStore
+  ) {
     super();
     this.apiService = this.groupChatApi;
     this.apiService.connected();
@@ -44,6 +50,66 @@ export class GroupChatListComponent extends BaseChatListComponent<GroupChat> imp
   newGroupImage: File | null = null;
   errors: string[] = [];
 
+  search = '';
+  isSearchActive = false;
+
+  userSearchQuery = '';
+  selectedUsers: Array<{nickName: string, image: string}> = [];
+  isUserSearchActive = false;
+  
+  onSearchFocus() {
+    this.isSearchActive = true;
+  }
+  
+  onSearchQueryChange(query: string) {
+    this.search = query;
+  }
+
+  onUserSearchQueryChange(query: string) {
+    this.userSearchQuery = query;
+    const trimmed = query.trim();
+    if (trimmed) {
+      this.findUserStore.findUser(trimmed);
+      this.isUserSearchActive = true;
+    } else {
+      this.findUserStore.clearUser();
+      this.isUserSearchActive = false;
+    }
+  }
+
+  onUserSearchActiveChange(isActive: boolean) {
+    this.isUserSearchActive = isActive;
+  }
+
+  onUserSearchFocus() {
+    this.isUserSearchActive = true;
+    this.userSearchQuery = '';
+    this.findUserStore.clearUser();
+  }
+
+  addUserToGroup(nickName: string, image: string) {
+    if (!this.selectedUsers.find(user => user.nickName === nickName)) {
+      this.selectedUsers.push({ nickName, image });
+      this.updateFormDataUsers();
+    }
+    this.userSearchQuery = '';
+    this.findUserStore.clearUser();
+    this.isUserSearchActive = false;
+  }
+
+  removeUserFromGroup(nickName: string) {
+    this.selectedUsers = this.selectedUsers.filter(user => user.nickName !== nickName);
+    this.updateFormDataUsers();
+  }
+
+  private updateFormDataUsers() {
+    this.formData.Users = this.selectedUsers.map(user => user.nickName);
+  }
+
+  get user$() {
+    return this.findUserStore.user$;
+  }
+
   openCreateGroupModal() {
     this.showCreateGroupModal = true;
     const currentUser = this.authService.getNickName() || '';
@@ -57,6 +123,9 @@ export class GroupChatListComponent extends BaseChatListComponent<GroupChat> imp
     };
     
     this.selectedImageUrl = null;
+    this.selectedUsers = [];
+    this.userSearchQuery = '';
+    this.isUserSearchActive = false;
     this.errors = [];
   }
   
@@ -70,33 +139,21 @@ export class GroupChatListComponent extends BaseChatListComponent<GroupChat> imp
       Admin: '',
     };
     this.selectedImageUrl = null;
+    this.selectedUsers = [];
+    this.userSearchQuery = '';
+    this.isUserSearchActive = false;
     this.errors = [];
+    this.findUserStore.clearUser();
   }
   
   createGroup() {
     this.errors = validateCreateGroupForm(this.formData);
     if (this.errors.length > 0) return;
 
-    let usersArray: string[] = [];
-    
-    if (Array.isArray(this.formData.Users)) {
-      usersArray = this.formData.Users;
-    } else if (typeof this.formData.Users === 'string') {
-      usersArray = (this.formData.Users as string).split(',')
-        .map((u: string) => u.trim())
-        .filter((u: string) => u.length > 0);
-    } else {
-      usersArray = [];
-    }
-
-    let cleanUsers = usersArray
-      .map((u: string) => u.trim())
-      .filter((u: string) => u.length > 0);
-    
-    cleanUsers = Array.from(new Set(cleanUsers));
-    
     const admin = this.authService.getNickName() || this.formData.Admin;
-    const usersWithoutAdmin = cleanUsers.filter(user => user !== admin);
+    const usersWithoutAdmin = this.selectedUsers
+      .map(user => user.nickName)
+      .filter(user => user !== admin);
     
     const totalUniqueUsers = usersWithoutAdmin.length + 1; 
     if (totalUniqueUsers < 3 || totalUniqueUsers > 40) {

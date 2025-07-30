@@ -25,7 +25,9 @@ export class OtoChatPageComponent extends BaseChatPageComponent {
   constructor(private otoChatApi: OtoChatApiService, private authService: AuthService) {
     super();
     this.apiService = this.otoChatApi;
-    this.currentUserNickName = this.authService.getNickName() || '';
+    this.authService.waitForAuthInit().subscribe(() => {
+      this.currentUserNickName = this.authService.getNickName() || '';
+    });
   }
 
   onOtoChatSelected(chat: OtoChat) {

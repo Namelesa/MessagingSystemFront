@@ -1,12 +1,13 @@
 <aside class="w-64 h-full bg-gray-100 text-black flex flex-col dark:bg-gray-900 dark:text-gray-200">
-  <div class="p-4 border border-white dark:border-transparent">
-    <shared-search-input
-      [query]="searchQuery"
-      (queryChange)="searchQuery = $event; onSearchChange()"
-      (clear)="clearSearch()"
-      [placeholder]="searchPlaceholder"
-    ></shared-search-input>
-  </div>
+  
+  <div #searchContainer>
+    <app-find-user-component
+      [isSearchActive]="isSearchFocused"
+      (searchFocus)="onSearchFocused()"
+      (searchActiveChange)="onSearchActiveChange($event)"
+      (searchQueryChange)="onSearchQueryChange($event)"
+    ></app-find-user-component>
+  </div>  
 
   <ng-container *ngIf="searchQuery && searchResults.length > 0 && image; else fallback">
     <div class="flex-1 overflow-y-auto p-2">
@@ -37,11 +38,14 @@
     </ng-template>
 
     <ng-template #showChats>
-      <ul class="flex-grow overflow-y-auto border border-white dark:border-transparent">
+      <ul
+        *ngIf="!isSearchFocused"
+        class="flex-grow overflow-y-auto border border-white dark:border-transparent"
+      >
         <li *ngIf="(chats$ | async)?.length === 0" class="p-4 text-center text-black dark:text-gray-500">
           {{ emptyListText }}
         </li>
-
+    
         <shared-chat-list-item
           *ngFor="let chat of sortedChats$ | async"
           [name]="getChatDisplayName(chat)"
@@ -58,6 +62,6 @@
           </ng-container>
         </shared-chat-list-item>
       </ul>
-    </ng-template>
+    </ng-template>    
   </ng-template>
 </aside>

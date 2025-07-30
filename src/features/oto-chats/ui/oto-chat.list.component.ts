@@ -1,23 +1,27 @@
-import { Component, Input, Output, EventEmitter } from '@angular/core';
+import { Component, Input, Output, EventEmitter, ElementRef, ViewChild, HostListener } from '@angular/core';
 import { BaseChatListComponent } from '../../../shared/chats';
 import { OtoChat } from '../../../entities/oto-chats';
 import { OtoChatApiService } from '../api/oto-chat-hub.api';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ChatListItemComponent, SearchInputComponent } from '../../../shared/chats-ui-elements';
+import { ChatListItemComponent } from '../../../shared/chats-ui-elements';
 import { map } from 'rxjs/operators';
+import { SearchUserComponent } from '../../search-user';
 
 @Component({
   selector: 'app-oto-chat-list',
   standalone: true,
-  imports: [CommonModule, FormsModule, ChatListItemComponent, SearchInputComponent],
+  imports: [CommonModule, FormsModule, ChatListItemComponent, SearchUserComponent],
   templateUrl: './oto-chat.list.component.html',
 })
 export class OtoChatListComponent extends BaseChatListComponent<OtoChat> {
   protected apiService: OtoChatApiService;
 
   public image: string | null = null;
+  public isSearchFocused = false;
+  public search = '';
 
+  @ViewChild('searchContainer', { static: false }) searchContainerRef!: ElementRef;
   @Input() searchPlaceholder = 'Search...';
   @Input() emptyListText = 'Chats not found ;(';
   @Input() currentUserNickName!: string;
@@ -56,5 +60,32 @@ export class OtoChatListComponent extends BaseChatListComponent<OtoChat> {
 
   getChatDisplayName(chat: OtoChat): string {
     return this.isSavedMessagesChat(chat) ? 'SavedMessage' : chat.nickName;
+  }
+
+  onSearchFocused() {
+    this.isSearchFocused = true;
+  }
+
+  onSearchActiveChange(isActive: boolean) {
+    this.isSearchFocused = isActive;
+  }
+
+  onSearchQueryChange(query: string) {
+    this.search = query;
+  }  
+
+  onStartChat(nick: string, image: string) {
+    this.startChat(nick, image);
+    this.isSearchFocused = false;
+  }
+
+  @HostListener('document:click', ['$event'])
+  onDocumentClick(event: MouseEvent) {
+    const clickedInside = this.searchContainerRef?.nativeElement?.contains(event.target);
+    const hasQuery = this.search.trim().length > 0;
+
+    if (!clickedInside && !hasQuery) {
+        this.isSearchFocused = false;
+    }
   }
 }

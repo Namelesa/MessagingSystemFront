@@ -14,5 +14,6 @@ import { FormsModule } from '@angular/forms';
     @Output() queryChange = new EventEmitter<string>();
     @Output() search = new EventEmitter<void>();
     @Output() clear = new EventEmitter<void>();
+    @Output() focus = new EventEmitter<void>();
   }
   

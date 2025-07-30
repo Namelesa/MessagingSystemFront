@@ -40,6 +40,14 @@ export class GroupChatApiService extends BaseChatApiService<GroupChat> {
         return g.groupId === group.groupId ? group : g;
       });
       this.chatsSubject.next(updatedGroups);
+    });
+    
+    this.connection.on('GroupMembersAdded', (updatedGroup: GroupChat) => {
+      this.updateGroupInList(updatedGroup);
+    });  
+    
+    this.connection.on('GroupMembersRemoved', (updatedGroup: GroupChat) => {
+      this.updateGroupInList(updatedGroup);
     });    
   }
 
@@ -91,14 +99,42 @@ export class GroupChatApiService extends BaseChatApiService<GroupChat> {
     this.refreshGroups();
   }  
 
-  public refreshGroups(): void {
+  refreshGroups(): void {
     if (!this.connection || this.connection.state !== signalR.HubConnectionState.Connected) return;
+  
     this.connection.invoke<GroupChat[]>('GetAllGroupForUserAsync')
       .then(groups => {
-        this.chatsSubject.next(groups ?? []);
+        const currentGroups = this.chatsSubject.value;
+        const updatedGroups = currentGroups.map(existing => {
+          const updated = groups?.find(g => g.groupId === existing.groupId);
+          return updated ?? existing;
+        });
+        this.chatsSubject.next(updatedGroups);
       })
       .catch(err => {
         console.error('Failed to refresh group list:', err);
       });
   }
+    
+  addGroupMembers(groupId: string, members: { users: string[] }): Promise<GroupChat> {
+    if (!this.connection || this.connection.state !== signalR.HubConnectionState.Connected) {
+      return Promise.reject('SignalR connection is not established');
+    }
+    return this.connection.invoke('AddMembersToGroupAsync', groupId, members);
+  }
+  
+  removeGroupMembers(groupId: string, members: { users: string[] }): Promise<GroupChat> {
+    if (!this.connection || this.connection.state !== signalR.HubConnectionState.Connected) {
+      return Promise.reject('SignalR connection is not established');
+    }
+    return this.connection.invoke('RemoveMembersFromGroupAsync', groupId, members);
+  }  
+
+  private updateGroupInList(updatedGroup: GroupChat): void {
+    const currentGroups = this.chatsSubject.value;
+    const newGroups = currentGroups.map(g =>
+      g.groupId === updatedGroup.groupId ? updatedGroup : g
+    );
+    this.chatsSubject.next(newGroups);
+  }  
 }

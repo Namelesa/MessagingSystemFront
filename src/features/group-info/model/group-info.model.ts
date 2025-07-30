@@ -11,7 +11,6 @@ export interface GroupInfoData {
   image: string;
   members: GroupMember[];
   users: string[];
-  rowVersion: string;
 }
 
 export interface GroupInfoResponse {
