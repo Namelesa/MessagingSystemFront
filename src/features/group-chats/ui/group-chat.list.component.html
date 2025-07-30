@@ -1,10 +1,11 @@
 <aside class="w-64 h-full bg-gray-100 text-black flex flex-col dark:bg-gray-900 dark:text-gray-200">
   <div class="p-4 border border-white dark:border-transparent flex items-center justify-between">
     <shared-search-input
-      [query]="searchQuery"
-      (queryChange)="searchQuery = $event; onSearchChange()"
-      (clear)="clearSearch()"
+      [query]="search"
+      (queryChange)="onSearchQueryChange($event)"
+      (clear)="clearSearching()"
       [placeholder]="searchPlaceholder"
+      (focus)="onSearchFocus()"
     ></shared-search-input>
     <button 
       class="w-10 h-10 bg-transparent border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 rounded-lg flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-800 hover:border-blue-500 hover:text-blue-500 transition-all duration-200 flex-shrink-0 ml-2" 
@@ -183,36 +184,23 @@
     </div>
   </div>
 
-  <ng-container *ngIf="searchQuery && searchResults.length > 0 && image; else fallback">
-    <div class="flex-1 overflow-y-auto p-2">
-      <div
-        *ngFor="let result of searchResults"
-        (click)="startChat(result, image)"
-        class="p-2 hover:bg-gray-300 rounded-xl cursor-pointer transition flex items-center gap-2 dark:hover:bg-gray-800"
-      >
-        <span class="text-blue-400">🔎</span>
-        <span class="font-medium">{{ result }}</span>
-      </div>
+  <ng-container *ngIf="loading$ | async; else notLoading">
+    <div class="flex-grow flex items-center justify-center text-gray-500">
+      Loading...
     </div>
   </ng-container>
 
-  <ng-template #fallback>
-    <ng-container *ngIf="loading$ | async; else notLoading">
-      <div class="flex-grow flex items-center justify-center text-gray-500">
-        Loading...
+  <ng-template #notLoading>
+    <ng-container *ngIf="error$ | async as error; else showChats">
+      <div class="flex-grow flex items-center justify-center text-red-500 px-4">
+        Error: {{ error }}
       </div>
     </ng-container>
+  </ng-template>
 
-    <ng-template #notLoading>
-      <ng-container *ngIf="error$ | async as error; else showChats">
-        <div class="flex-grow flex items-center justify-center text-red-500 px-4">
-          Error: {{ error }}
-        </div>
-      </ng-container>
-    </ng-template>
-
-    <ng-template #showChats>
-      <ul class="flex-grow overflow-y-auto border border-white dark:border-transparent">
+  <ng-template #showChats>
+    <ul class="flex-grow overflow-y-auto border border-white dark:border-transparent">
+      <ng-container *ngIf="!isSearchActive || !search.trim()">
         <li *ngIf="(chats$ | async)?.length === 0" class="p-4 text-center text-black dark:text-gray-500">
           {{ emptyListText }}
         </li>
@@ -224,7 +212,34 @@
           [active]="selectedNickname === getChatName(chat)"
           (click)="onSelectGroupChat(getChatName(chat), chat.image, chat.groupId || '')"
         ></shared-chat-list-item>
-      </ul>
-    </ng-template>
+      </ng-container>
+
+      <ng-container *ngIf="isSearchActive && search.trim()">
+        <ng-container *ngIf="(filteredChats$ | async)?.length as resultCount">
+          <li *ngIf="resultCount === 0" class="p-4 text-center text-gray-500 dark:text-gray-400">
+            <div class="flex flex-col items-center gap-2">
+              <svg class="w-8 h-8 text-gray-300 dark:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 12h6m-6-4h6m2 5.291A7.962 7.962 0 0112 15c-2.34 0-4.29-1.009-5.664-2.447M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+              </svg>
+              <div>No groups found for "{{ search }}"</div>
+              <button 
+                (click)="clearSearching()" 
+                class="text-blue-500 hover:text-blue-700 text-sm underline"
+              >
+                Clear search
+              </button>
+            </div>
+          </li>
+
+          <shared-chat-list-item
+            *ngFor="let chat of filteredChats$ | async"
+            [name]="getChatName(chat)"
+            [image]="chat.image"
+            [active]="selectedNickname === getChatName(chat)"
+            (click)="selectGroupFromSearch(chat)"
+          ></shared-chat-list-item>
+        </ng-container>
+      </ng-container>
+    </ul>
   </ng-template>
 </aside>

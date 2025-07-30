@@ -11,6 +11,7 @@ import { GroupCreateRequest } from '../api/group-create';
 import { ToastService, ToastComponent } from '../../../shared/ui-elements';
 import { AuthService } from '../../../entities/user/api/auht.service';
 import { FindUserStore } from '../../search-user/model/search-user-store';
+import { Observable, map, combineLatest } from 'rxjs';
 
 @Component({
   selector: 'app-group-chat-list',
@@ -34,8 +35,8 @@ export class GroupChatListComponent extends BaseChatListComponent<GroupChat> imp
 
   public image: string | null = null;
   selectedImageUrl: string | null = null;
-  @Input() searchPlaceholder = 'Search...';
-  @Input() emptyListText = 'Chats not found ;(';
+  @Input() searchPlaceholder = 'Search groups...';
+  @Input() emptyListText = 'Groups not found ;(';
 
   showCreateGroupModal = false;
   
@@ -56,13 +57,53 @@ export class GroupChatListComponent extends BaseChatListComponent<GroupChat> imp
   userSearchQuery = '';
   selectedUsers: Array<{nickName: string, image: string}> = [];
   isUserSearchActive = false;
-  
+
+  filteredChats$: Observable<GroupChat[]> = combineLatest([
+    this.chats$,
+    new Observable<string>(subscriber => {
+      subscriber.next(this.search);
+    })
+  ]).pipe(
+    map(([chats, query]) => {
+      if (!query.trim()) {
+        return chats || [];
+      }
+      return (chats || []).filter(chat => 
+        this.getChatName(chat).toLowerCase().includes(query.toLowerCase())
+      );
+    })
+  );
+
+  onSearchQueryChange(query: string) {
+    this.search = query;
+    this.isSearchActive = query.trim().length > 0;
+    this.updateFilteredChats();
+  }
+
   onSearchFocus() {
     this.isSearchActive = true;
   }
-  
-  onSearchQueryChange(query: string) {
-    this.search = query;
+
+  clearSearching() {
+    this.search = '';
+    this.isSearchActive = false;
+    this.updateFilteredChats();
+  }
+
+  private updateFilteredChats() {
+    this.filteredChats$ = combineLatest([
+      this.chats$,
+      new Observable<string>(subscriber => subscriber.next(this.search))
+    ]).pipe(
+      map(([chats, query]) => {
+        if (!query.trim()) {
+          return chats || [];
+        }
+        return (chats || []).filter(chat => 
+          this.getChatName(chat).toLowerCase().includes(query.toLowerCase())
+        );
+      })
+    );
   }
 
   onUserSearchQueryChange(query: string) {
@@ -237,5 +278,10 @@ export class GroupChatListComponent extends BaseChatListComponent<GroupChat> imp
     } else {
       this.onSelectChat(nickname, image ?? '', groupId);
     }
+  }
+
+  selectGroupFromSearch(chat: GroupChat) {
+    this.onSelectGroupChat(this.getChatName(chat), chat.image, chat.groupId);
+    this.clearSearch();
   }
 }
