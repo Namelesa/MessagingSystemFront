@@ -7,11 +7,13 @@ import { BaseChatPageComponent, ChatLayoutComponent} from '../../../shared/chats
 import { OtoChat } from '../../../entities/oto-chats';
 import { OtoChatMessagesComponent } from '../../../features/oto-messages';
 import { AuthService } from '../../../entities/user/api/auht.service';
+import { SendAreaComponent } from '../../../shared/chats-ui-elements';
 
 @Component({
   selector: 'app-oto-chat-page',
   standalone: true,
-  imports: [CommonModule, OtoChatListComponent, FormsModule, ChatLayoutComponent, OtoChatMessagesComponent],
+  imports: [CommonModule, OtoChatListComponent, FormsModule, 
+    ChatLayoutComponent, OtoChatMessagesComponent, SendAreaComponent],
   templateUrl: './oto-chat-page.html',
 })
 export class OtoChatPageComponent extends BaseChatPageComponent {

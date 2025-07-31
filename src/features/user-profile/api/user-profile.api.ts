@@ -3,7 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { environment, ProfileApiResult, AuthApiResult } from '../../../shared/api-result';
 import { Observable } from 'rxjs';
 import { AuthService } from '../../../entities/user/api/auht.service';
-import { EditUserContract } from '../../../entities';
+import { EditUserContract } from '../../../entities/user';
 
 @Injectable({ providedIn: 'root' })
 export class UserProfileApi {

@@ -12,9 +12,17 @@
 
   <ng-container chat-content>
     <ng-container *ngIf="selectedOtoChat; else noChatSelected">
-      <app-oto-chat-messages [chatNickName]="selectedOtoChat.nickName" [currentUserNickName]="currentUserNickName"></app-oto-chat-messages>
+      <div class="flex flex-col h-full">
+        <div class="flex-1 overflow-y-auto">
+          <app-oto-chat-messages 
+            [chatNickName]="selectedOtoChat.nickName" 
+            [currentUserNickName]="currentUserNickName">
+          </app-oto-chat-messages>
+        </div>
+            <shared-send-message-area></shared-send-message-area>
+        </div>
     </ng-container>
-    <ng-template #noChatSelected>
-    </ng-template>
+    
+    <ng-template #noChatSelected></ng-template>
   </ng-container>
 </app-chat-layout>

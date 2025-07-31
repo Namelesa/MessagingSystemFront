@@ -191,6 +191,10 @@ export class GroupChatListComponent extends BaseChatListComponent<GroupChat> imp
     this.errors = validateCreateGroupForm(this.formData);
     if (this.errors.length > 0) return;
 
+    if(this.formData.ImageFile == null){
+      this.toastService.show('Please select an image for the group.', 'error');
+    }
+
     const admin = this.authService.getNickName() || this.formData.Admin;
     const usersWithoutAdmin = this.selectedUsers
       .map(user => user.nickName)
@@ -199,6 +203,7 @@ export class GroupChatListComponent extends BaseChatListComponent<GroupChat> imp
     const totalUniqueUsers = usersWithoutAdmin.length + 1; 
     if (totalUniqueUsers < 3 || totalUniqueUsers > 40) {
       this.errors.push(`Group must have between 3 and 40 unique users. Current count: ${totalUniqueUsers} (including admin)`);
+      this.toastService.show(`Group must have between 3 and 40 unique users`, 'error');
       return;
     }
 

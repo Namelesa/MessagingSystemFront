@@ -1,6 +1,6 @@
 import { validateEmail, validateFirstName, validateLastName, validateNickName, validateLogin } 
 from '../../../shared/validators';
-import { EditUserContract } from '../../../entities';
+import { EditUserContract } from '../../../entities/user';
 
 export function validateUpdateForm(data: EditUserContract): string[] {
   const fields: [keyof EditUserContract, string, (value: any) => string | null][] = [

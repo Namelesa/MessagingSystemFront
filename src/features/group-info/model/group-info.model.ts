@@ -1,7 +1,4 @@
-export interface GroupMember {
-  nickName: string;
-  image: string;
-}
+import { GroupMember } from '../../../entities/group-member';
 
 export interface GroupInfoData {
   groupId: string;

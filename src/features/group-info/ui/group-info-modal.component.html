@@ -37,7 +37,7 @@
 
       <div *ngIf="!isMembersMode">
         <div class="mb-2">
-          <b>Group Name:</b>
+          <b>Group Name: </b>
           <ng-container *ngIf="!isEditing; else nameEdit">{{ groupInfo.groupName }}</ng-container>
           <ng-template #nameEdit>
             <app-input
@@ -51,7 +51,7 @@
         </div>
 
         <div class="mb-2">
-          <b>Description:</b>
+          <b>Description: </b>
           <ng-container *ngIf="!isEditing; else descriptionEdit">{{ groupInfo.description }}</ng-container>
           <ng-template #descriptionEdit>
             <app-input
@@ -65,7 +65,7 @@
         </div>
 
         <div class="mb-2" *ngIf="!isEditing">
-          <b>Admin:</b> {{ groupInfo.admin }}
+          <b>Admin: </b> {{ groupInfo.admin }}
         </div>
       </div>
 

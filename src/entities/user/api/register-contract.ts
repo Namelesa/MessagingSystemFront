@@ -5,5 +5,5 @@ export interface RegisterContract {
     email: string;
     nickName: string;
     password: string;
-    image?: File;
+    image: File | undefined;
 }

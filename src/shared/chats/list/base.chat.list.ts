@@ -40,7 +40,6 @@ export abstract class BaseChatListComponent<TChat> implements OnInit {
 
   onSearchChange(): void {
     if (this.searchQuery.trim()) {
-      console.log('Searching for:', this.searchQuery);
     } else {
       this.searchResults = [];
     }

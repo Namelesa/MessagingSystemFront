@@ -13,26 +13,30 @@ import { CommonModule } from '@angular/common';
         <button
           *ngIf="showEditButton"
           (click)="editClick.emit()"
-          class="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-colors duration-200"
+          class="text-green-600 hover:text-green-800 dark:text-green-400 dark:hover:text-green-600 transition-colors duration-200"
           aria-label="Edit">
           ✏️
         </button>
         
-        <!-- Save button -->
         <button
           *ngIf="showSaveButton"
           (click)="saveClick.emit()"
           [disabled]="saveDisabled"
           class="text-green-600 hover:text-green-800 dark:text-green-400 dark:hover:text-green-600 transition disabled:opacity-50">
-          ✔️
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
+               stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+          </svg>
         </button>
         
-        <!-- Cancel button -->
         <button
           *ngIf="showCancelButton"
           (click)="cancelClick.emit()"
-          class="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-600 transition">
-          ❌
+          class="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-600 transition-colors duration-200">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
+               stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+          </svg>
         </button>
       </div>
     </div>

@@ -12,7 +12,12 @@
 
   <ng-container chat-content>
     <ng-container *ngIf="selectedChat; else noChatSelected">
-      <app-group-messages [groupId]="selectedGroupId" />
+      <div class="flex flex-col h-full">
+        <div class="flex-1 overflow-y-auto">
+          <app-group-messages [groupId]="selectedGroupId" />
+        </div>
+        <shared-send-message-area></shared-send-message-area>
+      </div>     
     </ng-container>
     <ng-template #noChatSelected></ng-template>
   </ng-container>

@@ -1,0 +1,1 @@
+export * from '../../entities/group-member/model/group-member.model';

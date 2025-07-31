@@ -6,7 +6,7 @@ export function validateCreateGroupForm(data: GroupCreateRequest): string[] {
       validateGroupName(data.GroupName),
       validateGroupDescription(data.Description),
     ].filter(Boolean) as string[];
-  
+    
     return errors;
   }
   

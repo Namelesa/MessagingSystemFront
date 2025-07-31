@@ -1,4 +1,4 @@
-import { GroupMember } from "../../../features/group-info";
+import { GroupMember } from "../../../entities/group-member";
 
 export interface GroupChat {
     groupName: string;

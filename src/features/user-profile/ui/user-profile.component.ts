@@ -8,7 +8,7 @@ import { InputComponent } from '../../../shared/ui-elements';
 import { validateUpdateForm } from '../model/validate-update';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Router } from '@angular/router';
-import { EditUserContract } from '../../../entities';
+import { EditUserContract } from '../../../entities/user';
 
 @Component({
   selector: 'app-user-profile',

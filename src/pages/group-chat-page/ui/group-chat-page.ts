@@ -6,11 +6,14 @@ import { FormsModule } from '@angular/forms';
 import { BaseChatPageComponent, ChatLayoutComponent } from '../../../shared/chats';
 import { GroupInfoModalComponent } from '../../../features/group-info';
 import { GroupMessagesComponent } from '../../../features/group-messages';
+import { SendAreaComponent } from '../../../shared/chats-ui-elements';
 
 @Component({
   selector: 'app-group-chat-page',
   standalone: true,
-  imports: [CommonModule, GroupChatListComponent, FormsModule, ChatLayoutComponent, GroupInfoModalComponent, GroupMessagesComponent],
+  imports: [CommonModule, GroupChatListComponent, 
+    FormsModule, ChatLayoutComponent, GroupInfoModalComponent, 
+    GroupMessagesComponent, SendAreaComponent],
   templateUrl: './group-chat-page.html',
 })
 export class GroupChatPageComponent extends BaseChatPageComponent {
