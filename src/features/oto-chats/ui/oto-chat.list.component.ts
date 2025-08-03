@@ -20,6 +20,8 @@ export class OtoChatListComponent extends BaseChatListComponent<OtoChat> {
   public image: string | null = null;
   public isSearchFocused = false;
   public search = '';
+  public override searchQuery = ''; 
+  public override searchResults: string[] = []; 
 
   @ViewChild('searchContainer', { static: false }) searchContainerRef!: ElementRef;
   @Input() searchPlaceholder = 'Search...';
@@ -27,6 +29,7 @@ export class OtoChatListComponent extends BaseChatListComponent<OtoChat> {
   @Input() currentUserNickName!: string;
   @Input() declare selectedNickname?: string;
   @Output() chatSelected = new EventEmitter<OtoChat>();
+  @Output() foundedUser = new EventEmitter<{ nick: string, image: string }>();
 
   constructor(private otoChatApi: OtoChatApiService) {
     super();
@@ -68,16 +71,57 @@ export class OtoChatListComponent extends BaseChatListComponent<OtoChat> {
 
   onSearchActiveChange(isActive: boolean) {
     this.isSearchFocused = isActive;
+    if (!isActive) {
+      this.onClearSearch();
+    }
   }
 
   onSearchQueryChange(query: string) {
     this.search = query;
+    this.searchQuery = query;
   }  
 
-  onStartChat(nick: string, image: string) {
-    this.startChat(nick, image);
-    this.isSearchFocused = false;
+  onFoundedUser(userData: { nick: string, image: string }) {
+    this.onClearSearch();
+    this.foundedUser.emit(userData);
   }
+
+  // Метод для поиска существующего чата
+  findExistingChat(nickName: string): OtoChat | null {
+    // Получаем текущие чаты из BehaviorSubject
+    const currentChats = (this.apiService as any).chatsSubject?.value || [];
+    const foundChat = currentChats.find((chat: OtoChat) => chat.nickName === nickName) || null;
+    return foundChat;
+  }
+
+  // Метод для открытия чата с пользователем (существующий или новый)
+  openChatWithUser(userData: { nick: string, image: string }) {
+    const existingChat = this.findExistingChat(userData.nick);
+    
+    if (existingChat) {
+      // Если чат уже существует, открываем его
+      this.onChatClick(existingChat);
+    } else {
+      // Если чата нет, создаем новый
+      this.onFoundedUser(userData);
+    }
+  }
+
+  private onClearSearch() {
+    this.isSearchFocused = false;
+    this.search = '';
+    this.searchQuery = '';
+    this.searchResults = [];
+  }
+
+  onSearchResult(results: string[]) {
+    this.searchResults = results;
+  }
+
+  onStartChat(result: string, image: string | null) {
+    this.onClearSearch();
+    this.foundedUser.emit({ nick: result, image: image || '' });
+  }  
 
   @HostListener('document:click', ['$event'])
   onDocumentClick(event: MouseEvent) {
@@ -85,7 +129,7 @@ export class OtoChatListComponent extends BaseChatListComponent<OtoChat> {
     const hasQuery = this.search.trim().length > 0;
 
     if (!clickedInside && !hasQuery) {
-        this.isSearchFocused = false;
+      this.onClearSearch();
     }
   }
 }

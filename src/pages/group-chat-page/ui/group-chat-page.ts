@@ -7,6 +7,8 @@ import { BaseChatPageComponent, ChatLayoutComponent } from '../../../shared/chat
 import { GroupInfoModalComponent } from '../../../features/group-info';
 import { GroupMessagesComponent } from '../../../features/group-messages';
 import { SendAreaComponent } from '../../../shared/chats-ui-elements';
+import { GroupMessagesApiService } from '../../../features/group-messages';
+import { StorageService } from '../../../shared/storage/storage.service';
 
 @Component({
   selector: 'app-group-chat-page',
@@ -22,7 +24,11 @@ export class GroupChatPageComponent extends BaseChatPageComponent {
   selectedGroupId?: string;
   groupInfoModalOpen = false;
 
-  constructor(private groupChatApi: GroupChatApiService) {
+  constructor(
+    private groupChatApi: GroupChatApiService, 
+    private groupMessages: GroupMessagesApiService,
+    private storageService: StorageService
+  ) {
     super();
     this.apiService = this.groupChatApi;
   }
@@ -49,4 +55,14 @@ export class GroupChatPageComponent extends BaseChatPageComponent {
     this.selectedChat = undefined;
     this.selectedChatImage = undefined;
   } 
+
+  onOpenChatWithUser(userData: { nickName: string, image: string }) {
+    this.storageService.navigateToOtoChat(userData);
+  }
+
+  sendMessage(message: string) {
+    if (this.selectedGroupId && message.trim()) {
+      this.groupMessages.sendMessage(this.selectedGroupId, message);
+    }
+  }
 }

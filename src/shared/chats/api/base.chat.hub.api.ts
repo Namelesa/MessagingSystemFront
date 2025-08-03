@@ -25,6 +25,14 @@ export abstract class BaseChatApiService<TChat> {
   ) {}
 
   connect(): void {
+    if (this.connection && this.connection.state === signalR.HubConnectionState.Connected) {
+      return;
+    }
+
+    if (this.connection && this.connection.state === signalR.HubConnectionState.Connecting) {
+      return;
+    }
+
     this.connection = new signalR.HubConnectionBuilder()
       .withUrl(this.hubUrl, { withCredentials: true })
       .withAutomaticReconnect()
@@ -48,10 +56,65 @@ export abstract class BaseChatApiService<TChat> {
       if (!exists) {
         this.messagesSubject.next([...this.messagesSubject.value, message]);
       }
-      this.connection.invoke<TChat[]>(this.methodName).then(chats => {
-        this.chatsSubject.next(chats ?? []);
-      }).catch(err => {
-      });
+      this.refreshChats();
+    });
+
+    this.connection.on('MessageEdited', (editedData) => {
+      const currentMessages = this.messagesSubject.value;
+      const updatedMessages = currentMessages.map(msg => 
+        msg.messageId === editedData.messageId 
+          ? { 
+              ...msg, 
+              content: editedData.newContent,
+              isEdited: true,
+              editedAt: editedData.editedAt
+            } 
+          : msg
+      );
+      this.messagesSubject.next(updatedMessages);
+      this.refreshChats();
+    });
+
+    this.connection.on('MessageDeleted', (deletedData) => {
+      const messageId = typeof deletedData === 'string' ? deletedData : deletedData.messageId;
+      const deleteType = typeof deletedData === 'object' ? deletedData.type : undefined;
+      
+      const currentMessages = this.messagesSubject.value;
+      
+      if (deleteType === 'soft') {
+        const updatedMessages = currentMessages.map(msg => 
+          msg.messageId === messageId 
+            ? { 
+                ...msg, 
+                isDeleted: true,
+                deletedAt: deletedData.deletedAt,
+                deleteType: 'soft',
+                content: 'Message deleted by sender'
+              } 
+            : msg
+        );
+        this.messagesSubject.next(updatedMessages);
+      } else {
+        const updatedMessages = currentMessages.filter(msg => msg.messageId !== messageId);
+        this.messagesSubject.next(updatedMessages);
+      }
+      
+      this.refreshChats();
+    });
+
+    this.connection.on('ReplyToMessageAsync', (replyData) => {
+      const exists = this.messagesSubject.value.some(m => m.messageId === replyData.messageId);
+      if (!exists) {
+        const replyMessage = {
+          messageId: replyData.messageId,
+          sender: replyData.sender,
+          content: replyData.content,
+          sentAt: replyData.sentAt,
+          replyFor: replyData.replyTo
+        };
+        this.messagesSubject.next([...this.messagesSubject.value, replyMessage]);
+      }
+      this.refreshChats();
     });
 
     this.connection.on('UpdateChats', (chats) => {
@@ -62,6 +125,9 @@ export abstract class BaseChatApiService<TChat> {
 
     from(this.connection.start())
       .pipe(
+        tap(() => {
+          this.connected();
+        }),
         switchMap(() => {
           return from(this.connection.invoke<TChat[]>(this.methodName));
         }),
@@ -79,6 +145,16 @@ export abstract class BaseChatApiService<TChat> {
       .subscribe();
   }
 
+  private refreshChats(): void {
+    if (this.connection && this.connection.state === signalR.HubConnectionState.Connected) {
+      this.connection.invoke<TChat[]>(this.methodName).then(chats => {
+        this.chatsSubject.next(chats ?? []);
+      }).catch(err => {
+        console.error('Error refreshing chats:', err);
+      });
+    }
+  }
+
   public loadChatHistory(withUser: string, take: number, skip: number): Observable<any[]> {
     this.currentChatNickName = withUser;
     if (!this.connection || this.connection.state !== signalR.HubConnectionState.Connected) {
@@ -88,9 +164,12 @@ export abstract class BaseChatApiService<TChat> {
       this.connection.invoke<any[]>(this.loadHistoryMethod, withUser, take, skip)
     ).pipe(
       tap(messages => {
-        this.messagesSubject.next(messages ?? []);
+        if (skip === 0) {
+          this.messagesSubject.next(messages ?? []);
+        }
       }),
       catchError(err => {
+        console.error('Error loading chat history:', err);
         return of([]);
       })
     );
@@ -104,15 +183,27 @@ export abstract class BaseChatApiService<TChat> {
       this.connection.invoke<any[]>(this.loadHistoryMethod, groupId, take, skip)
     ).pipe(
       tap(messages => {
-        this.messagesSubject.next(messages ?? []);
+        if (skip === 0) {
+          this.messagesSubject.next(messages ?? []);
+        }
       }),
       catchError(err => {
+        console.error('Error loading group message history:', err);
         return of([]);
       })
     );
   }
 
-  protected getCurrentUser(): string | null {
-    return localStorage.getItem('nickName');
+  protected abstract getCurrentUser(): string | null;
+
+  protected abstract connected(): void;
+
+  disconnect(): void {
+    if (this.connection) {
+      this.connection.stop().then(() => {
+      }).catch(err => {
+        console.error(`[BaseChatApiService] Error disconnecting from ${this.hubUrl}:`, err);
+      });
+    }
   }
 }

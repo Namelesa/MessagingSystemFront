@@ -6,14 +6,15 @@
       (searchFocus)="onSearchFocused()"
       (searchActiveChange)="onSearchActiveChange($event)"
       (searchQueryChange)="onSearchQueryChange($event)"
+      (foundedUser)="onFoundedUser($event)">
     ></app-find-user-component>
   </div>  
 
-  <ng-container *ngIf="searchQuery && searchResults.length > 0 && image; else fallback">
+  <ng-container *ngIf="searchQuery && isSearchFocused; else fallback">
     <div class="flex-1 overflow-y-auto p-2">
       <div
         *ngFor="let result of searchResults"
-        (click)="startChat(result, image)"
+        (click)="onStartChat(result, image)"
         class="p-2 hover:bg-gray-300 rounded-xl cursor-pointer transition flex items-center gap-2 dark:hover:bg-gray-800"
       >
         <span class="text-blue-400">🔎</span>

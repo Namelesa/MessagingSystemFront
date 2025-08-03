@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { BaseChatApiService } from '../api/base.chat.hub.api';
 import { BehaviorSubject } from 'rxjs';
 
@@ -6,7 +6,7 @@ import { BehaviorSubject } from 'rxjs';
   template: '' 
 })
 
-export abstract class BaseChatPageComponent implements OnInit {
+export abstract class BaseChatPageComponent implements OnInit, OnDestroy {
   accessToken?: string;
   selectedChat?: string;
   selectedChatImage?: string;
@@ -16,6 +16,10 @@ export abstract class BaseChatPageComponent implements OnInit {
 
   ngOnInit(): void {
     this.apiService.connect();
+  }
+
+  ngOnDestroy(): void {
+    this.apiService.disconnect();
   }
 
   onChatSelected(chat: string, image: string): void {

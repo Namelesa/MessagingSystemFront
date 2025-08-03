@@ -1,4 +1,4 @@
-import { OnInit, Input, Output, EventEmitter } from '@angular/core';
+import { OnInit, Input, Output, EventEmitter, OnDestroy } from '@angular/core';
 import { Observable } from 'rxjs';
 
 import { Component } from '@angular/core';
@@ -7,7 +7,7 @@ import { Component } from '@angular/core';
   template: ''
 })
 
-export abstract class BaseChatListComponent<TChat> implements OnInit {
+export abstract class BaseChatListComponent<TChat> implements OnInit, OnDestroy {
   chats$!: Observable<TChat[]>;
   loading$!: Observable<boolean>;
   error$!: Observable<string | null>;
@@ -20,16 +20,22 @@ export abstract class BaseChatListComponent<TChat> implements OnInit {
   @Output() selectChat = new EventEmitter<{ nickname: string; image: string; groupId?: string }>();
 
   protected abstract apiService: {
-    connect(): void;
+    connected(): void;
+    disconnect(): void;
     chats$: Observable<TChat[]>;
     loading$: Observable<boolean>;
     error$: Observable<string | null>;
   };
 
   ngOnInit(): void {
+    this.apiService.connected(); // Устанавливаем соединение
     this.chats$ = this.apiService.chats$;
     this.loading$ = this.apiService.loading$;
     this.error$ = this.apiService.error$;
+  }
+
+  ngOnDestroy(): void {
+    this.apiService.disconnect(); // Отключаем соединение
   }
 
   onSelectChat(nickname: string, image: string, groupId?: string): void {

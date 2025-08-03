@@ -12,7 +12,9 @@ export interface User {
   imports: [CommonModule],
   template: `
     <ul [ngClass]="listClass">
-      <li *ngFor="let user of users" class="flex items-center justify-between mb-1 py-1">
+      <li *ngFor="let user of users" 
+          class="flex items-center justify-between mb-1 py-1 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg px-2 cursor-pointer transition-colors"
+          (click)="onUserClick(user)">
         <div class="flex items-center">
           <img [src]="user.image" alt="avatar" class="inline w-6 h-6 rounded-full mr-2" />
           {{ user.nickName }}
@@ -24,7 +26,7 @@ export interface User {
         </div>
         
         <button *ngIf="showRemoveButton(user.nickName)"
-                (click)="removeUser.emit(user.nickName)"
+                (click)="onRemoveUser($event, user.nickName)"
                 class="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-600 text-xs">
           ✖️
         </button>
@@ -40,6 +42,7 @@ export class UserListComponent {
   @Input() variant: 'simple' | 'detailed' = 'simple';
   
   @Output() removeUser = new EventEmitter<string>();
+  @Output() userClick = new EventEmitter<User>();
   
   get listClass(): string {
     return this.variant === 'simple' 
@@ -51,5 +54,18 @@ export class UserListComponent {
     return this.showRemoveButtons && 
            nickName !== this.adminNickname && 
            this.adminNickname === this.currentUserNickname;
+  }
+
+  onUserClick(user: User): void {
+    // Не открываем чат если это текущий пользователь
+    if (user.nickName === this.currentUserNickname) {
+      return;
+    }
+    this.userClick.emit(user);
+  }
+
+  onRemoveUser(event: Event, nickName: string): void {
+    event.stopPropagation(); // Предотвращаем всплытие события клика
+    this.removeUser.emit(nickName);
   }
 }

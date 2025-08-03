@@ -7,25 +7,43 @@ import { GroupCreateRequest } from '../api/group-create';
 import { AuthApiResult } from '../../../shared/api-result';
 import { HttpClient } from '@angular/common/http';
 import * as signalR from '@microsoft/signalr';
+import { AuthService } from '../../../entities/user/api/auht.service';
 
 
 @Injectable({ providedIn: 'root' })
 export class GroupChatApiService extends BaseChatApiService<GroupChat> {
   private isConnected = false;
 
-  constructor(private http: HttpClient) {
+  constructor(
+    private http: HttpClient,
+    private authService: AuthService
+  ) {
     super(environment.groupChatHubUrl, 'GetAllGroupForUserAsync', 'LoadChatHistoryAsync');
   }
 
   connected(): void {
-    if (this.isConnected) return;
-    super.connect();
+    if (this.isConnected) {
+      return;
+    }
     this.isConnected = true;
 
+    this.connection.onreconnected(() => {
+    });
+
+    this.connection.onclose(() => {
+    });
+
+    const originalOn = this.connection.on.bind(this.connection);
+    this.connection.on = (methodName: string, newMethod: (...args: any[]) => any) => {
+      return originalOn(methodName, (...args: any[]) => {
+        return newMethod(...args);
+      });
+    };
+
     this.connection.on('DeleteGroupAsync', (groupId: string) => {
-      this.chatsSubject.next(
-        this.chatsSubject.value.filter(g => g.groupId !== groupId)
-      );
+      const currentGroups = this.chatsSubject.value;
+      const updatedGroups = currentGroups.filter(g => g.groupId !== groupId);
+      this.chatsSubject.next(updatedGroups);
     });    
 
     this.connection.on('CreateGroupAsync', (group: GroupChat) => {
@@ -43,12 +61,74 @@ export class GroupChatApiService extends BaseChatApiService<GroupChat> {
     });
     
     this.connection.on('GroupMembersAdded', (updatedGroup: GroupChat) => {
-      this.updateGroupInList(updatedGroup);
-    });  
+      const currentUser = this.getCurrentUser();
+      
+      if (currentUser) {
+        const isUserAdmin = updatedGroup.admin === currentUser;
+        const isUserInGroup = this.isUserInGroupMembers(updatedGroup, currentUser);
+        
+        if (isUserAdmin || isUserInGroup) {
+          const currentGroups = this.chatsSubject.value;
+          const groupExists = currentGroups.some(g => g.groupId === updatedGroup.groupId);
+
+          if (!groupExists) {
+            const updatedGroups = [...currentGroups, updatedGroup];
+            this.chatsSubject.next(updatedGroups);
+          } else {
+            const updatedGroups = currentGroups.map(g =>
+              g.groupId === updatedGroup.groupId ? updatedGroup : g
+            );
+            this.chatsSubject.next(updatedGroups);
+          }
+        } else {
+        }
+      }
+    });
     
     this.connection.on('GroupMembersRemoved', (updatedGroup: GroupChat) => {
-      this.updateGroupInList(updatedGroup);
-    });    
+      const currentUser = this.getCurrentUser();
+      
+      if (currentUser) {
+        const isUserAdmin = updatedGroup.admin === currentUser;
+        const isUserStillInGroup = this.isUserInGroupMembers(updatedGroup, currentUser);
+        
+        if (isUserAdmin || isUserStillInGroup) {
+          const currentGroups = this.chatsSubject.value;
+          const updatedGroups = currentGroups.map(g =>
+            g.groupId === updatedGroup.groupId ? updatedGroup : g
+          );
+          this.chatsSubject.next(updatedGroups);
+        } else {
+          const currentGroups = this.chatsSubject.value;
+          const updatedGroups = currentGroups.filter(g => g.groupId !== updatedGroup.groupId);
+          this.chatsSubject.next(updatedGroups);
+        }
+      }
+    });
+
+    this.connection.on('UserRemovedFromGroup', (data: any) => {  
+      const currentUser = this.getCurrentUser();
+      
+      if (data.groupId) {
+        const currentGroups = this.chatsSubject.value;
+        const updatedGroups = currentGroups.filter(g => g.groupId !== data.groupId);
+        
+        this.chatsSubject.next(updatedGroups);
+      }
+    });
+
+    const possibleEventNames = [
+      'GroupMemberRemoved',
+      'MemberRemovedFromGroup',
+      'UserRemovedFromGroup',
+      'RemoveUserFromGroup',
+      'GroupUserRemoved'
+    ];
+
+    possibleEventNames.forEach(eventName => {
+      this.connection.on(eventName, (data: any) => {
+      });
+    });
   }
 
   createGroup(data: GroupCreateRequest): Observable<AuthApiResult> {
@@ -81,7 +161,13 @@ export class GroupChatApiService extends BaseChatApiService<GroupChat> {
     if (!this.connection || this.connection.state !== signalR.HubConnectionState.Connected) {
       return Promise.reject('Connection is not established');
     }
-    return this.connection.invoke('JoinGroupAsync', groupId);
+    
+    return this.connection.invoke('JoinGroupAsync', groupId)
+      .then(() => {
+      })
+      .catch(error => {
+        throw error;
+      });
   }
 
   leaveGroup(groupId: string): Promise<void> {
@@ -100,19 +186,23 @@ export class GroupChatApiService extends BaseChatApiService<GroupChat> {
   }  
 
   refreshGroups(): void {
-    if (!this.connection || this.connection.state !== signalR.HubConnectionState.Connected) return;
+    if (!this.connection || this.connection.state !== signalR.HubConnectionState.Connected) {
+      return;
+    }
   
     this.connection.invoke<GroupChat[]>('GetAllGroupForUserAsync')
-      .then(groups => {
+      .then(groups => { 
         const currentGroups = this.chatsSubject.value;
+        
         const updatedGroups = currentGroups.map(existing => {
           const updated = groups?.find(g => g.groupId === existing.groupId);
           return updated ?? existing;
         });
+        
         this.chatsSubject.next(updatedGroups);
       })
       .catch(err => {
-        console.error('Failed to refresh group list:', err);
+        console.error('[GroupChatApiService] Failed to refresh group list:', err);
       });
   }
     
@@ -120,15 +210,48 @@ export class GroupChatApiService extends BaseChatApiService<GroupChat> {
     if (!this.connection || this.connection.state !== signalR.HubConnectionState.Connected) {
       return Promise.reject('SignalR connection is not established');
     }
-    return this.connection.invoke('AddMembersToGroupAsync', groupId, members);
+    
+    return this.connection.invoke('AddMembersToGroupAsync', groupId, members)
+      .then(result => {
+        return result;
+      })
+      .catch(error => {
+        throw error;
+      });
   }
   
   removeGroupMembers(groupId: string, members: { users: string[] }): Promise<GroupChat> {
+    
     if (!this.connection || this.connection.state !== signalR.HubConnectionState.Connected) {
       return Promise.reject('SignalR connection is not established');
     }
-    return this.connection.invoke('RemoveMembersFromGroupAsync', groupId, members);
+    
+    return this.connection.invoke('RemoveMembersFromGroupAsync', groupId, members)
+      .then(result => {
+        return result;
+      })
+      .catch(error => {
+        throw error;
+      });
   }  
+
+  private isUserInGroupMembers(group: GroupChat, userName: string): boolean {
+    
+    if (group.users && Array.isArray(group.users)) {
+      const foundInUsers = group.users.some(user => user === userName);
+      if (foundInUsers) {
+        return true;
+      }
+    }
+    
+    if (group.members && Array.isArray(group.members)) {
+      const foundInMembers = group.members.some(member => member.nickName === userName);
+      if (foundInMembers) {
+        return true;
+      }
+    }
+    return false;
+  }
 
   private updateGroupInList(updatedGroup: GroupChat): void {
     const currentGroups = this.chatsSubject.value;
@@ -136,5 +259,17 @@ export class GroupChatApiService extends BaseChatApiService<GroupChat> {
       g.groupId === updatedGroup.groupId ? updatedGroup : g
     );
     this.chatsSubject.next(newGroups);
-  }  
+  }
+
+  protected override getCurrentUser(): string | null {
+    const nickName = this.authService.getNickName();
+    return nickName;
+  }
+
+  override disconnect(): void {
+    if (this.isConnected) {
+      super.disconnect();
+      this.isConnected = false;
+    }
+  }
 }

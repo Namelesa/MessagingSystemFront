@@ -16,7 +16,9 @@
         <div class="flex-1 overflow-y-auto">
           <app-group-messages [groupId]="selectedGroupId" />
         </div>
-        <shared-send-message-area></shared-send-message-area>
+        <shared-send-message-area
+        (send)="sendMessage($event)"
+        ></shared-send-message-area>
       </div>     
     </ng-container>
     <ng-template #noChatSelected></ng-template>
@@ -28,4 +30,5 @@
   [open]="groupInfoModalOpen"
   (close)="closeGroupInfoModal()"
   (groupUpdated)="onGroupUpdated()"
+  (openChatWithUser)="onOpenChatWithUser($event)"
 />

@@ -64,4 +64,21 @@ export class GroupMessagesApiService {
     }
     this.messages$.next([]);
   }
+
+  sendMessage(groupId: string, content: string): Promise<void> {
+    this.isConnected();
+    return this.connection!.invoke('SendMessageAsync', content, groupId);
+  }
+
+  editMessage(messageId: string, content: string): Promise<void> {
+    this.isConnected();
+    return this.connection!.invoke('EditMessageAsync', messageId, content);
+  }
+
+  isConnected(): Promise<void> {
+    if (!this.connection || this.connection.state !== signalR.HubConnectionState.Connected) {
+      return Promise.reject('SignalR connection is not established');
+    }
+    return this.ensureConnection();
+  }
 }

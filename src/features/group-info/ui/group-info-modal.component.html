@@ -119,7 +119,8 @@
     [currentUserNickname]="currentUserNickname"
     [showRemoveButtons]="isMembersMode"
     [variant]="isMembersMode ? 'detailed' : 'simple'"
-    (removeUser)="removeUserFromSelection($event)">
+    (removeUser)="removeUserFromSelection($event)"
+    (userClick)="onUserClick($event)">
   </app-user-list>
 </div>
     </div>

@@ -30,7 +30,6 @@ export class GroupChatListComponent extends BaseChatListComponent<GroupChat> imp
   ) {
     super();
     this.apiService = this.groupChatApi;
-    this.apiService.connected();
   }
 
   public image: string | null = null;
@@ -226,7 +225,6 @@ export class GroupChatListComponent extends BaseChatListComponent<GroupChat> imp
         if (error.error?.message) {
           this.toastService.show(`Failed to create group: ${error.error.message}`, 'error');
         } else {
-          console.error('Group creation error:', error);
           this.toastService.show('Failed to create group. Please try again.', 'error');
         }
       }
@@ -277,7 +275,6 @@ export class GroupChatListComponent extends BaseChatListComponent<GroupChat> imp
       this.groupChatApi.joinGroup(groupId).then(() => {
         this.onSelectChat(nickname, image ?? '', groupId); 
       }).catch(err => {
-        console.error('Failed to join group', err);
         this.onSelectChat(nickname, image ?? '', groupId); 
       });
     } else {

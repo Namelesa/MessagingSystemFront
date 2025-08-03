@@ -31,6 +31,7 @@ export class GroupInfoModalComponent implements OnChanges, OnInit {
   @Input() open = false;
   @Output() close = new EventEmitter<void>();
   @Output() groupUpdated = new EventEmitter<void>();
+  @Output() openChatWithUser = new EventEmitter<{ nickName: string, image: string }>();
 
   groupInfo!: GroupInfoData;
   loading = false;
@@ -118,8 +119,7 @@ export class GroupInfoModalComponent implements OnChanges, OnInit {
 
   toggleEdit(): void {
     this.isEditing = !this.isEditing;
-    this.isMembersMode = false; // Выходим из режима управления участниками при редактировании
-    
+    this.isMembersMode = false; 
     if (this.isEditing && this.groupInfo) {
       this.editableGroup = {
         GroupName: this.groupInfo.groupName,
@@ -240,7 +240,7 @@ export class GroupInfoModalComponent implements OnChanges, OnInit {
     this.isMembersMode = true;
     this.isEditing = false; 
     this.isAddingMember = true;
-    this.selectedUsers = []; // Сбрасываем выбранных пользователей
+    this.selectedUsers = [];
     this.userSearchQuery = '';
   }
   
@@ -280,7 +280,6 @@ export class GroupInfoModalComponent implements OnChanges, OnInit {
     }
   }
   
-
   async removeUserFromSelection(nickName: string): Promise<void> {
   if (this.selectedUsers.some(u => u.nickName === nickName)) {
     this.selectedUsers = this.selectedUsers.filter(u => u.nickName !== nickName);
@@ -342,5 +341,10 @@ export class GroupInfoModalComponent implements OnChanges, OnInit {
     } else {
       this.cancelEdit();
     }
+  }
+
+  onUserClick(user: { nickName: string, image: string }): void {
+    this.close.emit();
+    this.openChatWithUser.emit(user);
   }
 }

@@ -17,6 +17,7 @@ export class SearchUserComponent {
   @Output() searchActiveChange = new EventEmitter<boolean>();
   @Output() searchFocus = new EventEmitter<void>();
   @Output() searchQueryChange = new EventEmitter<string>();
+  @Output() foundedUser = new EventEmitter<{ nick: string, image: string }>();
 
     searchQuery = '';
     user$;
@@ -45,6 +46,7 @@ export class SearchUserComponent {
     }
   
     startChat(nick: string, image: string) {
-      console.log('Start chat with:', nick, image);
+      this.foundedUser.emit({ nick, image });
+      this.onClearSearch();
     }
   }
