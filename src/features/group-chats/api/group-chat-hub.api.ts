@@ -81,6 +81,9 @@ export class GroupChatApiService extends BaseChatApiService<GroupChat> {
             this.chatsSubject.next(updatedGroups);
           }
         } else {
+          const currentGroups = this.chatsSubject.value;
+          const updatedGroups = currentGroups.filter(g => g.groupId !== updatedGroup.groupId);
+          this.chatsSubject.next(updatedGroups);
         }
       }
     });
@@ -115,19 +118,6 @@ export class GroupChatApiService extends BaseChatApiService<GroupChat> {
         
         this.chatsSubject.next(updatedGroups);
       }
-    });
-
-    const possibleEventNames = [
-      'GroupMemberRemoved',
-      'MemberRemovedFromGroup',
-      'UserRemovedFromGroup',
-      'RemoveUserFromGroup',
-      'GroupUserRemoved'
-    ];
-
-    possibleEventNames.forEach(eventName => {
-      this.connection.on(eventName, (data: any) => {
-      });
     });
   }
 
@@ -166,6 +156,7 @@ export class GroupChatApiService extends BaseChatApiService<GroupChat> {
       .then(() => {
       })
       .catch(error => {
+        console.error('Error joining group:', error);
         throw error;
       });
   }
@@ -216,27 +207,29 @@ export class GroupChatApiService extends BaseChatApiService<GroupChat> {
         return result;
       })
       .catch(error => {
+        console.error('Error adding members to group:', error);
         throw error;
       });
   }
   
   removeGroupMembers(groupId: string, members: { users: string[] }): Promise<GroupChat> {
-    
     if (!this.connection || this.connection.state !== signalR.HubConnectionState.Connected) {
       return Promise.reject('SignalR connection is not established');
     }
     
+    console.log('Removing members from group:', groupId, members);
     return this.connection.invoke('RemoveMembersFromGroupAsync', groupId, members)
       .then(result => {
+        console.log('Members removed successfully:', result);
         return result;
       })
       .catch(error => {
+        console.error('Error removing members from group:', error);
         throw error;
       });
   }  
 
   private isUserInGroupMembers(group: GroupChat, userName: string): boolean {
-    
     if (group.users && Array.isArray(group.users)) {
       const foundInUsers = group.users.some(user => user === userName);
       if (foundInUsers) {
@@ -251,14 +244,6 @@ export class GroupChatApiService extends BaseChatApiService<GroupChat> {
       }
     }
     return false;
-  }
-
-  private updateGroupInList(updatedGroup: GroupChat): void {
-    const currentGroups = this.chatsSubject.value;
-    const newGroups = currentGroups.map(g =>
-      g.groupId === updatedGroup.groupId ? updatedGroup : g
-    );
-    this.chatsSubject.next(newGroups);
   }
 
   protected override getCurrentUser(): string | null {

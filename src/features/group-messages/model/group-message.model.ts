@@ -1,9 +1,11 @@
 export interface GroupMessage {
-  messageId: string;
+  id: string;
   groupId: string;
+  replyFor?: string;
   sender: string;
   content: string;
   sendTime: string; 
+  isDeleted: boolean;
   isEdited: boolean;
-  replyFor?: string;
+  editTime?: string | Date;
 } 

@@ -1,7 +1,13 @@
 import { Component, Output, EventEmitter, Input, OnChanges, SimpleChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { OtoMessage } from '../../../entities/oto-message';
+
+interface BaseMessage {
+  messageId?: string;
+  id?: string;
+  sender: string;
+  content: string;
+}
 
 @Component({
   selector: 'shared-send-message-area',
@@ -15,8 +21,8 @@ export class SendAreaComponent implements OnChanges {
   @Output() editCancel = new EventEmitter<void>();
   @Output() replyCancel = new EventEmitter<void>();
   
-  @Input() editingMessage?: OtoMessage;
-  @Input() replyingToMessage?: OtoMessage;
+  @Input() editingMessage?: BaseMessage;
+  @Input() replyingToMessage?: BaseMessage;
 
   message = '';
   readonly maxLength = 2000;
@@ -82,7 +88,7 @@ export class SendAreaComponent implements OnChanges {
 
     if (this.isEditing && this.editingMessage) {
       this.editComplete.emit({
-        messageId: this.editingMessage.messageId,
+        messageId: (this.editingMessage.messageId || this.editingMessage.id)!,
         content: text
       });
     } else {

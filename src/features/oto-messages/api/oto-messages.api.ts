@@ -7,7 +7,6 @@ export class OtoMessagesService {
   constructor(private chatApi: OtoChatApiService) {}
 
   private getConnection(): signalR.HubConnection | null {
-    // Получаем соединение через рефлексию, так как оно protected
     const connection = (this.chatApi as any).connection;
     if (connection && connection.state === signalR.HubConnectionState.Connected) {
       return connection;
