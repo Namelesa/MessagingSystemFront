@@ -18,6 +18,7 @@
             #messagesComponent
             *ngIf="selectedGroupId"
             [groupId]="selectedGroupId"
+            [members]="groupMembers"
             (editMessage)="onEditMessage($event)"
             (deleteMessage)="onDeleteMessage($event)"
             (replyToMessage)="onReplyToMessage($event)">

@@ -111,4 +111,20 @@ export class SendAreaComponent implements OnChanges {
   truncateText(text: string, maxLength: number = 50): string {
     return text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
   }
+
+  onKeyDown(event: KeyboardEvent) {
+    if (event.key === 'Enter') {
+      if (event.shiftKey) {
+        return;
+      } else {
+        event.preventDefault();
+        this.emitMessage();
+      }
+    }
+  }
+  
+  get textareaRows(): number {
+    const lines = this.message.split('\n').length;
+    return Math.min(Math.max(lines, 1), 5);
+  }
 }

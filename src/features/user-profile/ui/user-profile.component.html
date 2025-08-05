@@ -14,7 +14,11 @@
 
     <div class="flex flex-col items-center pt-12 pb-8">
       <div class="relative mb-6">
-        <div class="relative w-32 h-32 rounded-full overflow-hidden">
+        <div class="relative w-32 h-32 rounded-full overflow-hidden"
+             [ngClass]="{
+               'ring-2 ring-red-400': hasFieldError('imageFile'),
+               'ring-2 ring-green-400': isFieldValid('imageFile')
+             }">
           <img
             *ngIf="userProfile.image; else initials"
             [src]="userProfile.image"
@@ -59,7 +63,17 @@
             accept="image/*"
             class="hidden"
           />
-        </div>        
+        </div>
+        
+        <div *ngIf="hasFieldError('imageFile')" 
+             class="absolute -top-2 -right-2 group">
+          <div class="w-6 h-6 bg-red-500 rounded-full flex items-center justify-center cursor-help">
+            <span class="text-white text-xs">!</span>
+          </div>
+          <div class="absolute bottom-full right-0 mb-2 px-2 py-1 bg-red-500 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-10">
+            <div *ngFor="let error of getFieldErrors('imageFile')">{{ error }}</div>
+          </div>
+        </div>
       </div>
       <p class="text-gray-700 dark:text-gray-300 mb-2 transition-colors duration-300">
         {{ userProfile.nickName }}
@@ -70,10 +84,10 @@
     </div>
 
     <div
-      class="relative max-w-lg mx-auto px-6 mt-8 bg-white dark:bg-gray-800 rounded-2xl p-6 shadow transition-colors duration-300">
+      class="relative max-w-lg mx-auto px-6 mt-4 bg-white dark:bg-gray-800 rounded-2xl p-6 shadow transition-colors duration-300">
 
       <h3
-        class="text-xl font-medium flex items-center gap-3 mb-8 text-gray-800 dark:text-white select-none transition-colors duration-300">
+        class="text-xl font-medium flex items-center gap-3 mb-2 text-gray-800 dark:text-white select-none transition-colors duration-300">
         📋 Personal Information
         <button
           type="button"
@@ -119,7 +133,9 @@
           <div class="flex flex-1 justify-end">
             <ng-container *ngIf="isEditing; else firstNameView">
               <app-input
-                [(ngModel)]="editableProfile.firstName"
+                [ngModel]="editableProfile.firstName"
+                (ngModelChange)="onFieldChange('firstName', $event)"
+                (blur)="onFieldBlur('firstName')"
                 name="firstName"
                 [required]="true"
                 placeholder="First Name"
@@ -140,7 +156,9 @@
           <div class="flex flex-1 justify-end">
             <ng-container *ngIf="isEditing; else lastNameView">
               <app-input
-                [(ngModel)]="editableProfile.lastName"
+                [ngModel]="editableProfile.lastName"
+                (ngModelChange)="onFieldChange('lastName', $event)"
+                (blur)="onFieldBlur('lastName')"
                 name="lastName"
                 [required]="true"
                 placeholder="Last Name"
@@ -161,7 +179,9 @@
           <div class="flex flex-1 justify-end">
             <ng-container *ngIf="isEditing; else nickNameView">
               <app-input
-                [(ngModel)]="editableProfile.nickName"
+                [ngModel]="editableProfile.nickName"
+                (ngModelChange)="onFieldChange('nickName', $event)"
+                (blur)="onFieldBlur('nickName')"
                 name="nickName"
                 [required]="true"
                 placeholder="NickName"
@@ -182,7 +202,9 @@
           <div class="flex flex-1 justify-end">
             <ng-container *ngIf="isEditing; else emailView">
               <app-input
-                [(ngModel)]="editableProfile.email"
+                [ngModel]="editableProfile.email"
+                (ngModelChange)="onFieldChange('email', $event)"
+                (blur)="onFieldBlur('email')"
                 name="email"
                 [required]="true"
                 placeholder="Email"
@@ -198,6 +220,7 @@
             </ng-template>
           </div>
         </div>
+
         <ng-container *ngIf="!isEditing">
           <div class="pt-6">
             <button

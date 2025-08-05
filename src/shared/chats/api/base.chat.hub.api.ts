@@ -89,7 +89,6 @@ export abstract class BaseChatApiService<TChat> {
                 isDeleted: true,
                 deletedAt: deletedData.deletedAt,
                 deleteType: 'soft',
-                content: 'Message deleted by sender'
               } 
             : msg
         );

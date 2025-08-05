@@ -10,6 +10,8 @@ import { AuthService } from '../../../entities/user/api/auht.service';
 import { SendAreaComponent } from '../../../shared/chats-ui-elements';
 import { GroupMessagesApiService } from '../../../features/group-messages';
 import { StorageService } from '../../../shared/storage/storage.service';
+import { GroupInfoApiService } from '../../../features/group-info';
+import { GroupMember } from '../../../entities/group-member';
 
 @Component({
   selector: 'app-group-chat-page',
@@ -34,6 +36,7 @@ export class GroupChatPageComponent extends BaseChatPageComponent {
   forceMessageComponentReload = false;
 
   currentUserNickName: string = '';
+  groupMembers: GroupMember[] = [];
 
   @Input() edit: string = '';
 
@@ -45,6 +48,7 @@ export class GroupChatPageComponent extends BaseChatPageComponent {
     private groupMessages: GroupMessagesApiService,
     private authService: AuthService, 
     private storageService: StorageService,
+    private groupInfoApi: GroupInfoApiService,
     private cdr: ChangeDetectorRef
   ) {
     super();
@@ -70,6 +74,7 @@ export class GroupChatPageComponent extends BaseChatPageComponent {
     
     if (groupId) {
       this.apiService.loadChatHistory(groupId, 20, 0);
+      this.loadGroupMembers(groupId);
     }
   }
 
@@ -92,7 +97,12 @@ export class GroupChatPageComponent extends BaseChatPageComponent {
 
   sendMessage(message: string) {
     if (this.selectedGroupId && message.trim()) {
-      this.groupMessages.sendMessage(this.selectedGroupId, message);
+      if (this.replyingToMessage) {
+        this.groupMessages.replyToMessage(this.replyingToMessage.id, message, this.selectedGroupId);
+        this.replyingToMessage = undefined;
+      } else {
+        this.groupMessages.sendMessage(this.selectedGroupId, message);
+      }
     }
   }
 
@@ -123,6 +133,7 @@ export class GroupChatPageComponent extends BaseChatPageComponent {
   async onConfirmDelete() {
     if (this.messageToDelete && this.selectedChat) {
       const deleteType = this.deleteForBoth ? 'hard' : 'soft';
+      console.log(`Deleting message ${this.messageToDelete.id} for ${deleteType} in group ${this.selectedGroupId}`);
       if (deleteType === 'hard') {
         await this.groupMessages.deleteMessage(this.messageToDelete.id, this.selectedGroupId!);
       } else {
@@ -151,5 +162,19 @@ export class GroupChatPageComponent extends BaseChatPageComponent {
     if (this.messagesComponent) {
       this.messagesComponent.scrollToMessage(messageId);
     }
+  }
+
+  private loadGroupMembers(groupId: string) {
+    this.groupInfoApi.getGroupInfo(groupId).subscribe({
+      next: (response) => {
+        if (response.success && response.data) {
+          this.groupMembers = response.data.members;
+        }
+      },
+      error: (error) => {
+        console.error('Error loading group members:', error);
+        this.groupMembers = [];
+      }
+    });
   }
 }

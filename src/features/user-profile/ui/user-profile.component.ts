@@ -5,10 +5,11 @@ import { UserProfileApi } from '../api/user-profile.api';
 import { ProfileApiResult } from '../../../shared/api-result';
 import { ToastService, ToastComponent } from '../../../shared/ui-elements';
 import { InputComponent } from '../../../shared/ui-elements';
-import { validateUpdateForm } from '../model/validate-update';
+import { validateUpdateForm, validateSingleField } from '../model/validate-update';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { EditUserContract } from '../../../entities/user';
+import { debounceTime, distinctUntilChanged, Subject } from 'rxjs';
 
 @Component({
   selector: 'app-user-profile',
@@ -28,7 +29,23 @@ export class UserProfileComponent implements OnInit {
   editableProfile: Partial<ProfileApiResult> = {};
   selectedAvatarFile: File | null = null;
 
-  errors: string[] = [];
+  fieldErrors: { [key: string]: string[] } = {
+    firstName: [],
+    lastName: [],
+    login: [],
+    email: [],
+    nickName: [],
+    imageFile: []
+  };
+
+  touchedFields: { [key: string]: boolean } = {
+    firstName: false,
+    lastName: false,
+    login: false,
+    email: false,
+    nickName: false,
+    imageFile: false
+  };
 
   formData: EditUserContract = {
     firstName: '',
@@ -39,11 +56,21 @@ export class UserProfileComponent implements OnInit {
     imageFile: undefined,
   };
 
+  private validationSubjects: { [key: string]: Subject<string> } = {
+    firstName: new Subject<string>(),
+    lastName: new Subject<string>(),
+    login: new Subject<string>(),
+    email: new Subject<string>(),
+    nickName: new Subject<string>()
+  };
+
   constructor(
     private userProfileApi: UserProfileApi,
     private toastService: ToastService,
     private router: Router
-  ) {}
+  ) {
+    this.setupDynamicValidation();
+  }
 
   ngOnInit(): void {
     this.userProfileApi.getUserProfile().subscribe({
@@ -62,11 +89,59 @@ export class UserProfileComponent implements OnInit {
     });
   }
 
+  private setupDynamicValidation(): void {
+    Object.keys(this.validationSubjects).forEach(fieldName => {
+      this.validationSubjects[fieldName]
+        .pipe(
+          debounceTime(300),
+          distinctUntilChanged()
+        )
+        .subscribe(value => {
+          this.validateField(fieldName as keyof EditUserContract, value);
+        });
+    });
+  }
+
+  private validateField(fieldName: keyof EditUserContract, value: any): void {
+    if (!this.touchedFields[fieldName]) return;
+
+    const errors = validateSingleField(fieldName, value);
+    this.fieldErrors[fieldName] = errors;
+  }
+
+  onFieldChange(fieldName: keyof EditUserContract, value: any): void {
+    (this.editableProfile as any)[fieldName] = value;
+    
+    this.touchedFields[fieldName] = true;
+    
+    if (this.validationSubjects[fieldName]) {
+      this.validationSubjects[fieldName].next(value);
+    }
+  }
+
+  onFieldBlur(fieldName: keyof EditUserContract): void {
+    this.touchedFields[fieldName] = true;
+    
+    const value = (this.editableProfile as any)[fieldName];
+    this.validateField(fieldName, value);
+  }
+
   toggleEdit(): void {
     this.isEditing = !this.isEditing;
     if (this.isEditing && this.userProfile) {
       this.editableProfile = { ...this.userProfile };
+      this.resetValidationState();
     }
+  }
+
+  private resetValidationState(): void {
+    Object.keys(this.fieldErrors).forEach(key => {
+      this.fieldErrors[key] = [];
+    });
+    
+    Object.keys(this.touchedFields).forEach(key => {
+      this.touchedFields[key] = false;
+    });
   }
 
   saveChanges(): void {
@@ -80,9 +155,21 @@ export class UserProfileComponent implements OnInit {
       nickName: nickName || '',
       imageFile: this.selectedAvatarFile ?? undefined,
     };
-  
-    this.errors = validateUpdateForm(this.formData);
-    if (this.errors.length > 0) return;
+
+    Object.keys(this.touchedFields).forEach(key => {
+      this.touchedFields[key] = true;
+    });
+
+    const allErrors = validateUpdateForm(this.formData);
+    
+    this.distributeErrors(allErrors);
+    
+    const hasErrors = Object.values(this.fieldErrors).some(errors => errors.length > 0);
+    
+    if (hasErrors) {
+      this.toastService.show('Please fix validation errors', 'error');
+      return;
+    }
   
     this.userProfileApi.updateUserProfile(this.formData).subscribe({
       next: (response) => {
@@ -98,7 +185,38 @@ export class UserProfileComponent implements OnInit {
         );
       },
     });
-  }  
+  }
+
+  private distributeErrors(errors: string[]): void {
+    Object.keys(this.fieldErrors).forEach(key => {
+      this.fieldErrors[key] = [];
+    });
+
+    const fieldMapping: { [key: string]: string } = {
+      'first name': 'firstName',
+      'last name': 'lastName',
+      'login': 'login',
+      'email': 'email',
+      'nickname': 'nickName',
+      'image': 'imageFile'
+    };
+
+    errors.forEach(error => {
+      const errorLower = error.toLowerCase();
+      let assigned = false;
+
+      Object.entries(fieldMapping).forEach(([keyword, fieldName]) => {
+        if (errorLower.includes(keyword) && !assigned) {
+          this.fieldErrors[fieldName].push(error);
+          assigned = true;
+        }
+      });
+
+      if (!assigned) {
+        console.warn('Unassigned error:', error);
+      }
+    });
+  }
 
   cancelEdit(): void {
     this.isEditing = false;
@@ -106,7 +224,7 @@ export class UserProfileComponent implements OnInit {
       this.editableProfile = { ...this.userProfile };
     }
     this.selectedAvatarFile = null;
-    this.errors = [];
+    this.resetValidationState();
   }
 
   onAvatarChange(event: Event): void {
@@ -114,6 +232,10 @@ export class UserProfileComponent implements OnInit {
     if (input.files && input.files.length > 0) {
       const file = input.files[0];
       this.selectedAvatarFile = file;
+
+      this.touchedFields['imageFile'] = true;
+      
+      this.validateField('imageFile', file);
 
       const reader = new FileReader();
       reader.onload = () => {
@@ -148,18 +270,20 @@ export class UserProfileComponent implements OnInit {
   }
 
   getFieldErrors(fieldName: string): string[] {
-    const fieldMapping: { [key: string]: string } = {
-      firstName: 'first name',
-      lastName: 'last name',
-      login: 'login',
-      email: 'email',
-      nickName: 'nick name',
-    };
-  
-    const fieldNameLower = fieldMapping[fieldName];
-    if (!fieldNameLower) return [];
-  
-    const filtered = this.errors.filter(e => e.toLowerCase().includes(fieldNameLower));
-    return filtered;
-  }  
+    return this.fieldErrors[fieldName] || [];
+  }
+
+  hasFieldError(fieldName: string): boolean {
+    return this.touchedFields[fieldName] && this.fieldErrors[fieldName].length > 0;
+  }
+
+  isFieldValid(fieldName: string): boolean {
+    return this.touchedFields[fieldName] && this.fieldErrors[fieldName].length === 0;
+  }
+
+  ngOnDestroy(): void {
+    Object.values(this.validationSubjects).forEach(subject => {
+      subject.complete();
+    });
+  }
 }

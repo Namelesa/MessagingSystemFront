@@ -159,7 +159,7 @@ export class GroupMessagesComponent implements OnChanges, AfterViewInit, OnDestr
         next: (newMsgs) => {
         const filteredNewMsgs = newMsgs.filter(msg => {
           if (msg.isDeleted) {
-            return !this.isMyMessage(msg);
+            return this.isMyMessage(msg);
           }
           return true;
         });
@@ -288,7 +288,10 @@ export class GroupMessagesComponent implements OnChanges, AfterViewInit, OnDestr
   }
 
   getMessageContent(msg: GroupMessage): string {
-    return msg.isDeleted ? 'This message was deleted' : msg.content;
+    if (msg.isDeleted && !this.isMyMessage(msg)) {
+      return msg.content;
+    }
+    return msg.content;
   }  
 
   truncateText(text: string, maxLength: number = 50): string {

@@ -17,7 +17,9 @@ export class GroupMessagesApiService {
     const connection = this.getConnection();
     if (!connection || this.listenersSetup) {
       if (!connection) {
+        console.log('No connection available');
       } else {
+        console.log('Listeners already setup');
       }
       return;
     }
@@ -26,45 +28,99 @@ export class GroupMessagesApiService {
       connection.off('ReceiveMessage');
       connection.off('MessageEdited');
       connection.off('MessageDeleted');
+      connection.off('MessageSoftDeleted');
     } catch (error) {
       console.warn('Error removing listeners:', error);
     }
 
-connection.on('ReceiveMessage', (msg: GroupMessage) => {
-  if (msg.groupId === this.currentGroupId) {
-    const currentMessages = this.messages$.value;
-  
-    const messageExists = currentMessages.some(m => {
-      const exists = m.id === msg.id;
-      return exists;
-    });
-    
-    if (!messageExists) {
-      const newMessages = [...currentMessages, msg];
-      this.messages$.next(newMessages);
-    } else {
-      const duplicateMsg = currentMessages.find(m => m.id === msg.id);
-    }
-  }
-});
-
-    connection.on('MessageEdited', (msg: GroupMessage) => {
+    connection.on('ReceiveMessage', (msg: any) => {
       if (msg.groupId === this.currentGroupId) {
         const currentMessages = this.messages$.value;
-        const updatedMessages = currentMessages.map(m => 
-          m.id === msg.id ? msg : m
-        );
+        
+        const messageExists = currentMessages.some(m => m.id === msg.id);
+        
+        if (!messageExists) {
+          const newMessage: GroupMessage = {
+            id: msg.id,
+            groupId: msg.groupId,
+            sender: msg.sender,
+            content: msg.content,
+            sendTime: msg.sendTime,
+            isEdited: false,
+            editTime: undefined,
+            isDeleted: false,
+            replyFor: msg.replyTo || undefined
+          };
+          
+          const newMessages = [...currentMessages, newMessage];
+          this.messages$.next(newMessages);
+        }
+      }
+    });
+
+    connection.on('MessageEdited', (editInfo: any) => {
+      if (editInfo.messageId) {
+        const currentMessages = this.messages$.value;
+        const updatedMessages = currentMessages.map(m => {
+          if (m.id === editInfo.messageId) {
+            return {
+              ...m,
+              content: editInfo.newContent,
+              isEdited: true,
+              editTime: editInfo.editedAt
+            };
+          }
+          return m;
+        });
         this.messages$.next(updatedMessages);
       }
     });
 
-    connection.on('MessageDeleted', (messageId: string, groupId: string) => {
-      if (groupId === this.currentGroupId) {
+    connection.on('MessageSoftDeleted', (deleteInfo: any) => {
+      if (deleteInfo.messageId) {
         const currentMessages = this.messages$.value;
-        const updatedMessages = currentMessages.map(m => 
-          m.id === messageId ? { ...m, isDeleted: true } : m
-        );
+        const updatedMessages = currentMessages.map(m => {
+          if (m.id === deleteInfo.messageId) {
+            return {
+              ...m,
+              isDeleted: true
+            };
+          }
+          return m;
+        });
         this.messages$.next(updatedMessages);
+      }
+    });
+
+    connection.on('MessageDeleted', (deleteInfo: any) => {
+      const messageId = deleteInfo.messageId || deleteInfo;
+      const currentMessages = this.messages$.value;
+      const updatedMessages = currentMessages.filter(m => m.id !== messageId);
+      this.messages$.next(updatedMessages);
+    });
+
+    connection.on('MessageReplied', (replyData: any) => {
+      if (replyData.groupId === this.currentGroupId) {
+        const currentMessages = this.messages$.value;
+        
+        const messageExists = currentMessages.some(m => m.id === replyData.messageId);
+        
+        if (!messageExists) {
+          const newMessage: GroupMessage = {
+            id: replyData.messageId,
+            groupId: this.currentGroupId!,
+            sender: replyData.sender,
+            content: replyData.content,
+            sendTime: replyData.sentAt,
+            isEdited: false,
+            editTime: undefined,
+            isDeleted: false,
+            replyFor: replyData.replyTo
+          };
+          
+          const newMessages = [...currentMessages, newMessage];
+          this.messages$.next(newMessages);
+        }
       }
     });
 
@@ -79,7 +135,6 @@ connection.on('ReceiveMessage', (msg: GroupMessage) => {
     }
     
     if (connection) {
-      console.log('Connection exists but state is:', connection.state);
     } else {
       console.log('No connection found');
     }
@@ -134,7 +189,6 @@ connection.on('ReceiveMessage', (msg: GroupMessage) => {
       })
     ).pipe(
       tap(messages => {
-        
         if (skip === 0) {
           this.messages$.next(messages);
         } else {
@@ -174,9 +228,7 @@ connection.on('ReceiveMessage', (msg: GroupMessage) => {
   async sendMessage(groupId: string, content: string) {
     try {
       const connection = await this.ensureConnection();
-
       await connection.invoke('SendMessageAsync', content, groupId);
-      
     } catch (error) {
       console.error('Error sending message:', error);
       throw error;

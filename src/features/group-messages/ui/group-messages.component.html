@@ -12,24 +12,68 @@
         [attr.data-message-id]="msg.id"
         (contextmenu)="onMessageRightClick($event, msg)"
       >
-        <div class="relative max-w-[75%]">
-          <div
-            class="px-3 py-2 rounded-2xl shadow-sm text-sm min-w-[48px] min-h-[32px]"
-            [ngClass]="isMyMessage(msg)
-              ? 'ml-auto bg-blue-500 text-white rounded-br-md'
-              : 'mr-auto bg-gray-200 text-gray-900 dark:bg-gray-600 dark:text-white rounded-bl-md'"
-            style="word-break: break-word;"
-          >
-            <div *ngIf="!isMyMessage(msg) && shouldShowSenderName(group.messages, i)" 
-                 class="text-xs mb-1 text-left font-bold text-gray-700 dark:text-gray-200">
-              {{ msg.sender }}
-            </div>
-            <div class="whitespace-pre-line break-words">{{ msg.content }}</div>
-            <div class="flex items-center gap-1 mt-1 text-xs justify-end"
-              [ngClass]="isMyMessage(msg)
-                ? 'text-blue-200 dark:text-gray-200'
-                : 'text-gray-500 dark:text-gray-200'">
-              <span>{{ msg.sendTime | date:'shortTime' }}</span>
+        <div class="flex items-end gap-2 max-w-[75%]" [ngClass]="isMyMessage(msg) ? 'flex-row-reverse ml-auto' : 'flex-row mr-auto'">
+          <div *ngIf="!isMyMessage(msg)" class="flex-shrink-0">
+            <img 
+              [src]="getMemberAvatar(msg.sender)" 
+              [alt]="msg.sender"
+              class="w-8 h-8 rounded-full object-cover"
+            >
+          </div>
+          <div class="relative flex-1">
+            <div
+              class="px-3 py-2 rounded-2xl shadow-sm text-sm min-w-[48px] min-h-[32px] message-block transition-all duration-300"
+              [ngClass]="[
+                isMyMessage(msg)
+                  ? 'bg-blue-500 text-white rounded-br-md'
+                  : 'bg-gray-200 text-gray-900 dark:bg-gray-600 dark:text-white rounded-bl-md',
+                isMessageHighlighted(msg.id) ? 'ring-2 ring-blue-400 ring-opacity-80 shadow-md' : ''
+              ]"
+              style="word-break: break-word;"
+            >
+              <div 
+                *ngIf="msg.replyFor && getRepliedMessage(msg.replyFor)" 
+                class="mb-2 p-2 rounded-lg border-l-2 cursor-pointer transition-colors"
+                [ngClass]="isMyMessage(msg) 
+                  ? 'bg-blue-400/20 border-blue-200 hover:bg-blue-400/30' 
+                  : 'bg-gray-300/50 dark:bg-gray-500/30 border-gray-400 dark:border-gray-500 hover:bg-gray-300/70 dark:hover:bg-gray-500/50'"
+                (click)="onScrollToReplyMessage(msg.replyFor!)"
+              >
+                <div class="flex items-center space-x-1 mb-1">
+                  <svg class="w-3 h-3 opacity-75" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"></path>
+                  </svg>
+                  <span class="text-xs font-medium opacity-75">
+                    {{ getRepliedMessage(msg.replyFor!)?.sender }}
+                  </span>
+                </div>
+                <p class="text-xs opacity-75 line-clamp-2">
+                  {{ truncateText(getRepliedMessage(msg.replyFor!)?.content || '') }}
+                </p>
+              </div>
+
+              <div *ngIf="!isMyMessage(msg) && shouldShowSenderName(group.messages, i)" 
+                   class="text-xs mb-1 text-left font-bold text-gray-700 dark:text-gray-200">
+                {{ msg.sender }}
+              </div>
+              
+              <div 
+                class="whitespace-pre-line break-words"
+              >
+                {{ getMessageContent(msg) }}
+              </div>
+              
+              <div class="flex items-center gap-1 mt-1 text-xs justify-end"
+                [ngClass]="isMyMessage(msg)
+                  ? 'text-blue-200 dark:text-gray-200'
+                  : 'text-gray-500 dark:text-gray-200'">
+                <span>{{ msg.sendTime | date:'shortTime' }}</span>
+                
+                <ng-container *ngIf="msg.isEdited && msg.editTime">
+                  <span class="mx-1">•</span>
+                  <span class="italic opacity-75">edited {{ msg.editTime | date:'shortTime' }}</span>
+                </ng-container>
+              </div>
             </div>
           </div>
         </div>
@@ -37,7 +81,6 @@
     </ng-container>
   </ng-container>
 
-  <!-- КОНТЕКСТНОЕ МЕНЮ -->
   <div
     *ngIf="showContextMenu"
     class="fixed bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg py-1 z-50 min-w-[150px]"

@@ -57,10 +57,8 @@
           [class.border-blue-400]="isEditing"
           [class.bg-blue-50]="isEditing"
           [class.dark:bg-blue-900]="isEditing"
-          [class.border-green-400]="isReplying && !isEditing"
-          [class.bg-green-50]="isReplying && !isEditing"
-          [class.dark:bg-green-900]="isReplying && !isEditing"
-          rows="1"
+          [rows]="textareaRows"
+          (keydown)="onKeyDown($event)"
         ></textarea>
 
         <div
@@ -96,20 +94,19 @@
         class="flex-shrink-0 w-10 h-10 text-gray-500 hover:bg-gray-100 rounded-full flex items-center justify-center transition-colors dark:text-gray-250 hover:bg-gray-800"
         type="button"
       >
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-          <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
-          <path d="M8 14s1.5 2 4 2 4-2 4-2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-          <line x1="9" y1="9" x2="9.01" y2="9" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-          <line x1="15" y1="9" x2="15.01" y2="9" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-        </svg>
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+        <path
+          d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66L9.64 16.2a2 2 0 0 1-2.83-2.83l8.49-8.49"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        />
+      </svg>
       </button>
 
       <button
-        class="flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center transition-colors"
-        [class]="isEditing ? 
-          'bg-blue-500 text-white hover:bg-blue-600' : 
-          isReplying ? 'bg-green-500 text-white hover:bg-green-600' :
-          'bg-blue-500 text-white hover:bg-blue-600'"
+        class="flex-shrink-0 w-10 h-10 bg-blue-500 text-white hover:bg-blue-600 rounded-full flex items-center justify-center transition-colors"
         type="button"
         (click)="emitMessage()"
         [disabled]="isTooLong || !message.trim()"
