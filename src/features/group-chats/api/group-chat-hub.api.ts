@@ -118,6 +118,15 @@ export class GroupChatApiService extends BaseChatApiService<GroupChat> {
         this.chatsSubject.next(updatedGroups);
       }
     });
+
+    this.connection.on('UserInfoDeleted', (userInfo: any) => {      
+      const normalizedUserInfo = {
+        UserName: userInfo.UserName || userInfo.userName || userInfo.userInfo?.userName,
+        userName: userInfo.userName || userInfo.UserName || userInfo.userInfo?.userName
+      };
+      
+      this.handleUserInfoDeleted(normalizedUserInfo);
+    });
   }
 
   protected override handleUserInfoChanged(userInfo: { NewUserName: string, Image?: string, UpdatedAt: string, OldNickName: string }): void {
@@ -125,7 +134,60 @@ export class GroupChatApiService extends BaseChatApiService<GroupChat> {
     this.updateGroupsUserInfo(userInfo);
   }
 
-private updateGroupsUserInfo(userInfo: { NewUserName: string, Image?: string, UpdatedAt: string, OldNickName: string }): void {  
+  protected override handleUserInfoDeleted(userInfo: { UserName?: string, userName?: string }): void {
+    super.handleUserInfoDeleted(userInfo);
+    this.handleUserInfoDeletedInGroups(userInfo);
+  }
+
+  private handleUserInfoDeletedInGroups(userInfo: { UserName?: string, userName?: string }): void {
+    const userName = userInfo.UserName || userInfo.userName || (userInfo as any).userInfo?.userName;
+    
+    if (!userName) {
+      console.error('No valid userName found in userInfo:', userInfo);
+      return;
+    }
+    
+    const currentGroups = this.chatsSubject.value;
+    let hasChanges = false;
+    
+    const updatedGroups = currentGroups.map(group => {
+      let updatedGroup = { ...group };
+      let groupChanged = false;
+      
+      if (group.admin === userName) {
+        updatedGroup.admin = '';
+        groupChanged = true;
+      }
+      
+      if (group.users && Array.isArray(group.users)) {
+        const filteredUsers = group.users.filter(user => user !== userName);
+        if (filteredUsers.length !== group.users.length) {
+          updatedGroup.users = filteredUsers;
+          groupChanged = true;
+        }
+      }
+      
+      if (group.members && Array.isArray(group.members)) {
+        const filteredMembers = group.members.filter(member => member.nickName !== userName);
+        if (filteredMembers.length !== group.members.length) {
+          updatedGroup.members = filteredMembers;
+          groupChanged = true;
+        }
+      }
+      
+      if (groupChanged) {
+        hasChanges = true;
+      }
+      
+      return updatedGroup;
+    });
+    
+    if (hasChanges) {
+      this.chatsSubject.next(updatedGroups);
+    }
+  }
+
+  private updateGroupsUserInfo(userInfo: { NewUserName: string, Image?: string, UpdatedAt: string, OldNickName: string }): void {  
   const currentGroups = this.chatsSubject.value;
   
   let hasChanges = false;

@@ -35,6 +35,7 @@ export class GroupMessagesApiService {
       connection.off('MessageDeleted');
       connection.off('MessageSoftDeleted');
       connection.off('UserInfoChanged');
+      connection.off('UserInfoDeleted');
     } catch (error) {
       console.warn('Error removing listeners:', error);
     }
@@ -126,7 +127,26 @@ export class GroupMessagesApiService {
       this.handleUserInfoChanged(normalizedUserInfo);
     });
 
+    connection.on('UserInfoDeleted', (userInfo: any) => {
+      const userName = userInfo.UserName || userInfo.userName || userInfo.userInfo?.userName;
+      this.handleUserInfoDeleted(userName);
+    });  
+
     this.listenersSetup = true;
+  }
+
+  private handleUserInfoDeleted(userName: string): void {
+    if (!userName) {
+      console.error('No valid userName found for deletion');
+      return;
+    }
+
+    const currentMessages = this.messages$.value;
+    const filteredMessages = currentMessages.filter(message => message.sender !== userName);
+    
+    if (filteredMessages.length !== currentMessages.length) {
+      this.messages$.next(filteredMessages);
+    }
   }
 
   private handleUserInfoChanged(userInfo: {

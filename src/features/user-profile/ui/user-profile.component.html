@@ -236,3 +236,45 @@
     </div>
   </div>
 </div>
+
+<div *ngIf="showDeleteModal" class="fixed inset-0 z-50 flex items-center justify-center">
+  <div class="absolute inset-0 bg-black bg-opacity-50 backdrop-blur-sm transition-opacity duration-300" 
+       (click)="cancelDelete()"></div>
+  
+  <div class="relative bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-md w-full mx-4 p-6 transform transition-all duration-300 scale-100 animate-in fade-in-0 zoom-in-95">
+    <div class="flex items-center justify-center w-16 h-16 mx-auto mb-6 bg-red-100 dark:bg-red-900/20 rounded-full">
+      <svg class="w-8 h-8 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+      </svg>
+    </div>
+    
+    <div class="text-center mb-6">
+      <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+        Delete Account
+      </h3>
+      <p class="text-gray-600 dark:text-gray-300 leading-relaxed">
+        Are you sure you want to permanently delete your account? This action cannot be undone and all your data will be lost forever.
+      </p>
+    </div>
+    
+    <div class="flex gap-3">
+      <button
+        type="button"
+        (click)="cancelDelete()"
+        class="flex-1 px-4 py-3 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 
+               hover:bg-gray-200 dark:hover:bg-gray-600 rounded-xl transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-gray-300"
+      >
+        Cancel
+      </button>
+      <button
+        type="button"
+        (click)="confirmDelete()"
+        class="flex-1 px-4 py-3 text-sm font-medium text-white bg-red-600 hover:bg-red-700 
+               rounded-xl transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-red-500 shadow-lg"
+      >
+        Delete Account
+      </button>
+    </div>
+  </div>
+</div>

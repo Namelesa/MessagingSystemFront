@@ -65,6 +65,7 @@ export class GroupInfoApiService {
 
     try {
       connection.off('UserInfoChanged');
+      connection.off('UserInfoDeleted');
     } catch (error) {
       console.warn('Error removing UserInfoChanged listener:', error);
     }
@@ -80,7 +81,49 @@ export class GroupInfoApiService {
       this.handleUserInfoChanged(normalizedUserInfo);
     });
 
+    connection.on('UserInfoDeleted', (userInfo: any) => {
+      const userName = userInfo.UserName || userInfo.userName || userInfo.userInfo?.userName;
+      this.handleUserInfoDeleted(userName);
+    });
+
     this.userInfoListenerSetup = true;
+  }
+
+  private handleUserInfoDeleted(userName: string): void {
+    const currentGroupInfo = this.groupInfoSubject.value;
+    
+    if (!currentGroupInfo || !userName) {
+      return;
+    }
+  
+    let hasChanges = false;
+    const updatedGroupInfo = { ...currentGroupInfo };
+    updatedGroupInfo.data = { ...currentGroupInfo.data };
+  
+    if (currentGroupInfo.data.admin === userName) {
+      updatedGroupInfo.data.admin = '';
+      hasChanges = true;
+    }
+
+    if (currentGroupInfo.data.members && Array.isArray(currentGroupInfo.data.members)) {
+      const filteredMembers = currentGroupInfo.data.members.filter(member => member.nickName !== userName);
+      if (filteredMembers.length !== currentGroupInfo.data.members.length) {
+        updatedGroupInfo.data.members = filteredMembers;
+        hasChanges = true;
+      }
+    }
+  
+    if (currentGroupInfo.data.users && Array.isArray(currentGroupInfo.data.users)) {
+      const filteredUsers = currentGroupInfo.data.users.filter(user => user !== userName);
+      if (filteredUsers.length !== currentGroupInfo.data.users.length) {
+        updatedGroupInfo.data.users = filteredUsers;
+        hasChanges = true;
+      }
+    }
+  
+    if (hasChanges) {
+      this.groupInfoSubject.next(updatedGroupInfo);
+    }
   }
 
   private handleUserInfoChanged(userInfo: { NewUserName: string, Image?: string, UpdatedAt: string, OldNickName: string }): void {

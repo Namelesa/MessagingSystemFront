@@ -22,6 +22,7 @@ export class UserProfileComponent implements OnInit {
   isLoading = true;
   hasError = false;
   isEditing = false;
+  showDeleteModal = false;
 
   toastMessage: string | null = null;
   toastType: 'success' | 'error' = 'success';
@@ -251,22 +252,29 @@ export class UserProfileComponent implements OnInit {
   }
 
   onDeleteAccount(): void {
-    if (confirm('Are you sure you want to delete your account? This action cannot be undone.')) {
-      this.userProfileApi.deleteUserProfile().subscribe({
-        next: (response) => {
-          this.toastService.show(response.message, 'success');
-          setTimeout(() => {
-            this.router.navigate(['/login']);
-          }, 1000);
-        },
-        error: (err: HttpErrorResponse) => {
-          this.toastService.show(
-            err.error?.message || 'Can not delete profile',
-            'error'
-          );
-        },
-      });
-    }
+    this.showDeleteModal = true;
+  }
+
+  confirmDelete(): void {
+    this.showDeleteModal = false;
+    this.userProfileApi.deleteUserProfile().subscribe({
+      next: (response) => {
+        this.toastService.show(response.message, 'success');
+        setTimeout(() => {
+          this.router.navigate(['/login']);
+        }, 1000);
+      },
+      error: (err: HttpErrorResponse) => {
+        this.toastService.show(
+          err.error?.message || 'Can not delete profile',
+          'error'
+        );
+      },
+    });
+  }
+
+  cancelDelete(): void {
+    this.showDeleteModal = false;
   }
 
   getFieldErrors(fieldName: string): string[] {
