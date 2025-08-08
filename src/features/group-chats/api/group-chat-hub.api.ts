@@ -9,7 +9,6 @@ import { HttpClient } from '@angular/common/http';
 import * as signalR from '@microsoft/signalr';
 import { AuthService } from '../../../entities/user/api/auht.service';
 
-
 @Injectable({ providedIn: 'root' })
 export class GroupChatApiService extends BaseChatApiService<GroupChat> {
   private isConnected = false;
@@ -121,6 +120,74 @@ export class GroupChatApiService extends BaseChatApiService<GroupChat> {
     });
   }
 
+  protected override handleUserInfoChanged(userInfo: { NewUserName: string, Image?: string, UpdatedAt: string, OldNickName: string }): void {
+    super.handleUserInfoChanged(userInfo);
+    this.updateGroupsUserInfo(userInfo);
+  }
+
+private updateGroupsUserInfo(userInfo: { NewUserName: string, Image?: string, UpdatedAt: string, OldNickName: string }): void {  
+  const currentGroups = this.chatsSubject.value;
+  
+  let hasChanges = false;
+  
+  const updatedGroups = currentGroups.map(group => {
+    let updatedGroup = { ...group };
+    let groupChanged = false;
+    
+    if (group.admin === userInfo.OldNickName) {
+      updatedGroup.admin = userInfo.NewUserName;
+      groupChanged = true;
+      hasChanges = true;
+    }
+    
+    if (group.users && Array.isArray(group.users)) {
+      const updatedUsers = group.users.map(user => 
+        user === userInfo.OldNickName ? userInfo.NewUserName : user
+      );
+      
+      if (updatedUsers.some((user, index) => user !== group.users![index])) {
+        updatedGroup.users = updatedUsers;
+        groupChanged = true;
+        hasChanges = true;
+      }
+    }
+    
+    if (group.members && Array.isArray(group.members)) {
+      const updatedMembers = group.members.map(member => {
+        if (member.nickName === userInfo.OldNickName) {
+          return {
+            ...member,
+            nickName: userInfo.NewUserName,
+            ...(userInfo.Image && { 
+              image: userInfo.Image, 
+              userImage: userInfo.Image, 
+              avatar: userInfo.Image 
+            })
+          };
+        }
+        return member;
+      });
+      
+      const membersChanged = updatedMembers.some((member, index) => {
+        const original = group.members![index];
+        return member.nickName !== original.nickName || 
+               member.image !== original.image;
+      });
+      
+      if (membersChanged) {
+        updatedGroup.members = updatedMembers;
+        groupChanged = true;
+        hasChanges = true;
+      }
+    }  
+    return updatedGroup;
+  });
+  
+  if (hasChanges) {
+    this.chatsSubject.next(updatedGroups);
+  }
+}
+
   createGroup(data: GroupCreateRequest): Observable<AuthApiResult> {
     const formData = new FormData();
 
@@ -217,10 +284,8 @@ export class GroupChatApiService extends BaseChatApiService<GroupChat> {
       return Promise.reject('SignalR connection is not established');
     }
     
-    console.log('Removing members from group:', groupId, members);
     return this.connection.invoke('RemoveMembersFromGroupAsync', groupId, members)
       .then(result => {
-        console.log('Members removed successfully:', result);
         return result;
       })
       .catch(error => {

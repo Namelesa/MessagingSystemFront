@@ -1,4 +1,4 @@
-import { BehaviorSubject, Observable, from, of } from 'rxjs';
+import { BehaviorSubject, Observable, from, of, Subject } from 'rxjs';
 import { catchError, tap, switchMap } from 'rxjs/operators';
 import * as signalR from '@microsoft/signalr';
 
@@ -16,6 +16,10 @@ export abstract class BaseChatApiService<TChat> {
 
   protected messagesSubject = new BehaviorSubject<any[]>([]);
   public messages$ = this.messagesSubject.asObservable();
+  
+  protected userInfoUpdatedSubject = new Subject<{ userName: string, image?: string, updatedAt: string, oldNickName: string }>();
+  public userInfoUpdated$: Observable<{ userName: string, image?: string, updatedAt: string, oldNickName: string } | null> = this.userInfoUpdatedSubject.asObservable();
+  
   private currentChatNickName: string | null = null;
 
   constructor(
@@ -45,6 +49,7 @@ export abstract class BaseChatApiService<TChat> {
     this.connection.onreconnected(() => {
       this.errorSubject.next(null);
       this.loadingSubject.next(false);
+      this.refreshChats();
     });
 
     this.connection.onreconnecting(() => {
@@ -120,6 +125,17 @@ export abstract class BaseChatApiService<TChat> {
       this.chatsSubject.next(chats ?? []);
     });
 
+    this.connection.on('UserInfoChanged', (userInfo) => {      
+      const normalizedUserInfo = {
+        NewUserName: userInfo.NewUserName || userInfo.newUserName,
+        Image: userInfo.Image || userInfo.image,
+        UpdatedAt: userInfo.UpdatedAt || userInfo.updatedAt,
+        OldNickName: userInfo.OldNickName || userInfo.oldNickName
+      };
+      
+      this.handleUserInfoChanged(normalizedUserInfo);
+    });
+
     this.loadingSubject.next(true);
 
     from(this.connection.start())
@@ -144,7 +160,93 @@ export abstract class BaseChatApiService<TChat> {
       .subscribe();
   }
 
-  private refreshChats(): void {
+  protected handleUserInfoChanged(userInfo: { NewUserName: string, Image?: string, UpdatedAt: string, OldNickName: string }): void {    
+    const currentMessages = this.messagesSubject.value;
+    let messageUpdated = false;
+    
+    const updatedMessages = currentMessages.map(message => {
+      if (message.sender === userInfo.OldNickName || message.sender === userInfo.NewUserName) {
+        messageUpdated = true;
+        return {
+          ...message,
+          sender: userInfo.NewUserName,
+          senderImage: userInfo.Image || message.senderImage
+        };
+      }
+      return message;
+    });
+    
+    if (messageUpdated) {
+      this.messagesSubject.next(updatedMessages);
+    }
+    this.updateChatUserInfo(userInfo);
+    
+    setTimeout(() => {
+      this.refreshChats();
+    }, 50);
+
+    const mappedUserInfo = {
+      userName: userInfo.NewUserName,
+      image: userInfo.Image,
+      updatedAt: userInfo.UpdatedAt,
+      oldNickName: userInfo.OldNickName
+    };
+        
+    this.userInfoUpdatedSubject.next(mappedUserInfo);
+  }
+
+  protected updateChatUserInfo(userInfo: { NewUserName: string, Image?: string, UpdatedAt: string, OldNickName: string }): void {
+    const currentChats = this.chatsSubject.value;
+    let hasChanges = false;
+    
+    const updatedChats = currentChats.map(chat => {
+      const chatAny = chat as any;
+      
+      let shouldUpdate = false;
+      const updatedChat = { ...chatAny };
+      
+      if (chatAny.nickName === userInfo.OldNickName || chatAny.nickName === userInfo.NewUserName) {
+        updatedChat.nickName = userInfo.NewUserName;
+        shouldUpdate = true;
+      }
+
+      if (chatAny.userName === userInfo.OldNickName || chatAny.userName === userInfo.NewUserName) {
+        updatedChat.userName = userInfo.NewUserName;
+        shouldUpdate = true;
+      }
+
+      if (chatAny.name === userInfo.OldNickName || chatAny.name === userInfo.NewUserName) {
+        updatedChat.name = userInfo.NewUserName;
+        shouldUpdate = true;
+      }
+
+      if (chatAny.displayName === userInfo.OldNickName || chatAny.displayName === userInfo.NewUserName) {
+        updatedChat.displayName = userInfo.NewUserName;
+        shouldUpdate = true;
+      }
+
+      if (shouldUpdate && userInfo.Image) {
+        updatedChat.image = userInfo.Image;
+        updatedChat.userImage = userInfo.Image;
+        updatedChat.avatar = userInfo.Image;
+        updatedChat.profileImage = userInfo.Image;
+      }
+      
+      if (shouldUpdate) {
+        updatedChat.lastUserInfoUpdate = userInfo.UpdatedAt;
+        hasChanges = true;
+      }
+      
+      return updatedChat;
+    });
+    
+    if (hasChanges) {
+      this.chatsSubject.next(updatedChats);
+    } else {
+    }
+  }
+
+  public refreshChats(): void {
     if (this.connection && this.connection.state === signalR.HubConnectionState.Connected) {
       this.connection.invoke<TChat[]>(this.methodName).then(chats => {
         this.chatsSubject.next(chats ?? []);
@@ -191,6 +293,23 @@ export abstract class BaseChatApiService<TChat> {
         return of([]);
       })
     );
+  }
+
+  public notifyUserInfoChanged(userInfo: { userName: string, image?: string, updatedAt: string, oldNickName: string }): void {
+    const normalizedUserInfo = {
+      NewUserName: userInfo.userName,
+      Image: userInfo.image,
+      UpdatedAt: userInfo.updatedAt,
+      OldNickName: userInfo.oldNickName
+    };
+    
+    this.updateChatUserInfo(normalizedUserInfo);
+    
+    setTimeout(() => {
+      this.refreshChats();
+    }, 50);
+    
+    this.userInfoUpdatedSubject.next(userInfo);
   }
 
   protected abstract getCurrentUser(): string | null;

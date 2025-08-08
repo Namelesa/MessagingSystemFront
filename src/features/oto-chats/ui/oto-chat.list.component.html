@@ -48,10 +48,10 @@
         </li>
     
         <shared-chat-list-item
-          *ngFor="let chat of sortedChats$ | async"
+          *ngFor="let chat of sortedChats$ | async; trackBy: trackByFn"
           [name]="getChatDisplayName(chat)"
-          [image]="!isSavedMessagesChat(chat) ? chat.image : ''"
-          [active]="selectedNickname === getChatName(chat)"
+          [image]="getChatImage(chat) ?? 'default-image.png'"
+          [active]="isChatActive(chat)"
           (click)="onChatClick(chat)"
         >
           <ng-container *ngIf="isSavedMessagesChat(chat)" icon>

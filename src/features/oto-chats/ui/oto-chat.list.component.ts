@@ -1,12 +1,13 @@
-import { Component, Input, Output, EventEmitter, ElementRef, ViewChild, HostListener } from '@angular/core';
+import { Component, Input, Output, EventEmitter, ElementRef, ViewChild, HostListener, OnInit, OnDestroy } from '@angular/core';
 import { BaseChatListComponent } from '../../../shared/chats';
 import { OtoChat } from '../../../entities/oto-chats';
 import { OtoChatApiService } from '../api/oto-chat-hub.api';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ChatListItemComponent } from '../../../shared/chats-ui-elements';
-import { map } from 'rxjs/operators';
+import { map, filter } from 'rxjs/operators';
 import { SearchUserComponent } from '../../search-user';
+import { Subscription } from 'rxjs';
 
 @Component({
   selector: 'app-oto-chat-list',
@@ -14,7 +15,7 @@ import { SearchUserComponent } from '../../search-user';
   imports: [CommonModule, FormsModule, ChatListItemComponent, SearchUserComponent],
   templateUrl: './oto-chat.list.component.html',
 })
-export class OtoChatListComponent extends BaseChatListComponent<OtoChat> {
+export class OtoChatListComponent extends BaseChatListComponent<OtoChat> implements OnInit, OnDestroy {
   protected apiService: OtoChatApiService;
 
   public image: string | null = null;
@@ -23,17 +24,83 @@ export class OtoChatListComponent extends BaseChatListComponent<OtoChat> {
   public override searchQuery = ''; 
   public override searchResults: string[] = []; 
 
+  private subscriptions: Subscription[] = [];
+  private _selectedNickname?: string;
+
   @ViewChild('searchContainer', { static: false }) searchContainerRef!: ElementRef;
   @Input() searchPlaceholder = 'Search...';
   @Input() emptyListText = 'Chats not found ;(';
   @Input() currentUserNickName!: string;
-  @Input() declare selectedNickname?: string;
+  
+  @Input() 
+  override selectedNickname: string | undefined = undefined;
+  
   @Output() chatSelected = new EventEmitter<OtoChat>();
   @Output() foundedUser = new EventEmitter<{ nick: string, image: string }>();
+  @Output() userInfoUpdated = new EventEmitter<{ userName: string, image?: string, updatedAt: string, oldNickName: string }>();
+  @Output() selectedChatUserUpdated = new EventEmitter<{ oldNickName: string, newNickName: string, image?: string }>();
 
   constructor(private otoChatApi: OtoChatApiService) {
     super();
     this.apiService = this.otoChatApi;
+  }
+
+  override ngOnInit() {
+    super.ngOnInit();
+    this.subscribeToUserInfoChanges();
+  }
+
+  override ngOnDestroy() {
+    super.ngOnDestroy();
+    this.subscriptions.forEach(sub => sub.unsubscribe());
+  }
+
+  private subscribeToUserInfoChanges() {
+    const userInfoSubscription = this.apiService.userInfoUpdated$
+      .pipe(
+        filter(userInfo => userInfo !== null)
+      )
+      .subscribe(userInfo => {
+        if (userInfo) {    
+          this.userInfoUpdated.emit(userInfo);
+          
+          this.handleUserInfoUpdate(userInfo);
+        }
+      });
+
+    const chatsSubscription = this.chats$.subscribe(chats => {
+    });
+
+    this.subscriptions.push(userInfoSubscription, chatsSubscription);
+  }
+
+  private handleUserInfoUpdate(userInfo: { userName: string, image?: string, updatedAt: string, oldNickName: string }) {
+    if (userInfo.oldNickName === this.currentUserNickName || userInfo.userName === this.currentUserNickName) {
+      this.currentUserNickName = userInfo.userName;
+    
+      if (userInfo.image) {
+        this.image = userInfo.image;
+      }
+    }
+    
+    if (this.selectedNickname === userInfo.oldNickName) {
+      this.selectedNickname = userInfo.userName;
+      
+      this.selectedChatUserUpdated.emit({
+        oldNickName: userInfo.oldNickName,
+        newNickName: userInfo.userName,
+        image: userInfo.image
+      });
+      
+      setTimeout(() => {
+        const currentChats = (this.apiService as any).chatsSubject?.value || [];
+        const updatedChat = currentChats.find((chat: OtoChat) => chat.nickName === userInfo.userName);
+        
+        if (updatedChat) {
+          this.chatSelected.emit(updatedChat);
+        }
+      }, 100);
+    }
   }
 
   getChatName(chat: OtoChat): string {
@@ -41,6 +108,7 @@ export class OtoChatListComponent extends BaseChatListComponent<OtoChat> {
   }  
 
   onChatClick(chat: OtoChat) {
+    this.selectedNickname = chat.nickName;
     this.chatSelected.emit(chat);
   }
 
@@ -51,6 +119,14 @@ export class OtoChatListComponent extends BaseChatListComponent<OtoChat> {
         return [...chats].sort((a, b) => {
           if (a.nickName === this.currentUserNickName) return -1;
           if (b.nickName === this.currentUserNickName) return 1;
+          
+          const aUpdate = (a as any).lastUserInfoUpdate;
+          const bUpdate = (b as any).lastUserInfoUpdate;
+          
+          if (aUpdate && bUpdate) {
+            return new Date(bUpdate).getTime() - new Date(aUpdate).getTime();
+          }
+          
           return 0;
         });
       })
@@ -63,6 +139,14 @@ export class OtoChatListComponent extends BaseChatListComponent<OtoChat> {
 
   getChatDisplayName(chat: OtoChat): string {
     return this.isSavedMessagesChat(chat) ? 'SavedMessage' : chat.nickName;
+  }
+
+  getChatImage(chat: OtoChat): string | null {
+    if (this.isSavedMessagesChat(chat)) {
+      return this.image;
+    }
+    
+    return (chat as any).image || (chat as any).userImage || null;
   }
 
   onSearchFocused() {
@@ -86,23 +170,18 @@ export class OtoChatListComponent extends BaseChatListComponent<OtoChat> {
     this.foundedUser.emit(userData);
   }
 
-  // Метод для поиска существующего чата
   findExistingChat(nickName: string): OtoChat | null {
-    // Получаем текущие чаты из BehaviorSubject
     const currentChats = (this.apiService as any).chatsSubject?.value || [];
     const foundChat = currentChats.find((chat: OtoChat) => chat.nickName === nickName) || null;
     return foundChat;
   }
 
-  // Метод для открытия чата с пользователем (существующий или новый)
   openChatWithUser(userData: { nick: string, image: string }) {
     const existingChat = this.findExistingChat(userData.nick);
     
     if (existingChat) {
-      // Если чат уже существует, открываем его
       this.onChatClick(existingChat);
     } else {
-      // Если чата нет, создаем новый
       this.onFoundedUser(userData);
     }
   }
@@ -131,5 +210,37 @@ export class OtoChatListComponent extends BaseChatListComponent<OtoChat> {
     if (!clickedInside && !hasQuery) {
       this.onClearSearch();
     }
+  }
+
+  getChatLastUpdate(chat: OtoChat): Date | null {
+    const lastUpdate = (chat as any).lastUpdated || (chat as any).lastUserInfoUpdate;
+    return lastUpdate ? new Date(lastUpdate) : null;
+  }
+
+  isRecentlyUpdated(chat: OtoChat): boolean {
+    const lastUpdate = this.getChatLastUpdate(chat);
+    if (!lastUpdate) return false;
+    
+    const now = new Date();
+    const diffInMinutes = (now.getTime() - lastUpdate.getTime()) / (1000 * 60);
+    return diffInMinutes < 5;
+  }
+
+  forceRefreshChats() {
+    this.apiService.refreshChats();
+  }
+
+  isChatActive(chat: OtoChat): boolean {
+    return this.selectedNickname === chat.nickName;
+  }
+  
+  updateActiveChatAfterUserChange(oldNickName: string, newNickName: string) {
+    if (this.selectedNickname === oldNickName) {
+      this.selectedNickname = newNickName;
+    }
+  }
+
+  trackByFn(index: number, chat: OtoChat): string {
+    return chat.nickName || index.toString();
   }
 }
