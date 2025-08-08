@@ -6,6 +6,7 @@ import { environment } from '../../../shared/api-result/urls/api.urls';
 import { ProfileApiResult } from '../../../shared/api-result';
 import { StorageService } from '../../../shared/storage/storage.service';
 import { filter, take } from 'rxjs/operators';
+import { Router } from '@angular/router';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
@@ -24,7 +25,8 @@ export class AuthService {
 
   constructor(
     private http: HttpClient,
-    private storageService: StorageService
+    private storageService: StorageService,
+    private router: Router
   ) {
     from(this.storageService.get(this.storageKey))
       .pipe(
@@ -127,5 +129,23 @@ export class AuthService {
   getUserAvatarUrl(): string | undefined {
     const profile = this.getCurrentProfile();
     return profile?.image;
+  }
+
+  logout(): Observable<boolean> {
+    console.log('Performing logout...');
+    return from(this.clearLocalAuthData()).pipe(
+      map(() => {
+        console.log('Logout completed successfully');
+        this.router.navigate(['/login']);
+        return true;
+      })
+    );
+  }
+
+  private async clearLocalAuthData(): Promise<void> {
+    this.nickName = null;
+    this.isLoggedInSubject.next(false);
+    this.userProfileSubject.next(null);
+    await this.storageService.remove(this.storageKey);
   }
 }
