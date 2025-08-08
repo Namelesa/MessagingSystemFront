@@ -20,6 +20,9 @@ export abstract class BaseChatApiService<TChat> {
   protected userInfoUpdatedSubject = new Subject<{ userName: string, image?: string, updatedAt: string, oldNickName: string }>();
   public userInfoUpdated$: Observable<{ userName: string, image?: string, updatedAt: string, oldNickName: string } | null> = this.userInfoUpdatedSubject.asObservable();
   
+  protected userInfoDeletedSubject = new Subject<{ userName: string }>();
+  public userInfoDeleted$: Observable<{ userName: string }> = this.userInfoDeletedSubject.asObservable();
+  
   private currentChatNickName: string | null = null;
 
   constructor(
@@ -136,6 +139,15 @@ export abstract class BaseChatApiService<TChat> {
       this.handleUserInfoChanged(normalizedUserInfo);
     });
 
+    this.connection.on('UserInfoDeleted', (userInfo) => {      
+      const normalizedUserInfo = {
+        UserName: userInfo.UserName || userInfo.userName || userInfo.userInfo?.userName,
+        userName: userInfo.userName || userInfo.UserName || userInfo.userInfo?.userName
+      };
+      
+      this.handleUserInfoDeleted(normalizedUserInfo);
+    });
+    
     this.loadingSubject.next(true);
 
     from(this.connection.start())
@@ -158,6 +170,39 @@ export abstract class BaseChatApiService<TChat> {
         tap(() => this.loadingSubject.next(false))
       )
       .subscribe();
+  }
+
+  protected handleUserInfoDeleted(userInfo: { UserName?: string, userName?: string }): void {
+    
+    const userName = userInfo.UserName || userInfo.userName || (userInfo as any).userInfo?.userName;
+    
+    if (!userName) {
+      console.error('No valid userName found in userInfo:', userInfo);
+      return;
+    }
+    
+    
+    const currentChats = this.chatsSubject.value;
+    const updatedChats = currentChats.filter(chat => {
+      const chatAny = chat as any;
+      return chatAny.nickName !== userName && 
+             chatAny.userName !== userName && 
+             chatAny.name !== userName && 
+             chatAny.displayName !== userName;
+    });
+    
+    if (updatedChats.length !== currentChats.length) {
+      this.chatsSubject.next(updatedChats);
+    }
+  
+    const currentMessages = this.messagesSubject.value;
+    const updatedMessages = currentMessages.filter(msg => msg.sender !== userName);
+    
+    if (updatedMessages.length !== currentMessages.length) {
+      this.messagesSubject.next(updatedMessages);
+    }
+  
+    this.userInfoDeletedSubject.next({ userName });
   }
 
   protected handleUserInfoChanged(userInfo: { NewUserName: string, Image?: string, UpdatedAt: string, OldNickName: string }): void {    
@@ -242,7 +287,6 @@ export abstract class BaseChatApiService<TChat> {
     
     if (hasChanges) {
       this.chatsSubject.next(updatedChats);
-    } else {
     }
   }
 

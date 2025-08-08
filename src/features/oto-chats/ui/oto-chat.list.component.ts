@@ -39,6 +39,8 @@ export class OtoChatListComponent extends BaseChatListComponent<OtoChat> impleme
   @Output() foundedUser = new EventEmitter<{ nick: string, image: string }>();
   @Output() userInfoUpdated = new EventEmitter<{ userName: string, image?: string, updatedAt: string, oldNickName: string }>();
   @Output() selectedChatUserUpdated = new EventEmitter<{ oldNickName: string, newNickName: string, image?: string }>();
+  @Output() userDeleted = new EventEmitter<{ userName: string }>();
+  @Output() chatClosedDueToUserDeletion = new EventEmitter<void>();
 
   constructor(private otoChatApi: OtoChatApiService) {
     super();
@@ -48,6 +50,7 @@ export class OtoChatListComponent extends BaseChatListComponent<OtoChat> impleme
   override ngOnInit() {
     super.ngOnInit();
     this.subscribeToUserInfoChanges();
+    this.subscribeToUserDeletion();
   }
 
   override ngOnDestroy() {
@@ -72,6 +75,29 @@ export class OtoChatListComponent extends BaseChatListComponent<OtoChat> impleme
     });
 
     this.subscriptions.push(userInfoSubscription, chatsSubscription);
+  }
+
+  private subscribeToUserDeletion() {
+    const userDeletedSubscription = this.apiService.userInfoDeleted$
+      .subscribe(deletedUserInfo => {
+        this.handleUserDeletion(deletedUserInfo);
+      });
+
+    this.subscriptions.push(userDeletedSubscription);
+  }
+
+  private handleUserDeletion(deletedUserInfo: { userName: string }) {
+
+    if (this.selectedNickname === deletedUserInfo.userName) {
+      this.selectedNickname = undefined;
+      this.chatClosedDueToUserDeletion.emit();
+    }
+
+    this.userDeleted.emit(deletedUserInfo);
+
+    setTimeout(() => {
+      this.apiService.refreshChats();
+    }, 100);
   }
 
   private handleUserInfoUpdate(userInfo: { userName: string, image?: string, updatedAt: string, oldNickName: string }) {

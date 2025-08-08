@@ -1,4 +1,4 @@
-import { Component, Input, ViewChild, OnInit, ChangeDetectorRef } from '@angular/core';
+import { Component, Input, ViewChild, OnInit, ChangeDetectorRef, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { OtoChatListComponent } from '../../../features/oto-chats';
 import { OtoChatApiService } from '../../../features/oto-chats';
@@ -11,6 +11,7 @@ import { SendAreaComponent } from '../../../shared/chats-ui-elements';
 import { OtoMessagesService } from '../../../features/oto-messages';
 import { OtoMessage } from '../../../entities/oto-message';
 import { StorageService } from '../../../shared/storage/storage.service';
+import { Subscription } from 'rxjs';
 
 @Component({
   selector: 'app-oto-chat-page',
@@ -19,7 +20,7 @@ import { StorageService } from '../../../shared/storage/storage.service';
      ChatLayoutComponent, OtoChatMessagesComponent, SendAreaComponent],
   templateUrl: './oto-chat-page.html',
 })
-export class OtoChatPageComponent extends BaseChatPageComponent implements OnInit {
+export class OtoChatPageComponent extends BaseChatPageComponent implements OnInit, OnDestroy {
   protected override apiService: OtoChatApiService;
  
   declare selectedChat?: string;
@@ -35,11 +36,16 @@ export class OtoChatPageComponent extends BaseChatPageComponent implements OnIni
   
   forceMessageComponentReload = false;
   
+  showUserDeletedNotification = false;
+  deletedUserName = '';
+  
   @Input() foundedUser?: { nick: string, image: string };
   @Input() edit: string = '';
 
   @ViewChild(OtoChatMessagesComponent) messagesComponent?: OtoChatMessagesComponent;
   @ViewChild(OtoChatListComponent) chatListComponent?: OtoChatListComponent;
+  
+  private subscriptions: Subscription[] = [];
  
   constructor(
     private otoChatApi: OtoChatApiService, 
@@ -56,7 +62,91 @@ export class OtoChatPageComponent extends BaseChatPageComponent implements OnIni
   }
 
   override ngOnInit(): void {
-    this.checkForOpenChatUser();  
+    this.checkForOpenChatUser();
+    this.subscribeToUserDeletion();
+  }
+
+  override ngOnDestroy(): void {
+    this.subscriptions.forEach(sub => sub.unsubscribe());
+  }
+
+  private subscribeToUserDeletion(): void {
+    const userDeletedSubscription = this.apiService.userInfoDeleted$.subscribe(deletedUserInfo => {
+      this.handleUserDeletion(deletedUserInfo);
+    });
+
+    this.subscriptions.push(userDeletedSubscription);
+  }
+
+  private handleUserDeletion(deletedUserInfo: { userName: string }): void {
+    
+    if (this.selectedChat === deletedUserInfo.userName) {
+      this.closeChatWithDeletedUser(deletedUserInfo.userName);
+
+      this.showUserDeletedNotification = true;
+      this.deletedUserName = deletedUserInfo.userName;
+    }
+  }
+
+  private closeChatWithDeletedUser(userName: string): void {
+    this.selectedChat = undefined;
+    this.selectedChatImage = undefined;
+    this.selectedOtoChat = undefined;
+    
+    this.editingMessage = undefined;
+    this.replyingToMessage = undefined;
+    
+    this.closeDeleteModal();
+    
+    if (this.messagesComponent) {
+      this.messagesComponent.clearMessagesForDeletedUser();
+    }
+    
+    this.cdr.detectChanges();
+  }
+
+  onChatClosedDueToUserDeletion(): void {
+    this.selectedChat = undefined;
+    this.selectedChatImage = undefined;
+    this.selectedOtoChat = undefined;
+    this.editingMessage = undefined;
+    this.replyingToMessage = undefined;
+    this.closeDeleteModal();
+    this.cdr.detectChanges();
+  }
+
+  onUserDeleted(deletedUserInfo: { userName: string }): void {
+  }
+
+  onChatUserDeletedFromMessages(): void {
+    this.selectedChat = undefined;
+    this.selectedChatImage = undefined;
+    this.selectedOtoChat = undefined;
+    this.editingMessage = undefined;
+    this.replyingToMessage = undefined;
+    this.closeDeleteModal();
+    this.cdr.detectChanges();
+  }
+
+  onSelectedChatUserUpdated(updateInfo: { oldNickName: string, newNickName: string, image?: string }): void {
+    
+    if (this.selectedChat === updateInfo.oldNickName) {
+      this.selectedChat = updateInfo.newNickName;
+      
+      if (updateInfo.image) {
+        this.selectedChatImage = updateInfo.image;
+      }
+      
+      if (this.selectedOtoChat) {
+        this.selectedOtoChat = {
+          ...this.selectedOtoChat,
+          nickName: updateInfo.newNickName,
+          image: updateInfo.image || this.selectedOtoChat.image
+        };
+      }
+      
+      this.cdr.detectChanges();
+    }
   }
 
   private checkForOpenChatUser(): void {
@@ -65,12 +155,10 @@ export class OtoChatPageComponent extends BaseChatPageComponent implements OnIni
       setTimeout(() => {
         this.onOpenChatWithUser(userData);
       }, 100);
-    } else {
     }
   }
 
   onOpenChatWithUser(userData: { nickName: string, image: string }) {
-    
     if (this.chatListComponent) {
       this.chatListComponent.openChatWithUser({ nick: userData.nickName, image: userData.image });
     } else {
@@ -100,7 +188,6 @@ export class OtoChatPageComponent extends BaseChatPageComponent implements OnIni
           this.cdr.detectChanges();
         }
       }, 100);
-    } else {
     }
   }
 
@@ -110,10 +197,15 @@ export class OtoChatPageComponent extends BaseChatPageComponent implements OnIni
       image: userData.image,
     };
 
-    
     this.onOtoChatSelected(foundedUserChat);
-    
     this.cdr.detectChanges();
+  }
+
+  onUserInfoUpdated(userInfo: { userName: string, image?: string, updatedAt: string, oldNickName: string }): void {
+    
+    if (userInfo.oldNickName === this.currentUserNickName || userInfo.userName === this.currentUserNickName) {
+      this.currentUserNickName = userInfo.userName;
+    }
   }
  
   get displayChatName(): string {
@@ -140,9 +232,11 @@ export class OtoChatPageComponent extends BaseChatPageComponent implements OnIni
         ).then(() => {
           this.replyingToMessage = undefined;
         }).catch(error => {
+          console.error('Error sending reply:', error);
         });
       } else {
         this.messageService.sendMessage(this.selectedChat, content).catch(error => {
+          console.error('Error sending message:', error);
         });
       }
     }
@@ -158,6 +252,7 @@ export class OtoChatPageComponent extends BaseChatPageComponent implements OnIni
       await this.messageService.editMessage(editData.messageId, editData.content);
       this.editingMessage = undefined;
     } catch (error) {
+      console.error('Error editing message:', error);
     }
   }
 
@@ -179,6 +274,7 @@ export class OtoChatPageComponent extends BaseChatPageComponent implements OnIni
         await this.messageService.deleteMessage(this.messageToDelete.messageId, deleteType);
         this.closeDeleteModal();
       } catch (error) {
+        console.error('Error deleting message:', error);
       }
     }
   }

@@ -13,7 +13,7 @@ import {
 import { CommonModule } from '@angular/common';
 import { OtoChatApiService } from '../../../features/oto-chats/api/oto-chat-hub.api';
 import { Subject } from 'rxjs';
-import { takeUntil } from 'rxjs/operators';
+import { takeUntil, filter } from 'rxjs/operators';
 import { OtoMessage } from '../../../entities/oto-message';
 
 @Component({
@@ -29,6 +29,7 @@ export class OtoChatMessagesComponent implements OnChanges, AfterViewInit, OnDes
   @Output() editMessage = new EventEmitter<OtoMessage>();
   @Output() deleteMessage = new EventEmitter<OtoMessage>();
   @Output() replyToMessage = new EventEmitter<OtoMessage>();
+  @Output() chatUserDeleted = new EventEmitter<void>();
 
   @ViewChild('scrollContainer') scrollContainer!: ElementRef<HTMLDivElement>;
 
@@ -58,6 +59,8 @@ export class OtoChatMessagesComponent implements OnChanges, AfterViewInit, OnDes
     document.addEventListener('click', hideContextMenu);
     
     this.hideContextMenuHandler = hideContextMenu;
+
+    this.subscribeToUserDeletion();
   }
 
   private hideContextMenuHandler?: () => void;
@@ -75,6 +78,22 @@ export class OtoChatMessagesComponent implements OnChanges, AfterViewInit, OnDes
     if (this.hideContextMenuHandler) {
       document.removeEventListener('click', this.hideContextMenuHandler);
     }
+  }
+
+  private subscribeToUserDeletion() {
+    this.api.userInfoDeleted$
+      .pipe(
+        takeUntil(this.destroy$),
+        filter(deletedUserInfo => deletedUserInfo.userName === this.chatNickName)
+      )
+      .subscribe(deletedUserInfo => {
+        this.handleChatUserDeleted();
+      });
+  }
+
+  private handleChatUserDeleted() {
+    this.messages = [];
+    this.chatUserDeleted.emit();
   }
 
   private initChat() {
@@ -372,5 +391,11 @@ public scrollToMessage(messageId: string): void {
     if (this.isMessageDeleted(msg)) return false;
     
     return this.isMyMessage(msg);
+  }
+
+  clearMessagesForDeletedUser() {
+    this.messages = [];
+    this.skip = 0;
+    this.allLoaded = false;
   }
 }
