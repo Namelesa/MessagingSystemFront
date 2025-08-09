@@ -5,3 +5,4 @@ export * from './theme-switcher/index';
 export * from './password-avatar/index';
 export * from './toast-notification/index';
 export * from './switchers/index';
+export * from './side-bar-buttons/index';

@@ -7,6 +7,10 @@
   <app-group-chat-list
     chat-sidebar
     [accessToken]="accessToken || ''"
+    [user$]="user$"
+    (userSearchQueryChange)="onUserSearchQueryChange($event)"
+    (userSearchFocus)="onUserSearchFocus()"
+    (userSearchClear)="onUserSearchClear()"
     (selectChat)="onChatSelected($event.nickname, $event.image, $event.groupId)"
   ></app-group-chat-list>
 
@@ -41,9 +45,14 @@
 <app-group-info-modal
   [groupId]="selectedGroupId"
   [open]="groupInfoModalOpen"
+  [userSuggestions]="userSuggestion"
+  (userSearchQueryChange)="onModalUserSearchQueryChange($event)"
   (close)="closeGroupInfoModal()"
   (groupUpdated)="onGroupUpdated()"
   (openChatWithUser)="onOpenChatWithUser($event)"
+  (addMembersRequested)="onAddMembersRequested($event)"
+  (removeMemberRequested)="onRemoveMemberRequested($event)"
+  (deleteGroupRequested)="onDeleteGroupRequested()"
 />
 
 <div 

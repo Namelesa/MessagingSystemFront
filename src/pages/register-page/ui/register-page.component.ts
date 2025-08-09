@@ -1,6 +1,6 @@
 import { Component } from '@angular/core';
 import { RegisterWidgetComponent } from '../../../widgets/register-widget';
-import { AuthPageLayoutComponent } from '../../../shared/layouts/auth';
+import { AuthPageLayoutComponent } from '../../../shared/layouts';
 
 @Component({
   selector: 'app-register-page',

@@ -1,8 +1,8 @@
-import { environment } from "../../../shared/api-result";
-import { SearchUser } from "../../../entities/search-user";
-import { ApiResponse } from "../../../shared/api-result";
-import { HttpClient } from "@angular/common/http";
-import { inject } from "@angular/core";
+import { inject } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { SearchUser } from '../../../entities/search-user';
+import { ApiResponse } from '../../../shared/api-result';
+import { environment } from '../../../shared/api-result';
 
 export class FindUserApi {
     private http = inject(HttpClient);

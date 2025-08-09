@@ -6,7 +6,7 @@ import { ProfilePageComponent } from '../pages/user-profile-page';
 import { SettingsPageComponent } from '../pages/settings-page';
 import { OtoChatPageComponent } from '../pages/oto-chat-page';
 import { GroupChatPageComponent } from '../pages/group-chat-page';
-import { AuthGuard } from './auth-guard/auth-guard';
+import { AuthGuard } from '../shared/auth-guard';
 import { MainLayoutComponent } from './layouts/main-layout';
 
 export const routes: Routes = [

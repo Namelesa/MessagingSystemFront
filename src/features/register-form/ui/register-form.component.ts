@@ -1,14 +1,14 @@
 import { Component, Output, EventEmitter, OnInit } from '@angular/core';
-import { RegisterApi } from '../api/register.api';
-import { RegisterFieldValidationHelper } from '../../../shared/helper';
-import { RegisterContract } from '../../../entities/user/api/register-contract';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common'; 
-import { ButtonComponent, InputComponent, ToastService, ToastComponent } from '../../../shared/ui-elements';
-import { LucideAngularModule, Eye, EyeOff, FolderIcon } from 'lucide-angular';
+import { RegisterApi } from '../api/register.api';
 import { Router } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
 import { debounceTime, distinctUntilChanged, Subject } from 'rxjs';
+import { LucideAngularModule, Eye, EyeOff, FolderIcon } from 'lucide-angular';
+import { RegisterContract } from '../../../entities/user';
+import { RegisterFieldValidationHelper } from '../../../shared/helper';
+import { ButtonComponent, InputComponent, ToastService, ToastComponent } from '../../../shared/ui-elements';
 
 @Component({
   selector: 'app-register-form',

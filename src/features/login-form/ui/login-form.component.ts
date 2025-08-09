@@ -1,15 +1,15 @@
+import { Subject } from 'rxjs'; 
+import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
 import { Component, Output, EventEmitter } from '@angular/core';
+import { FormsModule } from '@angular/forms';
+import { CommonModule } from '@angular/common'; 
+import { Router } from '@angular/router';
+import {LucideAngularModule, Eye, EyeOff, FolderIcon } from 'lucide-angular';
 import { LoginApi } from '../api/login.api';
 import { LoginContract } from '../../../entities/user/api/login-contract';
 import { LoginFieldValidationHelper } from '../../../shared/helper';
-import { FormsModule } from '@angular/forms';
-import { CommonModule } from '@angular/common'; 
 import { ButtonComponent, InputComponent, ToastService, ToastComponent } from '../../../shared/ui-elements';
-import {LucideAngularModule, Eye, EyeOff, FolderIcon } from 'lucide-angular';
-import { Router } from '@angular/router';
-import { AuthService } from '../../../entities/user/api/auht.service';
-import { Subject } from 'rxjs'; 
-import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
+import { AuthService } from '../../../shared/auth-guard';
 
 @Component({
   selector: 'app-login-form',

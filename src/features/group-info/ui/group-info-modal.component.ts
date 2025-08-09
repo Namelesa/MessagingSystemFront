@@ -10,14 +10,12 @@ import {
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { GroupInfoApiService } from '../api/group-info.api';
-import { GroupInfoData } from '../model/group-info.model';
 import { GroupInfoEditData } from '../model/group-info-edit.model';
+import { GroupInfoData } from '../model/group-info.model';
 import { validateCreateGroupForm } from '../model/validate-group';
-import { InputComponent, ToastComponent, ToastService } from '../../../shared/ui-elements';
-import { GroupChatApiService } from '../../group-chats';
-import { AuthService } from '../../../entities/user/api/auht.service';
 import { SearchUser } from '../../../entities/search-user';
-import { FindUserStore } from '../../../features/search-user/model/search-user-store';
+import { AuthService } from '../../../shared/auth-guard';
+import { InputComponent, ToastComponent, ToastService } from '../../../shared/ui-elements';
 import { ModalHeaderComponent, AvatarComponent, UserListComponent, SelectedUsersComponent } from '../../../shared/group-chat-ui-elements';
 
 @Component({
@@ -29,6 +27,11 @@ import { ModalHeaderComponent, AvatarComponent, UserListComponent, SelectedUsers
 export class GroupInfoModalComponent implements OnChanges, OnInit {
   @Input() groupId?: string;
   @Input() open = false;
+  @Input() userSuggestions: SearchUser[] = [];
+  @Output() userSearchQueryChange = new EventEmitter<string>();
+  @Output() addMembersRequested = new EventEmitter<string[]>();
+  @Output() removeMemberRequested = new EventEmitter<string>();
+  @Output() deleteGroupRequested = new EventEmitter<void>();
   @Output() close = new EventEmitter<void>();
   @Output() groupUpdated = new EventEmitter<void>();
   @Output() openChatWithUser = new EventEmitter<{ nickName: string, image: string }>();
@@ -56,7 +59,7 @@ export class GroupInfoModalComponent implements OnChanges, OnInit {
 
   isAddingMember = false;
   userSearchQuery = '';
-  userSuggestions: SearchUser[] = [];
+  // suggestions come from parent now
   selectedUsers: SearchUser[] = [];
   selectedUserIndex = -1;
   searchTimeout: any;
@@ -69,9 +72,7 @@ export class GroupInfoModalComponent implements OnChanges, OnInit {
   constructor(
     private groupInfoApi: GroupInfoApiService,
     private toastService: ToastService,
-    private apiService: GroupChatApiService,
     private authService: AuthService,
-    private findUserStore: FindUserStore
   ) {}
 
   ngOnInit(): void {
@@ -82,29 +83,9 @@ export class GroupInfoModalComponent implements OnChanges, OnInit {
       }
     });
 
-    this.findUserStore.user$.subscribe(user => {
-      if (user && !this.selectedUsers.some(u => u.nickName === user.nickName)) {
-        this.userSuggestions = [user];
-      } else {
-        this.userSuggestions = [];
-      }
-    });    
-
     this.groupInfoApi.groupInfo$.subscribe(groupInfo => {
       if (groupInfo && this.open) {
         this.groupInfo = groupInfo.data;
-      }
-    });
-
-    this.apiService.userInfoUpdated$.subscribe(userInfo => {
-      if (userInfo && this.groupInfo) {
-        this.updateGroupInfoFromUserChange(userInfo);
-      }
-    });
-
-    this.apiService.userInfoDeleted$.subscribe(userInfo => {
-      if (userInfo && this.groupInfo) {
-        this.removeDeletedUserFromGroup(userInfo.userName);
       }
     });
   }  
@@ -307,16 +288,7 @@ export class GroupInfoModalComponent implements OnChanges, OnInit {
     }
   
     this.loading = true;
-
-    this.apiService.deleteGroup(this.groupInfo.groupId).then(res => {
-      this.toastService.show('Group deleted successfully', 'success');
-      this.groupUpdated.emit();
-      this.close.emit();
-      this.loading = false;
-    }).catch(err => {
-      this.toastService.show(err?.message || 'Failed to delete group.', 'error');
-      this.loading = false;
-    });
+    this.deleteGroupRequested.emit();
   }
 
   cancelEdit(): void {
@@ -428,7 +400,7 @@ export class GroupInfoModalComponent implements OnChanges, OnInit {
     const lastNickname = nicknames[nicknames.length - 1];
   
     this.searchTimeout = setTimeout(() => {
-      this.findUserStore.findUser(lastNickname);
+      this.userSearchQueryChange.emit(lastNickname);
     }, 300);
   }
 
@@ -462,18 +434,7 @@ export class GroupInfoModalComponent implements OnChanges, OnInit {
       return;
     }
 
-    try {
-      await this.apiService.removeGroupMembers(this.groupId!, { users: [nickName] });
-      
-      this.toastService.show(`Successfully removed member from the group.`, 'success');
-      
-      this.groupUpdated.emit();
-      this.onClose();
-      
-    } catch (error) {
-      console.error('Failed to remove member:', error);
-      this.toastService.show('Failed to remove member from group. Please check your connection or try again later.', 'error');
-    }
+    this.removeMemberRequested.emit(nickName);
   }
 
   async confirmAddMembers(): Promise<void> {
@@ -489,18 +450,7 @@ export class GroupInfoModalComponent implements OnChanges, OnInit {
       return;
     }
 
-    try {
-      await this.apiService.addGroupMembers(this.groupId!, { users: nicknames });
-      
-      this.toastService.show(`Successfully added ${nicknames.length} member(s) to the group.`, 'success');
-      
-      this.groupUpdated.emit();
-      this.onClose();
-
-    } catch (error) {
-      console.error('Failed to add members:', error);
-      this.toastService.show('Failed to add members to group. Please check your connection or try again later.', 'error');
-    }
+    this.addMembersRequested.emit(nicknames);
   }
 
   handleSave(): void {

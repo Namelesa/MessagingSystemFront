@@ -1,17 +1,18 @@
-import { Component,  Input, ViewChild, OnInit, ChangeDetectorRef } from '@angular/core';
+import { Component,  Input, ViewChild, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { GroupChatListComponent } from '../../../features/group-chats';
-import { GroupChatApiService } from '../../../features/group-chats';
 import { FormsModule } from '@angular/forms';
-import { BaseChatPageComponent, ChatLayoutComponent } from '../../../shared/chats';
-import { GroupInfoModalComponent } from '../../../features/group-info';
-import { GroupMessage, GroupMessagesComponent } from '../../../features/group-messages';
-import { AuthService } from '../../../entities/user/api/auht.service';
-import { SendAreaComponent } from '../../../shared/chats-ui-elements';
-import { GroupMessagesApiService } from '../../../features/group-messages';
-import { StorageService } from '../../../shared/storage/storage.service';
-import { GroupInfoApiService } from '../../../features/group-info';
 import { GroupMember } from '../../../entities/group-member';
+import { GroupChatListComponent, GroupChatApiService } from '../../../features/group-chat';
+import { GroupMessage, GroupMessagesComponent, GroupMessagesApiService } from '../../../features/group-message';
+import { GroupInfoModalComponent, GroupInfoApiService } from '../../../features/group-info';
+import { BaseChatPageComponent } from '../../../shared/chats';
+import { ChatLayoutComponent } from '../../../shared/layouts';
+import { AuthService } from '../../../shared/auth-guard';
+import { SendAreaComponent } from '../../../shared/chats-ui-elements';
+import { StorageService } from '../../../shared/storage';
+import { FindUserStore } from '../../../features/search-user';
+import { Observable } from 'rxjs';
+import { SearchUser } from '../../../entities/search-user';
 
 @Component({
   selector: 'app-group-chat-page',
@@ -43,18 +44,26 @@ export class GroupChatPageComponent extends BaseChatPageComponent {
   @ViewChild(GroupMessagesComponent) messagesComponent?: GroupMessagesComponent;
   @ViewChild(GroupChatListComponent) chatListComponent?: GroupChatListComponent;
 
+  user$: Observable<SearchUser | null>;
+  userSuggestion: SearchUser[] = [];
+
   constructor(
     private groupChatApi: GroupChatApiService, 
     private groupMessages: GroupMessagesApiService,
     private authService: AuthService, 
     private storageService: StorageService,
     private groupInfoApi: GroupInfoApiService,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
+    private findUserStore: FindUserStore
   ) {
     super();
     this.apiService = this.groupChatApi;
     this.authService.waitForAuthInit().subscribe(() => {
       this.currentUserNickName = this.authService.getNickName() || '';
+    });
+    this.user$ = this.findUserStore.user$;
+    this.findUserStore.user$.subscribe(u => {
+      this.userSuggestion = u ? [u] : [];
     });
   }
 
@@ -123,6 +132,55 @@ export class GroupChatPageComponent extends BaseChatPageComponent {
         console.error('Error loading updated group info:', error);
       }
     });
+  }
+
+  onUserSearchQueryChange(query: string) {
+    const trimmed = query.trim();
+    if (trimmed) {
+      this.findUserStore.findUser(trimmed);
+    } else {
+      this.findUserStore.clearUser();
+    }
+  }
+
+  onUserSearchFocus() {
+    this.findUserStore.clearUser();
+  }
+
+  onUserSearchClear() {
+    this.findUserStore.clearUser();
+  }
+
+  onModalUserSearchQueryChange(q: string) {
+    const trimmed = q.trim();
+    trimmed ? this.findUserStore.findUser(trimmed) : this.findUserStore.clearUser();
+  }
+
+  async onAddMembersRequested(nicks: string[]) {
+    if (!this.selectedGroupId || nicks.length === 0) return;
+    try {
+      await this.groupChatApi.addGroupMembers(this.selectedGroupId, { users: nicks });
+      this.groupChatApi.refreshGroups();
+      this.onGroupUpdated();
+    } catch {}
+  }
+
+  async onRemoveMemberRequested(nick: string) {
+    if (!this.selectedGroupId) return;
+    try {
+      await this.groupChatApi.removeGroupMembers(this.selectedGroupId, { users: [nick] });
+      this.groupChatApi.refreshGroups();
+      this.onGroupUpdated();
+    } catch {}
+  }
+
+  async onDeleteGroupRequested() {
+    if (!this.selectedGroupId) return;
+    try {
+      await this.groupChatApi.deleteGroup(this.selectedGroupId);
+      this.groupChatApi.refreshGroups();
+      this.closeGroupInfoModal();
+    } catch {}
   }
 
   onOpenChatWithUser(userData: { nickName: string, image: string }) {

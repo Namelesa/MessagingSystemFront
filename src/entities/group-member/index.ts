@@ -1,1 +1,1 @@
-export * from '../../entities/group-member/model/group-member.model';
+export * from './model/group-member.model';

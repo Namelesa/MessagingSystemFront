@@ -1,17 +1,16 @@
 import { Component, Input, ViewChild, OnInit, ChangeDetectorRef, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { OtoChatListComponent } from '../../../features/oto-chats';
-import { OtoChatApiService } from '../../../features/oto-chats';
 import { FormsModule } from '@angular/forms';
-import { BaseChatPageComponent, ChatLayoutComponent} from '../../../shared/chats';
-import { OtoChat } from '../../../entities/oto-chats';
-import { OtoChatMessagesComponent } from '../../../features/oto-messages';
-import { AuthService } from '../../../entities/user/api/auht.service';
-import { SendAreaComponent } from '../../../shared/chats-ui-elements';
-import { OtoMessagesService } from '../../../features/oto-messages';
-import { OtoMessage } from '../../../entities/oto-message';
-import { StorageService } from '../../../shared/storage/storage.service';
 import { Subscription } from 'rxjs';
+import { OtoChat } from '../../../entities/oto-chat';
+import { OtoMessage } from '../../../entities/oto-message';
+import { OtoChatListComponent, OtoChatApiService } from '../../../features/oto-chat';
+import { OtoChatMessagesComponent, OtoMessagesService} from '../../../features/oto-message';
+import { BaseChatPageComponent} from '../../../shared/chats';
+import { ChatLayoutComponent } from '../../../shared/layouts';
+import { AuthService } from '../../../shared/auth-guard';
+import { SendAreaComponent } from '../../../shared/chats-ui-elements';
+import { StorageService } from '../../../shared/storage';
 
 @Component({
   selector: 'app-oto-chat-page',

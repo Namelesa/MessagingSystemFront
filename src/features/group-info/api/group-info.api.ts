@@ -2,10 +2,10 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { BehaviorSubject, Observable, Subscription } from 'rxjs';
 import { tap } from 'rxjs/operators';
-import { environment } from '../../../shared/api-result/urls/api.urls';
+import { environment } from '../../../shared/api-result';
 import { GroupInfoResponse } from '../model/group-info.model';
 import { GroupInfoEditData } from '../model/group-info-edit.model';
-import { GroupChatApiService } from '../../group-chats';
+// Removed dependency on another feature to comply with FSD
 
 @Injectable({ providedIn: 'root' })
 export class GroupInfoApiService {
@@ -16,32 +16,10 @@ export class GroupInfoApiService {
   private userInfoSubscription: Subscription | null = null;
 
   constructor(
-    private http: HttpClient,
-    private groupChatApi: GroupChatApiService
-  ) {
-    // Подписываемся на события из GroupChatApiService
-    this.setupGroupChatSubscriptions();
-  }
+    private http: HttpClient
+  ) {}
 
-  private setupGroupChatSubscriptions(): void {
-    this.groupChatApi.userInfoUpdated$.subscribe(userInfo => {
-      if (userInfo) {
-        const normalizedUserInfo = {
-          NewUserName: userInfo.userName,
-          Image: userInfo.image,
-          UpdatedAt: userInfo.updatedAt,
-          OldNickName: userInfo.oldNickName
-        };
-        this.handleUserInfoChanged(normalizedUserInfo);
-      }
-    });
-
-    this.groupChatApi.userInfoDeleted$.subscribe(userInfo => {
-      if (userInfo) {
-        this.handleUserInfoDeleted(userInfo.userName);
-      }
-    });
-  }
+  // Subscriptions to user info changes are now handled at composition level (page/widget)
 
   getGroupInfo(groupId: string): Observable<GroupInfoResponse> {
     this.currentGroupId = groupId;
@@ -69,7 +47,7 @@ export class GroupInfoApiService {
       }).pipe(
         tap(updatedGroupInfo => {
           this.groupInfoSubject.next(updatedGroupInfo);
-          this.groupChatApi.refreshChats();
+          // Refreshing chat lists is handled by the page via GroupChatApiService
         })
       );
   }

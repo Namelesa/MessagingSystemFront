@@ -1,7 +1,7 @@
 import { Component } from '@angular/core';
-import { LoginWidgetComponent } from '../../../widgets/login-widget';
-import { AuthPageLayoutComponent } from '../../../shared/layouts/auth';
 import { RouterModule } from '@angular/router';
+import { LoginWidgetComponent } from '../../../widgets/login-widget';
+import { AuthPageLayoutComponent } from '../../../shared/layouts';
 
 @Component({
   selector: 'app-login-page',

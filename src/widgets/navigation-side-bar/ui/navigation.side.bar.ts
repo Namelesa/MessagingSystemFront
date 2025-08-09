@@ -1,11 +1,11 @@
 import { Component, OnInit, OnDestroy, HostListener, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
-import { SidebarNavItemComponent } from '../../../shared/ui-elements/side-bar-buttons';
-import { LucideAngularModule } from 'lucide-angular';
-import { AuthService } from '../../../entities/user/api/auht.service';
-import { ProfileApiResult } from '../../../shared/api-result';
 import { Subscription } from 'rxjs';
+import { LucideAngularModule } from 'lucide-angular';
+import { SidebarNavItemComponent } from '../../../shared/ui-elements';
+import { AuthService } from '../../../shared/auth-guard';
+import { ProfileApiResult } from '../../../shared/api-result';
 
 @Component({
   selector: 'app-sidebar-widget',

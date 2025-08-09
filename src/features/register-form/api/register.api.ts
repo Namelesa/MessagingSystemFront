@@ -1,8 +1,8 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { RegisterContract } from '../../../entities/user/api/register-contract';
-import { AuthApiResult, environment } from '../../../shared/api-result';
 import { Observable } from 'rxjs';
+import { RegisterContract } from '../../../entities/user';
+import { AuthApiResult, environment } from '../../../shared/api-result';
 
 @Injectable({ providedIn: 'root' })
 export class RegisterApi {
