@@ -1,12 +1,11 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { BehaviorSubject, Observable } from 'rxjs';
+import { BehaviorSubject, Observable, Subscription } from 'rxjs';
 import { tap } from 'rxjs/operators';
 import { environment } from '../../../shared/api-result/urls/api.urls';
 import { GroupInfoResponse } from '../model/group-info.model';
 import { GroupInfoEditData } from '../model/group-info-edit.model';
 import { GroupChatApiService } from '../../group-chats';
-import * as signalR from '@microsoft/signalr';
 
 @Injectable({ providedIn: 'root' })
 export class GroupInfoApiService {
@@ -14,16 +13,38 @@ export class GroupInfoApiService {
   public groupInfo$: Observable<GroupInfoResponse | null> = this.groupInfoSubject.asObservable();
   
   private currentGroupId: string | null = null;
-  private userInfoListenerSetup = false;
+  private userInfoSubscription: Subscription | null = null;
 
   constructor(
     private http: HttpClient,
     private groupChatApi: GroupChatApiService
-  ) {}
+  ) {
+    // Подписываемся на события из GroupChatApiService
+    this.setupGroupChatSubscriptions();
+  }
+
+  private setupGroupChatSubscriptions(): void {
+    this.groupChatApi.userInfoUpdated$.subscribe(userInfo => {
+      if (userInfo) {
+        const normalizedUserInfo = {
+          NewUserName: userInfo.userName,
+          Image: userInfo.image,
+          UpdatedAt: userInfo.updatedAt,
+          OldNickName: userInfo.oldNickName
+        };
+        this.handleUserInfoChanged(normalizedUserInfo);
+      }
+    });
+
+    this.groupChatApi.userInfoDeleted$.subscribe(userInfo => {
+      if (userInfo) {
+        this.handleUserInfoDeleted(userInfo.userName);
+      }
+    });
+  }
 
   getGroupInfo(groupId: string): Observable<GroupInfoResponse> {
     this.currentGroupId = groupId;
-    this.setupUserInfoListener();
     
     return this.http.get<GroupInfoResponse>(`${environment.groupApiUrl}${groupId}`, { withCredentials: true })
       .pipe(
@@ -48,45 +69,9 @@ export class GroupInfoApiService {
       }).pipe(
         tap(updatedGroupInfo => {
           this.groupInfoSubject.next(updatedGroupInfo);
+          this.groupChatApi.refreshChats();
         })
       );
-  }
-
-  private setupUserInfoListener(): void {
-    if (this.userInfoListenerSetup) {
-      return;
-    }
-
-    const connection = this.getConnection();
-    if (!connection) {
-      setTimeout(() => this.setupUserInfoListener(), 1000);
-      return;
-    }
-
-    try {
-      connection.off('UserInfoChanged');
-      connection.off('UserInfoDeleted');
-    } catch (error) {
-      console.warn('Error removing UserInfoChanged listener:', error);
-    }
-
-    connection.on('UserInfoChanged', (userInfo: any) => {
-      const normalizedUserInfo = {
-        NewUserName: userInfo.NewUserName || userInfo.newUserName,
-        Image: userInfo.Image || userInfo.image,
-        UpdatedAt: userInfo.UpdatedAt || userInfo.updatedAt,
-        OldNickName: userInfo.OldNickName || userInfo.oldNickName
-      };
-      
-      this.handleUserInfoChanged(normalizedUserInfo);
-    });
-
-    connection.on('UserInfoDeleted', (userInfo: any) => {
-      const userName = userInfo.UserName || userInfo.userName || userInfo.userInfo?.userName;
-      this.handleUserInfoDeleted(userName);
-    });
-
-    this.userInfoListenerSetup = true;
   }
 
   private handleUserInfoDeleted(userName: string): void {
@@ -153,8 +138,6 @@ export class GroupInfoApiService {
           
           if (userInfo.Image) {
             updatedMember.image = userInfo.Image;
-            if ('userImage' in member) updatedMember.image = userInfo.Image;
-            if ('avatar' in member) updatedMember.image = userInfo.Image;
           }
           
           return updatedMember;
@@ -181,16 +164,6 @@ export class GroupInfoApiService {
     }
   }
 
-  private getConnection(): signalR.HubConnection | null {
-    const connection = (this.groupChatApi as any).connection;
-    
-    if (connection && connection.state === signalR.HubConnectionState.Connected) {
-      return connection;
-    }
-    
-    return null;
-  }
-
   getCurrentGroupInfo(): GroupInfoResponse | null {
     return this.groupInfoSubject.value;
   }
@@ -202,6 +175,16 @@ export class GroupInfoApiService {
   clearGroupInfo(): void {
     this.groupInfoSubject.next(null);
     this.currentGroupId = null;
-    this.userInfoListenerSetup = false;
+    
+    if (this.userInfoSubscription) {
+      this.userInfoSubscription.unsubscribe();
+      this.userInfoSubscription = null;
+    }
+  }
+
+  forceRefresh(): void {
+    if (this.currentGroupId) {
+      this.refreshGroupInfo(this.currentGroupId).subscribe();
+    }
   }
 }

@@ -204,7 +204,6 @@ export class RegisterFormComponent implements OnInit {
       },
       error: (err: HttpErrorResponse) => {
         if (err.status === 400) {
-          console.log(err.error);
           this.toastService.show("A user with these parameters already exists.", 'error');
         } else {
           this.toastService.show('An unexpected error occurred.', 'error');

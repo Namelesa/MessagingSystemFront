@@ -58,6 +58,18 @@ export class GroupChatPageComponent extends BaseChatPageComponent {
     });
   }
 
+  override ngOnInit(): void {
+    super.ngOnInit();
+
+    this.groupChatApi.groupUpdated$.subscribe((updatedGroup) => {
+      if (updatedGroup && updatedGroup.groupId === this.selectedGroupId) {
+        this.selectedChat = updatedGroup.groupName;
+        this.selectedChatImage = updatedGroup.image;
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
   override onChatSelected(nickname: string, image: string, groupId?: string): void {
     this.selectedChat$.next(nickname); 
     this.selectedChat = nickname;      
@@ -87,9 +99,31 @@ export class GroupChatPageComponent extends BaseChatPageComponent {
   }
 
   onGroupUpdated() {
-    this.selectedChat = undefined;
-    this.selectedChatImage = undefined;
-  } 
+    if (this.selectedGroupId) {
+      setTimeout(() => {
+        this.loadGroupInfo();
+      }, 100);
+    }
+  }
+
+  private loadGroupInfo() {
+    if (!this.selectedGroupId) return;
+    
+    this.groupInfoApi.getGroupInfo(this.selectedGroupId).subscribe({
+      next: (response) => {
+        if (response.success && response.data) {
+          this.selectedChat = response.data.groupName;
+          this.selectedChatImage = response.data.image;
+          this.groupMembers = response.data.members;
+          
+          this.cdr.detectChanges();
+        }
+      },
+      error: (error) => {
+        console.error('Error loading updated group info:', error);
+      }
+    });
+  }
 
   onOpenChatWithUser(userData: { nickName: string, image: string }) {
     this.storageService.navigateToOtoChat(userData);
@@ -133,7 +167,6 @@ export class GroupChatPageComponent extends BaseChatPageComponent {
   async onConfirmDelete() {
     if (this.messageToDelete && this.selectedChat) {
       const deleteType = this.deleteForBoth ? 'hard' : 'soft';
-      console.log(`Deleting message ${this.messageToDelete.id} for ${deleteType} in group ${this.selectedGroupId}`);
       if (deleteType === 'hard') {
         await this.groupMessages.deleteMessage(this.messageToDelete.id, this.selectedGroupId!);
       } else {
@@ -169,6 +202,12 @@ export class GroupChatPageComponent extends BaseChatPageComponent {
       next: (response) => {
         if (response.success && response.data) {
           this.groupMembers = response.data.members;
+          
+          if (groupId === this.selectedGroupId) {
+            this.selectedChat = response.data.groupName;
+            this.selectedChatImage = response.data.image;
+            this.cdr.detectChanges();
+          }
         }
       },
       error: (error) => {

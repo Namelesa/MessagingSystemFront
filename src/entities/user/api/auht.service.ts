@@ -132,10 +132,8 @@ export class AuthService {
   }
 
   logout(): Observable<boolean> {
-    console.log('Performing logout...');
     return from(this.clearLocalAuthData()).pipe(
       map(() => {
-        console.log('Logout completed successfully');
         this.router.navigate(['/login']);
         return true;
       })

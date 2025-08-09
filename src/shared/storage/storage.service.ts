@@ -19,18 +19,15 @@ export class StorageService {
     return localForage.removeItem(key);
   }
 
-  // Методы для навигации между чатами
   navigateToOtoChat(userData: { nickName: string, image: string }): void {
-    // Сохраняем данные пользователя для открытия чата
     localStorage.setItem('openChatWithUser', JSON.stringify(userData));
-    // Перенаправляем на страницу OTO чатов
     window.location.href = '/otoChats';
   }
 
   getOpenChatUserData(): { nickName: string, image: string } | null {
     const data = localStorage.getItem('openChatWithUser');
     if (data) {
-      localStorage.removeItem('openChatWithUser'); // Удаляем после получения
+      localStorage.removeItem('openChatWithUser'); 
       return JSON.parse(data);
     }
     return null;

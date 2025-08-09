@@ -61,6 +61,11 @@ export class GroupInfoModalComponent implements OnChanges, OnInit {
   selectedUserIndex = -1;
   searchTimeout: any;
 
+  private readonly MIN_MEMBERS = 3;
+  private readonly MAX_MEMBERS = 40;
+  private readonly MAX_IMAGE_SIZE = 5 * 1024 * 1024; 
+  private readonly ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+
   constructor(
     private groupInfoApi: GroupInfoApiService,
     private toastService: ToastService,
@@ -84,6 +89,24 @@ export class GroupInfoModalComponent implements OnChanges, OnInit {
         this.userSuggestions = [];
       }
     });    
+
+    this.groupInfoApi.groupInfo$.subscribe(groupInfo => {
+      if (groupInfo && this.open) {
+        this.groupInfo = groupInfo.data;
+      }
+    });
+
+    this.apiService.userInfoUpdated$.subscribe(userInfo => {
+      if (userInfo && this.groupInfo) {
+        this.updateGroupInfoFromUserChange(userInfo);
+      }
+    });
+
+    this.apiService.userInfoDeleted$.subscribe(userInfo => {
+      if (userInfo && this.groupInfo) {
+        this.removeDeletedUserFromGroup(userInfo.userName);
+      }
+    });
   }  
 
   ngOnChanges(changes: SimpleChanges): void {
@@ -109,6 +132,8 @@ export class GroupInfoModalComponent implements OnChanges, OnInit {
         this.isEditing = false;
         this.isMembersMode = false;
         this.loading = false;
+
+        this.groupInfoApi.forceRefresh();
       },
       error: (err) => {
         this.error = err?.error?.message || 'Failed to load group info.';
@@ -116,6 +141,58 @@ export class GroupInfoModalComponent implements OnChanges, OnInit {
       },
     });
   }
+
+  private updateGroupInfoFromUserChange(userInfo: { userName: string, image?: string, updatedAt: string, oldNickName: string }): void {
+    if (!this.groupInfo) return;
+  
+    let hasChanges = false;
+  
+    if (this.groupInfo.admin === userInfo.oldNickName) {
+      this.groupInfo.admin = userInfo.userName;
+      hasChanges = true;
+    }
+  
+    if (this.groupInfo.members) {
+      this.groupInfo.members = this.groupInfo.members.map(member => {
+        if (member.nickName === userInfo.oldNickName) {
+          hasChanges = true;
+          return {
+            ...member,
+            nickName: userInfo.userName,
+            image: userInfo.image || member.image
+          };
+        }
+        return member;
+      });
+    }
+  
+    if (hasChanges) {
+      this.groupInfo = { ...this.groupInfo };
+    }
+  }  
+
+  private removeDeletedUserFromGroup(userName: string): void {
+    if (!this.groupInfo) return;
+  
+    let hasChanges = false;
+  
+    if (this.groupInfo.members) {
+      const originalLength = this.groupInfo.members.length;
+      this.groupInfo.members = this.groupInfo.members.filter(member => member.nickName !== userName);
+      if (this.groupInfo.members.length !== originalLength) {
+        hasChanges = true;
+      }
+    }
+  
+    if (this.groupInfo.admin === userName) {
+      this.groupInfo.admin = '';
+      hasChanges = true;
+    }
+  
+    if (hasChanges) {
+      this.groupInfo = { ...this.groupInfo };
+    }
+  }  
 
   toggleEdit(): void {
     this.isEditing = !this.isEditing;
@@ -136,9 +213,64 @@ export class GroupInfoModalComponent implements OnChanges, OnInit {
     this.isAddingMember = this.isAddingModeOnly;
   }  
 
+  private validateImage(file: File): string[] {
+    const errors: string[] = [];
+    
+    if (!this.ALLOWED_IMAGE_TYPES.includes(file.type)) {
+      errors.push('Image must be in JPEG, PNG, GIF or WebP format');
+    }
+    
+    if (file.size > this.MAX_IMAGE_SIZE) {
+      errors.push('Image size must not exceed 5MB');
+    }
+    
+    return errors;
+  }
+
+  private validateMemberCount(): string[] {
+    const errors: string[] = [];
+    const currentMemberCount = this.groupInfo?.members?.length || 0;
+    const selectedCount = this.selectedUsers.length;
+    
+    if (this.isMembersMode) {
+      const totalAfterAddition = currentMemberCount + selectedCount;
+      
+      if (totalAfterAddition > this.MAX_MEMBERS) {
+        errors.push(`Total members cannot exceed ${this.MAX_MEMBERS}. Current: ${currentMemberCount}, adding: ${selectedCount}`);
+      }
+    } else {
+      if (currentMemberCount < this.MIN_MEMBERS) {
+        errors.push(`Group must have at least ${this.MIN_MEMBERS} members (including admin)`);
+      }
+      
+      if (currentMemberCount > this.MAX_MEMBERS) {
+        errors.push(`Group cannot have more than ${this.MAX_MEMBERS} members (including admin)`);
+      }
+    }
+    
+    return errors;
+  }
+
+  private validateForm(): string[] {
+    let errors: string[] = [];
+    
+    const baseErrors = validateCreateGroupForm(this.editableGroup);
+    errors = [...errors, ...baseErrors];
+    
+    if (this.selectedAvatarFile) {
+      const imageErrors = this.validateImage(this.selectedAvatarFile);
+      errors = [...errors, ...imageErrors];
+    }
+    
+    const memberErrors = this.validateMemberCount();
+    errors = [...errors, ...memberErrors];
+    
+    return errors;
+  }
+
   saveChanges(): void {
     this.editableGroup.ImageFile = this.selectedAvatarFile ?? undefined;
-    this.errors = validateCreateGroupForm(this.editableGroup);
+    this.errors = this.validateForm();
     if (this.errors.length > 0) return;
 
     this.updateGroupInfo(this.editableGroup);
@@ -146,13 +278,16 @@ export class GroupInfoModalComponent implements OnChanges, OnInit {
 
   updateGroupInfo(updatedData: GroupInfoEditData) {
     if (!this.groupId) return;
-
+  
     this.loading = true;
     this.error = null;
-
+  
     this.groupInfoApi.updateGroupInfo(this.groupId, updatedData).subscribe({
       next: (res) => {
         this.toastService.show('Group updated successfully', 'success');
+        
+        this.groupInfoApi.forceRefresh();
+        
         this.close.emit();
         this.groupUpdated.emit();
         this.isEditing = false;
@@ -201,6 +336,14 @@ export class GroupInfoModalComponent implements OnChanges, OnInit {
     const input = event.target as HTMLInputElement;
     if (input.files && input.files.length > 0) {
       const file = input.files[0];
+      
+      const imageErrors = this.validateImage(file);
+      if (imageErrors.length > 0) {
+        this.toastService.show(imageErrors.join(', '), 'error');
+        input.value = ''; 
+        return;
+      }
+      
       this.selectedAvatarFile = file;
 
       const reader = new FileReader();
@@ -227,6 +370,22 @@ export class GroupInfoModalComponent implements OnChanges, OnInit {
     );
   }
 
+  getImageErrors(): string[] {
+    return this.errors.filter((e) =>
+      e.toLowerCase().includes('image') || 
+      e.toLowerCase().includes('format') ||
+      e.toLowerCase().includes('size')
+    );
+  }
+
+  getMemberErrors(): string[] {
+    return this.errors.filter((e) =>
+      e.toLowerCase().includes('member') || 
+      e.toLowerCase().includes('exceed') ||
+      e.toLowerCase().includes('at least')
+    );
+  }
+
   onClose() {
     this.isEditing = false;
     this.isMembersMode = false;
@@ -242,6 +401,7 @@ export class GroupInfoModalComponent implements OnChanges, OnInit {
     this.isAddingMember = true;
     this.selectedUsers = [];
     this.userSearchQuery = '';
+    this.errors = [];
   }
   
   exitMembersMode(): void {
@@ -251,6 +411,7 @@ export class GroupInfoModalComponent implements OnChanges, OnInit {
     this.userSearchQuery = '';
     this.userSuggestions = [];
     this.isSearchActive = false;
+    this.errors = [];
   }
 
   onSearchChange(input: string): void {
@@ -273,62 +434,82 @@ export class GroupInfoModalComponent implements OnChanges, OnInit {
 
   addUserToSelection(user: SearchUser): void {
     if (!this.selectedUsers.find(u => u.nickName === user.nickName)) {
+      const currentMemberCount = this.groupInfo?.members?.length || 0;
+      const totalAfterAddition = currentMemberCount + this.selectedUsers.length + 1;
+      
+      if (totalAfterAddition > this.MAX_MEMBERS) {
+        this.toastService.show(`Cannot add user. Maximum ${this.MAX_MEMBERS} members allowed.`, 'error');
+        return;
+      }
+      
       this.selectedUsers.push(user);
       this.userSearchQuery = '';
       this.userSuggestions = [];
       this.selectedUserIndex = -1;
+      this.errors = [];
     }
   }
   
   async removeUserFromSelection(nickName: string): Promise<void> {
-  if (this.selectedUsers.some(u => u.nickName === nickName)) {
-    this.selectedUsers = this.selectedUsers.filter(u => u.nickName !== nickName);
-    return;
-  }
+    if (this.selectedUsers.some(u => u.nickName === nickName)) {
+      this.selectedUsers = this.selectedUsers.filter(u => u.nickName !== nickName);
+      return;
+    }
 
-  try {
-    await this.apiService.removeGroupMembers(this.groupId!, { users: [nickName] });
-    
-    this.toastService.show(`Successfully removed member from the group.`, 'success');
-    
-    this.groupUpdated.emit();
-    this.onClose();
-    
-  } catch (error) {
-    console.error('Failed to remove member:', error);
-    this.toastService.show('Failed to remove member from group. Please check your connection or try again later.', 'error');
+    const currentMemberCount = this.groupInfo?.members?.length || 0;
+    if (currentMemberCount - 1 < this.MIN_MEMBERS) {
+      this.toastService.show(`Cannot remove member. Minimum ${this.MIN_MEMBERS} members required.`, 'error');
+      return;
+    }
+
+    try {
+      await this.apiService.removeGroupMembers(this.groupId!, { users: [nickName] });
+      
+      this.toastService.show(`Successfully removed member from the group.`, 'success');
+      
+      this.groupUpdated.emit();
+      this.onClose();
+      
+    } catch (error) {
+      console.error('Failed to remove member:', error);
+      this.toastService.show('Failed to remove member from group. Please check your connection or try again later.', 'error');
+    }
   }
-}
 
   async confirmAddMembers(): Promise<void> {
-  const nicknames = this.selectedUsers.map(u => u.nickName);
+    const nicknames = this.selectedUsers.map(u => u.nickName);
 
-  if (nicknames.length === 0) {
-    this.toastService.show('No users selected to add.', 'error');
-    return;
-  }
+    if (nicknames.length === 0) {
+      this.toastService.show('No users selected to add.', 'error');
+      return;
+    }
 
-  try {
-    await this.apiService.addGroupMembers(this.groupId!, { users: nicknames });
-    
-    this.toastService.show(`Successfully added ${nicknames.length} member(s) to the group.`, 'success');
-    
-    this.groupUpdated.emit();
-    this.onClose();
+    this.errors = this.validateMemberCount();
+    if (this.errors.length > 0) {
+      return;
+    }
 
-  } catch (error) {
-    console.error('Failed to add members:', error);
-    this.toastService.show('Failed to add members to group. Please check your connection or try again later.', 'error');
-  }
+    try {
+      await this.apiService.addGroupMembers(this.groupId!, { users: nicknames });
+      
+      this.toastService.show(`Successfully added ${nicknames.length} member(s) to the group.`, 'success');
+      
+      this.groupUpdated.emit();
+      this.onClose();
+
+    } catch (error) {
+      console.error('Failed to add members:', error);
+      this.toastService.show('Failed to add members to group. Please check your connection or try again later.', 'error');
+    }
   }
 
   handleSave(): void {
-  if (this.isMembersMode) {
-    this.confirmAddMembers().then(() => {
-    });
-  } else {
-    this.saveChanges();
-  }
+    if (this.isMembersMode) {
+      this.confirmAddMembers().then(() => {
+      });
+    } else {
+      this.saveChanges();
+    }
   } 
   
   getModalTitle(): string {
@@ -346,5 +527,17 @@ export class GroupInfoModalComponent implements OnChanges, OnInit {
   onUserClick(user: { nickName: string, image: string }): void {
     this.close.emit();
     this.openChatWithUser.emit(user);
+  }
+
+  get canSave(): boolean {
+    if (this.isMembersMode) {
+      return this.selectedUsers.length > 0 && this.getMemberErrors().length === 0;
+    }
+    return this.errors.length === 0;
+  }
+
+  get memberCountStatus(): string {
+    const currentCount = this.groupInfo?.members?.length || 0;
+    return `${currentCount}/${this.MAX_MEMBERS}`;
   }
 }

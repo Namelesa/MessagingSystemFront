@@ -40,7 +40,6 @@ export class NavigationSideBarComponent implements OnInit, OnDestroy {
 
   @HostListener('document:contextmenu', ['$event'])
   onDocumentContextMenu(event: MouseEvent) {
-    // Закрываем контекстное меню, если правый клик не по аватару
     const target = event.target as HTMLElement;
     if (!target.closest('.avatar-container')) {
       this.closeContextMenu();

@@ -13,11 +13,21 @@
       [showEditButton]="!isEditing && !isMembersMode"
       [showSaveButton]="(isEditing && !isMembersMode) || isMembersMode"
       [showCancelButton]="isEditing || isMembersMode"
-      [saveDisabled]="isMembersMode && selectedUsers.length === 0"
+      [saveDisabled]="!canSave"
       (editClick)="toggleEdit()"
       (saveClick)="handleSave()"
       (cancelClick)="handleCancel()">
     </app-modal-header>
+
+    <div *ngIf="errors.length > 0 && (isEditing || isMembersMode)" class="mb-4 p-3 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800">
+      <div class="text-red-600 dark:text-red-400 text-sm font-medium mb-1">Validation Errors:</div>
+      <ul class="text-red-600 dark:text-red-400 text-sm">
+        <li *ngFor="let error of errors" class="flex items-start">
+          <span class="mr-1">•</span>
+          <span>{{ error }}</span>
+        </li>
+      </ul>
+    </div>
 
     <div *ngIf="loading" class="text-center py-4 mt-16">Loading...</div>
     <div *ngIf="error && !loading" class="text-red-500 text-center py-4 mt-16">{{ error }}</div>
@@ -25,14 +35,20 @@
     <div *ngIf="groupInfo && !loading && !error" class="mt-4">
       
       <div class="flex justify-center mb-4">
-        <app-avatar
-          [src]="groupInfo.image"
-          alt="Group Avatar"
-          size="md"
-          [editable]="isEditing && !isMembersMode"
-          inputId="groupAvatarInput"
-          (fileChange)="onAvatarChange($event)">
-        </app-avatar>
+        <div class="text-center">
+          <app-avatar
+            [src]="groupInfo.image"
+            alt="Group Avatar"
+            size="md"
+            [editable]="isEditing && !isMembersMode"
+            inputId="groupAvatarInput"
+            (fileChange)="onAvatarChange($event)">
+          </app-avatar>
+          
+          <div *ngIf="getImageErrors().length > 0" class="mt-2 text-red-500 dark:text-red-400 text-xs">
+            <div *ngFor="let error of getImageErrors()">{{ error }}</div>
+          </div>
+        </div>
       </div>
 
       <div *ngIf="!isMembersMode">
@@ -71,7 +87,10 @@
 
 <div class="mb-2" *ngIf="!isEditing || isMembersMode">
   <div class="flex items-center justify-between mb-2">
-    <b>Members:</b>
+    <div class="flex items-center">
+      <b>Members:</b>
+      <span class="ml-2 text-sm text-gray-500 dark:text-gray-400">({{ memberCountStatus }})</span>
+    </div>
     <button
       *ngIf="!isEditing && !isMembersMode && groupInfo.admin === currentUserNickname"
       (click)="enterMembersMode()"
@@ -110,6 +129,12 @@
       [users]="selectedUsers"
       (removeUser)="removeUserFromSelection($event)">
     </app-selected-users>
+
+    <div *ngIf="getMemberErrors().length > 0" class="mt-2 p-2 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800">
+      <div *ngFor="let error of getMemberErrors()" class="text-red-600 dark:text-red-400 text-xs">
+        {{ error }}
+      </div>
+    </div>
   </div>
 
   <app-user-list

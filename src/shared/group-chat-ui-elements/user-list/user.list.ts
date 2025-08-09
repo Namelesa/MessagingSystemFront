@@ -57,7 +57,6 @@ export class UserListComponent {
   }
 
   onUserClick(user: User): void {
-    // Не открываем чат если это текущий пользователь
     if (user.nickName === this.currentUserNickname) {
       return;
     }
@@ -65,7 +64,7 @@ export class UserListComponent {
   }
 
   onRemoveUser(event: Event, nickName: string): void {
-    event.stopPropagation(); // Предотвращаем всплытие события клика
+    event.stopPropagation(); 
     this.removeUser.emit(nickName);
   }
 }

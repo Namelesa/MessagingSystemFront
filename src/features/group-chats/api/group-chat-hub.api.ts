@@ -8,10 +8,14 @@ import { AuthApiResult } from '../../../shared/api-result';
 import { HttpClient } from '@angular/common/http';
 import * as signalR from '@microsoft/signalr';
 import { AuthService } from '../../../entities/user/api/auht.service';
+import { Subject } from 'rxjs';
 
 @Injectable({ providedIn: 'root' })
 export class GroupChatApiService extends BaseChatApiService<GroupChat> {
   private isConnected = false;
+
+  private groupUpdatedSubject = new Subject<GroupChat>();
+  public groupUpdated$ = this.groupUpdatedSubject.asObservable();
 
   constructor(
     private http: HttpClient,
@@ -57,6 +61,8 @@ export class GroupChatApiService extends BaseChatApiService<GroupChat> {
         return g.groupId === group.groupId ? group : g;
       });
       this.chatsSubject.next(updatedGroups);
+      
+      this.groupUpdatedSubject.next(group);
     });
     
     this.connection.on('GroupMembersAdded', (updatedGroup: GroupChat) => {

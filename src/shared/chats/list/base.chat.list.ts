@@ -28,14 +28,14 @@ export abstract class BaseChatListComponent<TChat> implements OnInit, OnDestroy 
   };
 
   ngOnInit(): void {
-    this.apiService.connected(); // Устанавливаем соединение
+    this.apiService.connected(); 
     this.chats$ = this.apiService.chats$;
     this.loading$ = this.apiService.loading$;
     this.error$ = this.apiService.error$;
   }
 
   ngOnDestroy(): void {
-    this.apiService.disconnect(); // Отключаем соединение
+    this.apiService.disconnect(); 
   }
 
   onSelectChat(nickname: string, image: string, groupId?: string): void {
