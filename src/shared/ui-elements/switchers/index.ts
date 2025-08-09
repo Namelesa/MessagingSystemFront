@@ -1,1 +1,1 @@
-export * from './ui/switcher'
+export * from './component/switcher'

@@ -1,11 +1,11 @@
 import { Routes } from '@angular/router';
-import { RegisterPageComponent } from '../pages/register-page';
-import { LoginPageComponent } from '../pages/login-page';
-import { EmailConfirmedPageComponent } from '../pages/email-confirmation-page';
-import { ProfilePageComponent } from '../pages/user-profile-page';
-import { SettingsPageComponent } from '../pages/settings-page';
-import { OtoChatPageComponent } from '../pages/oto-chat-page';
-import { GroupChatPageComponent } from '../pages/group-chat-page';
+import { RegisterPageComponent } from '../pages/register';
+import { LoginPageComponent } from '../pages/login';
+import { EmailConfirmedPageComponent } from '../pages/email-confirmation';
+import { ProfilePageComponent } from '../pages/user-profile';
+import { SettingsPageComponent } from '../pages/settings';
+import { OtoChatPageComponent } from '../pages/oto-chat';
+import { GroupChatPageComponent } from '../pages/group-chat';
 import { AuthGuard } from '../shared/auth-guard';
 import { MainLayoutComponent } from './layouts/main-layout';
 

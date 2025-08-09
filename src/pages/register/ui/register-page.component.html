@@ -1,0 +1,13 @@
+<auth-page-layout
+  [title]="'Create Account'"
+  [subtitle]="'Join to start secure conversations'"
+  [bottomText]="'Already have an account?'"
+  [bottomLink]="{ href: '/login', text: 'Sign in' }"
+  [isPasswordVisible]="isPasswordVisible"
+  [passwordLength]="passwordLength"
+>
+  <app-register-form
+  (passwordVisibleChange)="isPasswordVisible = $event"
+  (passwordLengthChange)="passwordLength = $event"
+  />
+</auth-page-layout>

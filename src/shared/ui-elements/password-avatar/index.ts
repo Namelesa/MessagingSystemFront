@@ -1,1 +1,1 @@
-export * from './ui/password-avatar.component';
+export * from './component/password-avatar.component';

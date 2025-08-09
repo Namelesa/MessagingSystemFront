@@ -197,13 +197,20 @@ export class GroupMessagesApiService {
   }
 
   private async ensureConnection(): Promise<signalR.HubConnection> {
-    const connection = this.getConnection();
+    let connection = this.getConnection();
     if (connection) return connection;
 
-    await new Promise(resolve => setTimeout(resolve, 100));
-    const retryConnection = this.getConnection();
-    if (!retryConnection) throw new Error('SignalR connection not established');
-    return retryConnection;
+    // try to trigger connect via global service if available
+    if ((window as any).__groupChatService && typeof (window as any).__groupChatService.connect === 'function') {
+      try { (window as any).__groupChatService.connect(); } catch {}
+    }
+
+    for (let i = 0; i < 10; i++) {
+      await new Promise(resolve => setTimeout(resolve, 150));
+      connection = this.getConnection();
+      if (connection) return connection;
+    }
+    throw new Error('SignalR connection not established');
   }
 
   loadChatHistory(groupId: string, take = 20, skip = 0): Observable<GroupMessage[]> {

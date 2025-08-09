@@ -27,6 +27,7 @@
   (ngModelChange)="onPasswordInput($event)"
   [hasSuffix]="true"
   [errors]="getFieldErrors('password')"
+  [autocomplete]="'current-password'"
 >
   <button
     type="button"

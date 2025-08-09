@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { LoginContract } from '../../../entities/user/api/login-contract';
+import { LoginContract } from '../../../entities/user';
 import { AuthApiResult, environment } from '../../../shared/api-result';
 import { Observable } from 'rxjs';
 

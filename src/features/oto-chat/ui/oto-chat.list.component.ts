@@ -6,17 +6,22 @@ import { Subscription } from 'rxjs';
 import { BaseChatListComponent } from '../../../shared/chats';
 import { OtoChat } from '../../../entities/oto-chat';
 import { OtoChatApiService } from '../api/oto-chat-hub.api';
-import { ChatListItemComponent } from '../../../shared/chats-ui-elements';
-import { SearchUserComponent } from '../../search-user';
+import { ChatListItemComponent, SearchInputComponent } from '../../../shared/chats-ui-elements';
+import { Observable } from 'rxjs';
+import { SearchUser } from '../../../entities/search-user';
 
 @Component({
   selector: 'app-oto-chat-list',
   standalone: true,
-  imports: [CommonModule, FormsModule, ChatListItemComponent, SearchUserComponent],
+  imports: [CommonModule, FormsModule, ChatListItemComponent, SearchInputComponent],
   templateUrl: './oto-chat.list.component.html',
 })
 export class OtoChatListComponent extends BaseChatListComponent<OtoChat> implements OnInit, OnDestroy {
   protected apiService: OtoChatApiService;
+  @Input() user$: Observable<SearchUser | null> | null = null;
+  @Output() userSearchQueryChange = new EventEmitter<string>();
+  @Output() userSearchFocus = new EventEmitter<void>();
+  @Output() userSearchClear = new EventEmitter<void>();
 
   public image: string | null = null;
   public isSearchFocused = false;
@@ -177,22 +182,28 @@ export class OtoChatListComponent extends BaseChatListComponent<OtoChat> impleme
 
   onSearchFocused() {
     this.isSearchFocused = true;
+    this.userSearchFocus.emit();
   }
 
   onSearchActiveChange(isActive: boolean) {
     this.isSearchFocused = isActive;
     if (!isActive) {
       this.onClearSearch();
+      this.userSearchClear.emit();
     }
   }
 
   onSearchQueryChange(query: string) {
     this.search = query;
     this.searchQuery = query;
+    const trimmed = query.trim();
+    if (trimmed) this.userSearchQueryChange.emit(trimmed);
+    else this.userSearchClear.emit();
   }  
 
   onFoundedUser(userData: { nick: string, image: string }) {
     this.onClearSearch();
+    this.userSearchClear.emit();
     this.foundedUser.emit(userData);
   }
 

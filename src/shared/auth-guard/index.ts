@@ -1,2 +1,2 @@
-export * from './api/auht.service';
-export * from './api/auth-guard';
+export * from './services/auht.service';
+export * from './services/auth-guard';

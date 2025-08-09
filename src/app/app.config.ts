@@ -1,9 +1,10 @@
 import { ApplicationConfig, importProvidersFrom } from '@angular/core';
 import { provideRouter } from '@angular/router';
 import { FormsModule } from '@angular/forms';
-import { HttpClientModule } from '@angular/common/http';
+import { HttpClientModule, HTTP_INTERCEPTORS } from '@angular/common/http';
 import { LucideAngularModule, MessageSquare, Users, Settings, User, LogOutIcon } from 'lucide-angular';
 import { routes } from './app.routes';
+import { UnauthorizedRedirectInterceptor } from './unauthorized-redirect.interceptor';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -19,5 +20,6 @@ export const appConfig: ApplicationConfig = {
       })
     ),
     provideRouter(routes),
+    { provide: HTTP_INTERCEPTORS, useClass: UnauthorizedRedirectInterceptor, multi: true },
   ],
 };

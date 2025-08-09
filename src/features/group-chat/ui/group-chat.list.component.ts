@@ -1,6 +1,6 @@
 import { Component, Input, OnInit, Output, EventEmitter } from '@angular/core';
 import { BaseChatListComponent } from '../../../shared/chats';
-import { GroupChat } from '../../../entities/group-chat';
+import { GroupChat } from '../api/group.chat';
 import { GroupChatApiService } from '../api/group-chat-hub.api';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';

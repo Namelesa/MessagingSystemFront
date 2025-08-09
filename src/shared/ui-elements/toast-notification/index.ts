@@ -1,2 +1,2 @@
-export * from './model/toast.service';
-export * from './ui/toast.component';
+export * from './services/toast.service';
+export * from './component/toast.component';

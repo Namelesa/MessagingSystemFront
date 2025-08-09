@@ -99,7 +99,7 @@
     </button>
   </div>
 
-  <div *ngIf="isMembersMode" class="mb-3">
+  <div *ngIf="isMembersMode" class="mb-3" (click)="$event.stopPropagation()">
     <input
       type="text"
       [(ngModel)]="userSearchQuery"

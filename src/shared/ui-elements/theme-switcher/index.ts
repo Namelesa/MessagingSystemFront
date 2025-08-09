@@ -1,1 +1,1 @@
-export * from './ui/theme-switcher.component'
+export * from './component/theme-switcher.component'

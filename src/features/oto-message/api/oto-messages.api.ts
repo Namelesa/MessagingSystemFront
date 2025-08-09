@@ -1,13 +1,13 @@
 import { Injectable } from '@angular/core';
 import * as signalR from '@microsoft/signalr';
-import { OtoChatApiService } from '../../oto-chat';
+// Cross-feature dependency removed; connection is provided via composition
 
 @Injectable({ providedIn: 'root' })
 export class OtoMessagesService {
-  constructor(private chatApi: OtoChatApiService) {}
+  constructor() {}
 
   private getConnection(): signalR.HubConnection | null {
-    const connection = (this.chatApi as any).connection;
+    const connection = (window as any).__otoChatConnection as signalR.HubConnection | undefined;
     if (connection && connection.state === signalR.HubConnectionState.Connected) {
       return connection;
     }

@@ -1,0 +1,1 @@
+export * from '../oto-chat/ui/oto-chat-page';

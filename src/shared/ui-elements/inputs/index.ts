@@ -1,1 +1,1 @@
-export * from './ui/input.component'
+export * from './component/input.component'

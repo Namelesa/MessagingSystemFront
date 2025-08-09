@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { environment } from '../../../shared/api-result';
-import { GroupChat } from '../../../entities/group-chat';
+import { GroupChat } from './group.chat';
 import { BaseChatApiService } from '../../../shared/chats';
 import { Observable } from 'rxjs';
 import { GroupCreateRequest } from './group-create';
@@ -30,7 +30,6 @@ export class GroupChatApiService extends BaseChatApiService<GroupChat> {
     }
     this.isConnected = true;
 
-    // Expose SignalR connection for composition layer (consumed by group-messages service)
     (window as any).__groupChatConnection = this.connection;
 
     this.connection.onreconnected(() => {

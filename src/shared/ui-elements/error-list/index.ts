@@ -1,1 +1,1 @@
-export * from './ui/error-list.component';
+export * from './component/error-list.component';

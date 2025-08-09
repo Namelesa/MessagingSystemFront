@@ -13,7 +13,7 @@ import {
 import { CommonModule } from '@angular/common';
 import { Subject } from 'rxjs';
 import { takeUntil, filter } from 'rxjs/operators';
-import { OtoChatApiService } from '../../oto-chat';
+// Cross-feature import removed to comply with FSD
 import { OtoMessage } from '../../../entities/oto-message';
 
 @Component({
@@ -47,7 +47,7 @@ export class OtoChatMessagesComponent implements OnChanges, AfterViewInit, OnDes
   private destroy$ = new Subject<void>();
   private shouldScrollToBottom = false;
 
-  constructor(private api: OtoChatApiService) {}
+  constructor() {}
 
   ngAfterViewInit() {
     setTimeout(() => this.scrollToBottom(), 0);
@@ -81,14 +81,16 @@ export class OtoChatMessagesComponent implements OnChanges, AfterViewInit, OnDes
   }
 
   private subscribeToUserDeletion() {
-    this.api.userInfoDeleted$
-      .pipe(
-        takeUntil(this.destroy$),
-        filter(deletedUserInfo => deletedUserInfo.userName === this.chatNickName)
-      )
-      .subscribe(deletedUserInfo => {
-        this.handleChatUserDeleted();
-      });
+    // Listen to global deletion notifications if provided by composition
+    const global$ = (window as any).__otoUserInfoDeleted$ as any;
+    if (global$ && typeof global$.pipe === 'function') {
+      global$
+        .pipe(
+          takeUntil(this.destroy$),
+          filter((deletedUserInfo: any) => deletedUserInfo?.userName === this.chatNickName)
+        )
+        .subscribe(() => this.handleChatUserDeleted());
+    }
   }
 
   private handleChatUserDeleted() {
@@ -103,9 +105,14 @@ export class OtoChatMessagesComponent implements OnChanges, AfterViewInit, OnDes
     this.shouldScrollToBottom = true;
     this.loadMore();
   
-    this.api.messages$
+    const messages$ = (window as any).__otoMessages$ as any;
+    if (!messages$ || typeof messages$.pipe !== 'function') {
+      return;
+    }
+
+    messages$
       .pipe(takeUntil(this.destroy$))
-      .subscribe(newMsgs => {
+      .subscribe((newMsgs: OtoMessage[]) => {
         const filteredNewMsgs = newMsgs.filter(msg => {
           if (msg.isDeleted) {
             return !this.isMyMessage(msg);
@@ -168,18 +175,23 @@ export class OtoChatMessagesComponent implements OnChanges, AfterViewInit, OnDes
     if (this.loading || this.allLoaded) return;
     this.loading = true;
 
-    this.api.loadChatHistory(this.chatNickName, this.take, this.skip)
+    const loadHistory = (window as any).__otoLoadHistory as ((nick: string, take: number, skip: number) => any) | undefined;
+    if (!loadHistory) {
+      this.loading = false;
+      return;
+    }
+    loadHistory(this.chatNickName, this.take, this.skip)
       .pipe(takeUntil(this.destroy$))
-      .subscribe(newMsgs => {
-        const filteredNewMsgs = newMsgs.filter(msg => {
+      .subscribe((newMsgs: OtoMessage[]) => {
+        const filteredNewMsgs = newMsgs.filter((msg: OtoMessage) => {
           if (msg.isDeleted) {
             return !this.isMyMessage(msg);
           }
           return true;
         });
 
-        const existingIds = new Set(this.messages.map(m => m.messageId));
-        const uniqueNewMsgs = filteredNewMsgs.filter(m => !existingIds.has(m.messageId));
+        const existingIds = new Set(this.messages.map((m: OtoMessage) => m.messageId));
+        const uniqueNewMsgs = filteredNewMsgs.filter((m: OtoMessage) => !existingIds.has(m.messageId));
 
         if (uniqueNewMsgs.length === 0) {
           this.allLoaded = true;

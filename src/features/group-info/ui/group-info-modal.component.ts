@@ -91,11 +91,15 @@ export class GroupInfoModalComponent implements OnChanges, OnInit {
   }  
 
   ngOnChanges(changes: SimpleChanges): void {
-    if (this.open && this.groupId) {
+    // Fetch group info only when modal just opened or groupId changed
+    const openedJustNow = !!changes['open'] && changes['open'].currentValue && !changes['open'].previousValue;
+    const groupChanged = !!changes['groupId'] && !changes['groupId'].firstChange && this.open;
+
+    if ((openedJustNow || groupChanged) && this.groupId) {
       this.fetchGroupInfo();
     }
-    
-    if (!this.open) {
+
+    if (!!changes['open'] && !changes['open'].currentValue) {
       this.isEditing = false;
       this.isMembersMode = false;
       this.selectedUsers = [];
@@ -373,6 +377,7 @@ export class GroupInfoModalComponent implements OnChanges, OnInit {
     this.isAddingMember = true;
     this.selectedUsers = [];
     this.userSearchQuery = '';
+    this.showNotFoundMessage = false;
     this.errors = [];
   }
   
@@ -386,6 +391,15 @@ export class GroupInfoModalComponent implements OnChanges, OnInit {
     this.errors = [];
   }
 
+  // Called by parent on successful add-members operation
+  public onMembersAddedSuccess(): void {
+    this.selectedUsers = [];
+    this.userSearchQuery = '';
+    this.userSuggestions = [];
+    this.selectedUserIndex = -1;
+    this.showNotFoundMessage = false;
+  }
+
   onSearchChange(input: string): void {
     this.userSearchQuery = input;
     clearTimeout(this.searchTimeout);
@@ -394,6 +408,7 @@ export class GroupInfoModalComponent implements OnChanges, OnInit {
   
     if (nicknames.length === 0) {
       this.userSuggestions = [];
+      this.showNotFoundMessage = false;
       return;
     }
   

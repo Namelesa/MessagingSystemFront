@@ -1,5 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
+import { Router } from '@angular/router';
 import { BehaviorSubject, Observable, Subscription } from 'rxjs';
 import { tap } from 'rxjs/operators';
 import { environment } from '../../../shared/api-result';
@@ -16,7 +17,8 @@ export class GroupInfoApiService {
   private userInfoSubscription: Subscription | null = null;
 
   constructor(
-    private http: HttpClient
+    private http: HttpClient,
+    private router: Router
   ) {}
 
   // Subscriptions to user info changes are now handled at composition level (page/widget)

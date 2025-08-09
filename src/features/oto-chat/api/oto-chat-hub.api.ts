@@ -20,12 +20,19 @@ export class OtoChatApiService extends BaseChatApiService<OtoChat> {
     }
     super.connect();
     this.isConnected = true;
+    // Expose connection for composition usage (similar to group chat)
+    (window as any).__otoChatConnection = (this as any).connection;
+    // Expose streams for composition consumers (oto-messages UI)
+    ;(window as any).__otoMessages$ = this.messages$;
+    ;(window as any).__otoUserInfoDeleted$ = this.userInfoDeleted$;
+    ;(window as any).__otoLoadHistory = (nick: string, take: number, skip: number) => this.loadChatHistory(nick, take, skip);
   }
 
   override disconnect(): void {
     if (this.isConnected) {
       super.disconnect();
       this.isConnected = false;
+      (window as any).__otoChatConnection = undefined;
     }
   }
 

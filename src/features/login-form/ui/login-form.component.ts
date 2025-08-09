@@ -6,7 +6,7 @@ import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import {LucideAngularModule, Eye, EyeOff, FolderIcon } from 'lucide-angular';
 import { LoginApi } from '../api/login.api';
-import { LoginContract } from '../../../entities/user/api/login-contract';
+import { LoginContract } from '../../../entities/user';
 import { LoginFieldValidationHelper } from '../../../shared/helper';
 import { ButtonComponent, InputComponent, ToastService, ToastComponent } from '../../../shared/ui-elements';
 import { AuthService } from '../../../shared/auth-guard';
