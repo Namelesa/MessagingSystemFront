@@ -18,18 +18,4 @@ export class StorageService {
   remove(key: string): Promise<void> {
     return localForage.removeItem(key);
   }
-
-  navigateToOtoChat(userData: { nickName: string, image: string }): void {
-    localStorage.setItem('openChatWithUser', JSON.stringify(userData));
-    window.location.href = '/otoChats';
-  }
-
-  getOpenChatUserData(): { nickName: string, image: string } | null {
-    const data = localStorage.getItem('openChatWithUser');
-    if (data) {
-      localStorage.removeItem('openChatWithUser'); 
-      return JSON.parse(data);
-    }
-    return null;
-  }
 }

@@ -1,7 +1,8 @@
+import { Observable } from 'rxjs';
 import { Component,  Input, ViewChild, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Observable } from 'rxjs';
+import { Router } from '@angular/router';
 import { GroupMember } from '../../../entities/group-member';
 import { AuthService } from '../../../entities/session';
 import { SearchUser } from '../../../entities/search-user';
@@ -9,10 +10,9 @@ import { GroupChatListComponent, GroupChatApiService } from '../../../features/g
 import { GroupMessage, GroupMessagesComponent, GroupMessagesApiService } from '../../../features/group-message';
 import { GroupInfoModalComponent, GroupInfoApiService } from '../../../features/group-info';
 import { FindUserStore } from '../../../features/search-user';
-import { ChatLayoutComponent } from '../../../features/chat-layout';
-import { StorageService } from '../../../shared/storage';
-import { BaseChatPageComponent } from '../../../shared/chats';
-import { SendAreaComponent } from '../../../shared/chats-ui-elements';
+import { ChatLayoutComponent } from '../../../widgets/chat-layout';
+import { BaseChatPageComponent } from '../../../shared/chat';
+import { SendAreaComponent } from '../../../shared/send-message-area';
 
 @Component({
   selector: 'app-group-chat-page',
@@ -51,10 +51,10 @@ export class GroupChatPageComponent extends BaseChatPageComponent {
     private groupChatApi: GroupChatApiService, 
     private groupMessages: GroupMessagesApiService,
     private authService: AuthService, 
-    private storageService: StorageService,
     private groupInfoApi: GroupInfoApiService,
     private cdr: ChangeDetectorRef,
-    private findUserStore: FindUserStore
+    private findUserStore: FindUserStore,
+    private router: Router,
   ) {
     super();
     this.apiService = this.groupChatApi;
@@ -184,7 +184,10 @@ export class GroupChatPageComponent extends BaseChatPageComponent {
   }
 
   onOpenChatWithUser(userData: { nickName: string, image: string }) {
-    this.storageService.navigateToOtoChat(userData);
+    this.router.navigate(['/otoChats'], {
+      state: { openChatWithUser: userData },
+      queryParams: { openChatUser: userData.nickName, openChatImage: userData.image || '' },
+    });
   }
 
   sendMessage(message: string) {

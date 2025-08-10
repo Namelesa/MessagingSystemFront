@@ -4,10 +4,10 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { LucideAngularModule, Eye, EyeOff } from 'lucide-angular';
-import { ButtonComponent, InputComponent, ToastComponent, ToastService } from '../../../shared/ui-elements';
 import { AuthService } from '../../../entities/session';
 import { LoginApi, LoginContract, LoginFormStore } from '../../../entities/user';
-import { AuthPageLayoutComponent } from '../../../features/auth-layout';
+import { AuthPageLayoutComponent } from '../../../widgets/auth-layout';
+import { ButtonComponent, InputComponent, ToastComponent, ToastService } from '../../../shared/ui-elements';
 
 @Component({
   selector: 'app-login-page',

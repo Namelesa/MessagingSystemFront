@@ -1,7 +1,8 @@
+import { Observable, Subscription } from 'rxjs';
+import { Router } from '@angular/router';
 import { Component, Input, ViewChild, OnInit, ChangeDetectorRef, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Observable, Subscription } from 'rxjs';
 import { OtoChat } from '../../../entities/oto-chat';
 import { OtoMessage } from '../../../entities/oto-message';
 import { AuthService } from '../../../entities/session';
@@ -9,10 +10,9 @@ import { SearchUser } from '../../../entities/search-user';
 import { OtoChatListComponent, OtoChatApiService } from '../../../features/oto-chat';
 import { OtoChatMessagesComponent, OtoMessagesService} from '../../../features/oto-message';
 import { FindUserStore } from '../../../features/search-user';
-import { ChatLayoutComponent } from '../../../features/chat-layout';
-import { StorageService } from '../../../shared/storage';
-import { BaseChatPageComponent} from '../../../shared/chats';
-import { SendAreaComponent } from '../../../shared/chats-ui-elements';
+import { ChatLayoutComponent } from '../../../widgets/chat-layout';
+import { BaseChatPageComponent} from '../../../shared/chat';
+import { SendAreaComponent } from '../../../shared/send-message-area';
 
 @Component({
   selector: 'app-oto-chat-page',
@@ -53,7 +53,7 @@ export class OtoChatPageComponent extends BaseChatPageComponent implements OnIni
     private otoChatApi: OtoChatApiService, 
     private authService: AuthService, 
     private messageService: OtoMessagesService,
-    private storageService: StorageService,
+    private router: Router,
     private cdr: ChangeDetectorRef,
     private findUserStore: FindUserStore
   ) {
@@ -168,7 +168,13 @@ export class OtoChatPageComponent extends BaseChatPageComponent implements OnIni
   }
 
   private checkForOpenChatUser(): void {
-    const userData = this.storageService.getOpenChatUserData();
+    const nav = this.router.getCurrentNavigation();
+    const stateFromNav = nav?.extras?.state as { openChatWithUser?: { nickName: string; image: string } } | undefined;
+    const stateFromHistory = (window.history?.state as any) || {};
+    const url = new URL(window.location.href);
+    const queryNick = url.searchParams.get('openChatUser');
+    const queryImage = url.searchParams.get('openChatImage');
+    const userData = stateFromNav?.openChatWithUser || stateFromHistory.openChatWithUser || (queryNick ? { nickName: queryNick, image: queryImage || '' } : undefined);
     if (userData) {
       setTimeout(() => {
         this.onOpenChatWithUser(userData);

@@ -2,12 +2,12 @@ import { Component, Input, Output, EventEmitter, ContentChild, TemplateRef, Afte
 import { CommonModule } from '@angular/common';
 
 @Component({
-    selector: 'shared-chat-list-item',
+    selector: 'shared-list-item',
     standalone: true,
     imports: [CommonModule],
-    templateUrl: './chat-list-item.component.html',
+    templateUrl: './list-item.component.html',
   })
-  export class ChatListItemComponent implements AfterContentInit {
+  export class ListItemComponent implements AfterContentInit {
     @Input() name = '';
     @Input() image = '';
     @Input() active = false;

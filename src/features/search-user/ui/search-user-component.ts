@@ -1,8 +1,8 @@
 import { Component, Input, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { AsyncPipe } from '@angular/common';
-import { SearchInputComponent } from '../../../shared/chats-ui-elements';
 import { FindUserStore } from '../model/search-user-store';
+import { SearchInputComponent } from '../../../shared/search';
 
 @Component({
   selector: 'app-find-user-component',

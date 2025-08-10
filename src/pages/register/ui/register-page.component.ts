@@ -5,7 +5,7 @@ import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { LucideAngularModule, Eye, EyeOff } from 'lucide-angular';
 import { RegisterApi, RegisterContract, RegisterFormStore } from '../../../entities/user';
-import { AuthPageLayoutComponent } from '../../../features/auth-layout';
+import { AuthPageLayoutComponent } from '../../../widgets/auth-layout';
 import { ButtonComponent, InputComponent, ToastService, ToastComponent } from '../../../shared/ui-elements';
 
 @Component({

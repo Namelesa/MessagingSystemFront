@@ -1,21 +1,22 @@
-import { Component, Input, OnInit, Output, EventEmitter } from '@angular/core';
-import { BaseChatListComponent } from '../../../shared/chats';
-import { GroupChat } from '../api/group.chat';
-import { GroupChatApiService } from '../api/group-chat-hub.api';
 import { CommonModule } from '@angular/common';
+import { GroupChat } from '../api/group.chat';
 import { FormsModule } from '@angular/forms';
+import { Component, Input, OnInit, Output, EventEmitter } from '@angular/core';
 import { Observable, map, combineLatest } from 'rxjs';
-import { validateCreateGroupForm } from '../model/validate-group';
+import { GroupChatApiService } from '../api/group-chat-hub.api';
 import { GroupCreateRequest } from '../api/group-create';
+import { validateCreateGroupForm } from '../model/validate-group';
 import { SearchUser } from '../../../entities/search-user';
 import { AuthService } from '../../../entities/session';
 import { InputComponent, ToastService, ToastComponent } from '../../../shared/ui-elements';
-import { ChatListItemComponent, SearchInputComponent } from '../../../shared/chats-ui-elements';
+import { SearchInputComponent } from '../../../shared/search';
+import { BaseChatListComponent } from '../../../shared/chat';
+import { ListItemComponent } from '../../../shared/list';
 
 @Component({
   selector: 'app-group-chat-list',
   standalone: true,
-  imports: [CommonModule, FormsModule, ChatListItemComponent, SearchInputComponent, InputComponent, ToastComponent],
+  imports: [CommonModule, FormsModule, ListItemComponent, SearchInputComponent, InputComponent, ToastComponent],
   templateUrl: './group-chat.list.component.html',
 })
 export class GroupChatListComponent extends BaseChatListComponent<GroupChat> implements OnInit {

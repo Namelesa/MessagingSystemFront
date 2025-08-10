@@ -205,13 +205,13 @@
           {{ emptyListText }}
         </li>
 
-        <shared-chat-list-item
+        <shared-list-item
           *ngFor="let chat of chats$ | async"
           [name]="getChatName(chat)"
           [image]="chat.image"
           [active]="selectedNickname === getChatName(chat)"
           (click)="onSelectGroupChat(getChatName(chat), chat.image, chat.groupId || '')"
-        ></shared-chat-list-item>
+        ></shared-list-item>
       </ng-container>
 
       <ng-container *ngIf="isSearchActive && search.trim()">
@@ -231,13 +231,13 @@
             </div>
           </li>
 
-          <shared-chat-list-item
+          <shared-list-item
             *ngFor="let chat of filteredChats$ | async"
             [name]="getChatName(chat)"
             [image]="chat.image"
             [active]="selectedNickname === getChatName(chat)"
             (click)="selectGroupFromSearch(chat)"
-          ></shared-chat-list-item>
+          ></shared-list-item>
         </ng-container>
       </ng-container>
     </ul>

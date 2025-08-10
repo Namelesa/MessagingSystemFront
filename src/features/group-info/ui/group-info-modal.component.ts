@@ -59,7 +59,6 @@ export class GroupInfoModalComponent implements OnChanges, OnInit {
 
   isAddingMember = false;
   userSearchQuery = '';
-  // suggestions come from parent now
   selectedUsers: SearchUser[] = [];
   selectedUserIndex = -1;
   searchTimeout: any;
@@ -91,7 +90,6 @@ export class GroupInfoModalComponent implements OnChanges, OnInit {
   }  
 
   ngOnChanges(changes: SimpleChanges): void {
-    // Fetch group info only when modal just opened or groupId changed
     const openedJustNow = !!changes['open'] && changes['open'].currentValue && !changes['open'].previousValue;
     const groupChanged = !!changes['groupId'] && !changes['groupId'].firstChange && this.open;
 
@@ -149,29 +147,6 @@ export class GroupInfoModalComponent implements OnChanges, OnInit {
         }
         return member;
       });
-    }
-  
-    if (hasChanges) {
-      this.groupInfo = { ...this.groupInfo };
-    }
-  }  
-
-  private removeDeletedUserFromGroup(userName: string): void {
-    if (!this.groupInfo) return;
-  
-    let hasChanges = false;
-  
-    if (this.groupInfo.members) {
-      const originalLength = this.groupInfo.members.length;
-      this.groupInfo.members = this.groupInfo.members.filter(member => member.nickName !== userName);
-      if (this.groupInfo.members.length !== originalLength) {
-        hasChanges = true;
-      }
-    }
-  
-    if (this.groupInfo.admin === userName) {
-      this.groupInfo.admin = '';
-      hasChanges = true;
     }
   
     if (hasChanges) {
@@ -391,7 +366,6 @@ export class GroupInfoModalComponent implements OnChanges, OnInit {
     this.errors = [];
   }
 
-  // Called by parent on successful add-members operation
   public onMembersAddedSuccess(): void {
     this.selectedUsers = [];
     this.userSearchQuery = '';

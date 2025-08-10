@@ -1,5 +1,5 @@
-import { validateEmail, validateFirstName, validateLastName, validateNickName, validateLogin } from '../../../shared/validators';
 import { EditUserContract } from '../../../entities/user';
+import { validateEmail, validateFirstName, validateLastName, validateNickName, validateLogin } from '../../../shared/validators';
 
 const FIELD_VALIDATORS: Record<keyof EditUserContract, {
   label: string;
@@ -14,21 +14,17 @@ const FIELD_VALIDATORS: Record<keyof EditUserContract, {
     label: 'Image', 
     validator: (file: File | undefined) => {
       if (!file) return null;
-      
       if (!(file instanceof File)) {
         return 'must be a valid file';
       }
-      
       const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml'];
       if (!allowedTypes.includes(file.type)) {
         return 'must be a valid image file (jpeg, png, gif, webp, svg)';
       }
-      
       const maxSizeInBytes = 5 * 1024 * 1024; 
       if (file.size > maxSizeInBytes) {
         return 'must be smaller than 5MB';
       }
-      
       return null;
     }
   }
@@ -36,29 +32,23 @@ const FIELD_VALIDATORS: Record<keyof EditUserContract, {
 
 export function validateSingleField(fieldName: keyof EditUserContract, value: any): string[] {
   const fieldConfig = FIELD_VALIDATORS[fieldName];
-  
   if (!fieldConfig) {
-    console.warn(`No validator found for field: ${fieldName}`);
+    console.warn(`No validator found for field: ${String(fieldName)}`);
     return [];
   }
-  
   const error = fieldConfig.validator(value);
-  
   if (error) {
     return [`${fieldConfig.label}: ${error}`];
   }
-  
   return [];
 }
 
 export function validateUpdateForm(data: EditUserContract): string[] {
   const errors: string[] = [];
-  
   (Object.keys(FIELD_VALIDATORS) as Array<keyof EditUserContract>).forEach(fieldName => {
     const fieldErrors = validateSingleField(fieldName, data[fieldName]);
     errors.push(...fieldErrors);
   });
-  
   return errors;
 }
 
@@ -79,7 +69,6 @@ export function checkRequiredFields(data: EditUserContract): {
     const value = data[field];
     return !value || (typeof value === 'string' && value.trim() === '');
   });
-  
   return {
     isComplete: missingFields.length === 0,
     missingFields

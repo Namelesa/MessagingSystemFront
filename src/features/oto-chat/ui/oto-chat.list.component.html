@@ -68,7 +68,7 @@
           {{ emptyListText }}
         </li>
     
-        <shared-chat-list-item
+        <shared-list-item
           *ngFor="let chat of sortedChats$ | async; trackBy: trackByFn"
           [name]="getChatDisplayName(chat)"
           [image]="getChatImage(chat) ?? 'default-image.png'"
@@ -82,7 +82,7 @@
                 d="M5 5v14l7-7 7 7V5a2 2 0 00-2-2H7a2 2 0 00-2 2z"/>
             </svg>
           </ng-container>
-        </shared-chat-list-item>
+        </shared-list-item>
       </ul>
     </ng-template>    
   </ng-template>

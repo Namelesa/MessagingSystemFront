@@ -1,19 +1,19 @@
+import { Observable, Subscription } from 'rxjs';
+import { map, filter } from 'rxjs/operators';
 import { Component, Input, Output, EventEmitter, ElementRef, ViewChild, HostListener, OnInit, OnDestroy } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
-import { map, filter } from 'rxjs/operators';
-import { Subscription } from 'rxjs';
-import { BaseChatListComponent } from '../../../shared/chats';
-import { OtoChat } from '../../../entities/oto-chat';
 import { OtoChatApiService } from '../api/oto-chat-hub.api';
-import { ChatListItemComponent, SearchInputComponent } from '../../../shared/chats-ui-elements';
-import { Observable } from 'rxjs';
+import { OtoChat } from '../../../entities/oto-chat';
 import { SearchUser } from '../../../entities/search-user';
+import { BaseChatListComponent } from '../../../shared/chat';
+import { ListItemComponent} from '../../../shared/list';
+import { SearchInputComponent } from '../../../shared/search';
 
 @Component({
   selector: 'app-oto-chat-list',
   standalone: true,
-  imports: [CommonModule, FormsModule, ChatListItemComponent, SearchInputComponent],
+  imports: [CommonModule, FormsModule, ListItemComponent, SearchInputComponent],
   templateUrl: './oto-chat.list.component.html',
 })
 export class OtoChatListComponent extends BaseChatListComponent<OtoChat> implements OnInit, OnDestroy {

@@ -1,6 +1,6 @@
 import { BehaviorSubject } from 'rxjs';
 import { Component, OnInit, OnDestroy } from '@angular/core';
-import { BaseChatApiService } from '../services/base.chat.hub.api';
+import { BaseChatApiService } from '../service/base.chat.hub.api';
 
 @Component({
   template: '' 

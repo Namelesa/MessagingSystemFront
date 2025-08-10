@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { OtoChat } from '../../../entities/oto-chat';
 import { AuthService } from '../../../entities/session';
 import { environment } from '../../../shared/api-urls';
-import { BaseChatApiService } from '../../../shared/chats';
+import { BaseChatApiService } from '../../../shared/chat';
 
 @Injectable({
   providedIn: 'root'

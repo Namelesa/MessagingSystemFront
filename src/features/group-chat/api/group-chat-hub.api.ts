@@ -7,7 +7,7 @@ import { GroupCreateRequest } from './group-create';
 import { AuthApiResult } from '../../../entities/user';
 import { AuthService } from '../../../entities/session';
 import { environment } from '../../../shared/api-urls';
-import { BaseChatApiService } from '../../../shared/chats';
+import { BaseChatApiService } from '../../../shared/chat';
 
 @Injectable({ providedIn: 'root' })
 export class GroupChatApiService extends BaseChatApiService<GroupChat> {
