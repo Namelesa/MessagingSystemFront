@@ -1,14 +1,13 @@
-import { Injectable } from '@angular/core';
-import { environment } from '../../../shared/api-result';
-import { GroupChat } from './group.chat';
-import { BaseChatApiService } from '../../../shared/chats';
-import { Observable } from 'rxjs';
-import { GroupCreateRequest } from './group-create';
-import { AuthApiResult } from '../../../shared/api-result';
+import { Subject, Observable } from 'rxjs';
 import { HttpClient } from '@angular/common/http';
+import { Injectable } from '@angular/core';
 import * as signalR from '@microsoft/signalr';
-import { AuthService } from '../../../shared/auth-guard';
-import { Subject } from 'rxjs';
+import { GroupChat } from './group.chat';
+import { GroupCreateRequest } from './group-create';
+import { AuthApiResult } from '../../../entities/user';
+import { AuthService } from '../../../entities/session';
+import { environment } from '../../../shared/api-urls';
+import { BaseChatApiService } from '../../../shared/chats';
 
 @Injectable({ providedIn: 'root' })
 export class GroupChatApiService extends BaseChatApiService<GroupChat> {

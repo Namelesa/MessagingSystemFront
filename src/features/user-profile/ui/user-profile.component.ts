@@ -1,15 +1,14 @@
+import { debounceTime, distinctUntilChanged, Subject } from 'rxjs';
+import { Router } from '@angular/router';
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { UserProfileApi } from '../api/user-profile.api';
-import { ProfileApiResult } from '../../../shared/api-result';
-import { ToastService, ToastComponent } from '../../../shared/ui-elements';
-import { InputComponent } from '../../../shared/ui-elements';
-import { validateUpdateForm, validateSingleField } from '../model/validate-update';
 import { HttpErrorResponse } from '@angular/common/http';
-import { Router } from '@angular/router';
+import { validateUpdateForm, validateSingleField } from '../model/validate-update';
+import { UserProfileApi } from '../api/user-profile.api';
+import { ProfileApiResult } from '../../../entities/session';
 import { EditUserContract } from '../../../entities/user';
-import { debounceTime, distinctUntilChanged, Subject } from 'rxjs';
+import { InputComponent, ToastService, ToastComponent } from '../../../shared/ui-elements';
 
 @Component({
   selector: 'app-user-profile',

@@ -1,18 +1,18 @@
 import { Component,  Input, ViewChild, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Observable } from 'rxjs';
 import { GroupMember } from '../../../entities/group-member';
+import { AuthService } from '../../../entities/session';
+import { SearchUser } from '../../../entities/search-user';
 import { GroupChatListComponent, GroupChatApiService } from '../../../features/group-chat';
 import { GroupMessage, GroupMessagesComponent, GroupMessagesApiService } from '../../../features/group-message';
 import { GroupInfoModalComponent, GroupInfoApiService } from '../../../features/group-info';
-import { BaseChatPageComponent } from '../../../shared/chats';
-import { ChatLayoutComponent } from '../../../shared/layouts';
-import { AuthService } from '../../../shared/auth-guard';
-import { SendAreaComponent } from '../../../shared/chats-ui-elements';
-import { StorageService } from '../../../shared/storage';
 import { FindUserStore } from '../../../features/search-user';
-import { Observable } from 'rxjs';
-import { SearchUser } from '../../../entities/search-user';
+import { ChatLayoutComponent } from '../../../features/chat-layout';
+import { StorageService } from '../../../shared/storage';
+import { BaseChatPageComponent } from '../../../shared/chats';
+import { SendAreaComponent } from '../../../shared/chats-ui-elements';
 
 @Component({
   selector: 'app-group-chat-page',

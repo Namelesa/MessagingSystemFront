@@ -8,7 +8,7 @@ import { Observable, map, combineLatest } from 'rxjs';
 import { validateCreateGroupForm } from '../model/validate-group';
 import { GroupCreateRequest } from '../api/group-create';
 import { SearchUser } from '../../../entities/search-user';
-import { AuthService } from '../../../shared/auth-guard';
+import { AuthService } from '../../../entities/session';
 import { InputComponent, ToastService, ToastComponent } from '../../../shared/ui-elements';
 import { ChatListItemComponent, SearchInputComponent } from '../../../shared/chats-ui-elements';
 

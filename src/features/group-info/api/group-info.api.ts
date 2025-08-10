@@ -1,12 +1,11 @@
+import { BehaviorSubject, Observable, Subscription } from 'rxjs';
+import { tap } from 'rxjs/operators';
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
-import { BehaviorSubject, Observable, Subscription } from 'rxjs';
-import { tap } from 'rxjs/operators';
-import { environment } from '../../../shared/api-result';
 import { GroupInfoResponse } from '../model/group-info.model';
 import { GroupInfoEditData } from '../model/group-info-edit.model';
-// Removed dependency on another feature to comply with FSD
+import { environment } from '../../../shared/api-urls';
 
 @Injectable({ providedIn: 'root' })
 export class GroupInfoApiService {

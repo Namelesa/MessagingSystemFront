@@ -16,7 +16,7 @@ import { GroupMessagesApiService } from '../api/group-messages.api';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import { GroupMessage } from '../model/group-message.model';
-import { AuthService } from '../../../shared/auth-guard';
+import { AuthService } from '../../../entities/session';
 
 @Component({
   selector: 'app-group-messages',

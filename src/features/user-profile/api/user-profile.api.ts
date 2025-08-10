@@ -1,9 +1,9 @@
+import { Observable } from 'rxjs';
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
-import { environment, ProfileApiResult, AuthApiResult } from '../../../shared/api-result';
-import { AuthService } from '../../../shared/auth-guard';
-import { EditUserContract } from '../../../entities/user';
+import { AuthService, ProfileApiResult } from '../../../entities/session';
+import { EditUserContract, AuthApiResult } from '../../../entities/user';
+import { environment } from '../../../shared/api-urls';
 
 @Injectable({ providedIn: 'root' })
 export class UserProfileApi {

@@ -14,7 +14,7 @@ import { GroupInfoEditData } from '../model/group-info-edit.model';
 import { GroupInfoData } from '../model/group-info.model';
 import { validateCreateGroupForm } from '../model/validate-group';
 import { SearchUser } from '../../../entities/search-user';
-import { AuthService } from '../../../shared/auth-guard';
+import { AuthService } from '../../../entities/session';
 import { InputComponent, ToastComponent, ToastService } from '../../../shared/ui-elements';
 import { ModalHeaderComponent, AvatarComponent, UserListComponent, SelectedUsersComponent } from '../../../shared/group-chat-ui-elements';
 

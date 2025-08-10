@@ -4,15 +4,15 @@ import { FormsModule } from '@angular/forms';
 import { Observable, Subscription } from 'rxjs';
 import { OtoChat } from '../../../entities/oto-chat';
 import { OtoMessage } from '../../../entities/oto-message';
+import { AuthService } from '../../../entities/session';
+import { SearchUser } from '../../../entities/search-user';
 import { OtoChatListComponent, OtoChatApiService } from '../../../features/oto-chat';
 import { OtoChatMessagesComponent, OtoMessagesService} from '../../../features/oto-message';
-import { BaseChatPageComponent} from '../../../shared/chats';
-import { ChatLayoutComponent } from '../../../shared/layouts';
-import { AuthService } from '../../../shared/auth-guard';
-import { SendAreaComponent } from '../../../shared/chats-ui-elements';
-import { StorageService } from '../../../shared/storage';
 import { FindUserStore } from '../../../features/search-user';
-import { SearchUser } from '../../../entities/search-user';
+import { ChatLayoutComponent } from '../../../features/chat-layout';
+import { StorageService } from '../../../shared/storage';
+import { BaseChatPageComponent} from '../../../shared/chats';
+import { SendAreaComponent } from '../../../shared/chats-ui-elements';
 
 @Component({
   selector: 'app-oto-chat-page',

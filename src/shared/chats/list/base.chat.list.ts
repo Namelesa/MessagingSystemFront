@@ -1,7 +1,5 @@
-import { OnInit, Input, Output, EventEmitter, OnDestroy } from '@angular/core';
 import { Observable } from 'rxjs';
-
-import { Component } from '@angular/core';
+import { OnInit, Input, Output, EventEmitter, OnDestroy, Component } from '@angular/core';
 
 @Component({
   template: ''

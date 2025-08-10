@@ -3,9 +3,8 @@ import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { LucideAngularModule } from 'lucide-angular';
+import { ProfileApiResult, AuthService } from '../../../entities/session';
 import { SidebarNavItemComponent } from '../../../shared/ui-elements';
-import { AuthService } from '../../../shared/auth-guard';
-import { ProfileApiResult } from '../../../shared/api-result';
 
 @Component({
   selector: 'app-sidebar-widget',
