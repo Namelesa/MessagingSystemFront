@@ -68,3 +68,4 @@ export class UserListComponent {
     this.removeUser.emit(nickName);
   }
 }
+

@@ -54,3 +54,4 @@ export class AvatarComponent {
     this.fileChange.emit(event);
   }
 }
+

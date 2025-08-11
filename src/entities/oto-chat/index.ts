@@ -1,1 +1,0 @@
-export * from './model/oto.chat';

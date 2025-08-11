@@ -21,7 +21,7 @@ export class GroupInfoApiService {
   ) {}
 
   // Subscriptions to user info changes are now handled at composition level (page/widget)
-
+ 
   getGroupInfo(groupId: string): Observable<GroupInfoResponse> {
     this.currentGroupId = groupId;
     
@@ -167,3 +167,4 @@ export class GroupInfoApiService {
     }
   }
 }
+

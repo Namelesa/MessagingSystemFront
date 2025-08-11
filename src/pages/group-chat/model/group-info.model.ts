@@ -1,5 +1,3 @@
-import { GroupMember } from '../../../entities/group-member';
-
 export interface GroupInfoData {
   groupId: string;
   groupName: string;
@@ -14,4 +12,9 @@ export interface GroupInfoResponse {
   success: boolean;
   message: string | null;
   data: GroupInfoData;
-} 
+}
+
+export interface GroupMember {
+  nickName: string;
+  image: string;
+}

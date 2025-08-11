@@ -1,1 +1,0 @@
-export * from './model/group-member.model';

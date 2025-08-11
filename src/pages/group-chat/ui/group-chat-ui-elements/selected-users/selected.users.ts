@@ -28,3 +28,4 @@ export class SelectedUsersComponent {
   @Input() users: SelectedUser[] = [];
   @Output() removeUser = new EventEmitter<string>();
 }
+

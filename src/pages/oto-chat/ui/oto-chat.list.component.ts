@@ -4,11 +4,11 @@ import { Component, Input, Output, EventEmitter, ElementRef, ViewChild, HostList
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { OtoChatApiService } from '../api/oto-chat-hub.api';
-import { OtoChat } from '../../../entities/oto-chat';
+import { OtoChat } from '../model/oto.chat';
 import { SearchUser } from '../../../entities/search-user';
-import { BaseChatListComponent } from '../../../shared/chat/component/base.chat.list';
-import { ListItemComponent } from '../../../shared/list/component/list-item.component';
-import { SearchInputComponent } from '../../../shared/search/component/search-input.component';
+import { BaseChatListComponent } from '../../../shared/chat';
+import { ListItemComponent } from '../../../shared/list';
+import { SearchInputComponent } from '../../../shared/search';
 
 @Component({
   selector: 'app-oto-chat-list',

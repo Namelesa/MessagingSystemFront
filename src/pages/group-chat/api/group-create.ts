@@ -5,3 +5,4 @@ export interface GroupCreateRequest {
     Users: string[];
     ImageFile: File | null | undefined;
 }
+

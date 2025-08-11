@@ -7,3 +7,4 @@ export interface GroupChat {
     groupId: string;
     members: { nickName: string; image: string }[]
 }
+

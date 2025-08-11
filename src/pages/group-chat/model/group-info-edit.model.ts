@@ -3,3 +3,4 @@ export interface GroupInfoEditData {
     ImageFile? : File;
     Description: string;
 }
+

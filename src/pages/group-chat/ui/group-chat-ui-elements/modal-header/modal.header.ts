@@ -53,3 +53,4 @@ export class ModalHeaderComponent {
   @Output() saveClick = new EventEmitter<void>();
   @Output() cancelClick = new EventEmitter<void>();
 }
+
