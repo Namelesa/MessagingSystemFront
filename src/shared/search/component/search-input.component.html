@@ -1,0 +1,12 @@
+<div class="relative">
+    <button class="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white" (click)="search.emit()">🔍</button>
+    <input
+      [ngModel]="query"
+      (ngModelChange)="queryChange.emit($event)"
+      (focus)="focus.emit()"
+      type="text"
+      class="w-full rounded-xl pl-10 pr-10 py-2 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-white"
+      [placeholder]="placeholder"
+    />
+    <button *ngIf="query" class="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white" (click)="clear.emit()">✖️</button>
+  </div>

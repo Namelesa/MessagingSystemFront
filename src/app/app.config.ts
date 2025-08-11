@@ -1,12 +1,25 @@
-import { ApplicationConfig, provideBrowserGlobalErrorListeners, provideZoneChangeDetection } from '@angular/core';
+import { ApplicationConfig, importProvidersFrom } from '@angular/core';
 import { provideRouter } from '@angular/router';
-
+import { FormsModule } from '@angular/forms';
+import { HttpClientModule, HTTP_INTERCEPTORS } from '@angular/common/http';
+import { LucideAngularModule, MessageSquare, Users, Settings, User, LogOutIcon } from 'lucide-angular';
 import { routes } from './app.routes';
+import { UnauthorizedRedirectInterceptor } from './unauthorized-redirect.interceptor';
 
 export const appConfig: ApplicationConfig = {
   providers: [
-    provideBrowserGlobalErrorListeners(),
-    provideZoneChangeDetection({ eventCoalescing: true }),
-    provideRouter(routes)
-  ]
+    importProvidersFrom(FormsModule),
+    importProvidersFrom(HttpClientModule),
+    importProvidersFrom(
+      LucideAngularModule.pick({
+        MessageSquare,
+        Users, 
+        Settings,
+        User,
+        LogOutIcon
+      })
+    ),
+    provideRouter(routes),
+    { provide: HTTP_INTERCEPTORS, useClass: UnauthorizedRedirectInterceptor, multi: true },
+  ],
 };

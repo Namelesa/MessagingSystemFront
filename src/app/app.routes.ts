@@ -1,3 +1,30 @@
 import { Routes } from '@angular/router';
+import { RegisterPageComponent } from '../pages/register';
+import { LoginPageComponent } from '../pages/login';
+import { EmailConfirmedPageComponent } from '../pages/email-confirmation';
+import { ProfilePageComponent } from '../pages/user-profile';
+import { SettingsPageComponent } from '../pages/settings';
+import { OtoChatPageComponent } from '../pages/oto-chat';
+import { GroupChatPageComponent } from '../pages/group-chat';
+import { AuthGuard } from './guards/auth.guard';
+import { MainLayoutComponent } from './layouts';
 
-export const routes: Routes = [];
+export const routes: Routes = [
+  { path: '', redirectTo: 'login', pathMatch: 'full' },
+
+  {
+    path: '',
+    canActivate: [AuthGuard],
+    component: MainLayoutComponent,
+    children: [
+      { path: 'profile', component: ProfilePageComponent },
+      { path: 'settings', component: SettingsPageComponent },
+      { path: 'otoChats', component: OtoChatPageComponent },
+      { path: 'groupChats', component: GroupChatPageComponent },
+    ]
+  },
+
+  { path: 'register', component: RegisterPageComponent },
+  { path: 'login', component: LoginPageComponent },
+  { path: 'email-confirmed', loadComponent: () => EmailConfirmedPageComponent },
+];

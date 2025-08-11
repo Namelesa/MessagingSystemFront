@@ -1,0 +1,91 @@
+<aside class="w-64 h-full bg-gray-100 text-black flex flex-col dark:bg-gray-900 dark:text-gray-200">
+  
+  <div #searchContainer class="p-4 border border-white dark:border-transparent">
+    <shared-search-input
+      [query]="search"
+      (queryChange)="onSearchQueryChange($event)"
+      (focus)="onSearchFocused()"
+      (clear)="onSearchActiveChange(false)"
+      [placeholder]="'Search...'">
+    </shared-search-input>
+
+    <ng-container *ngIf="search.trim()">
+      <ng-container *ngIf="user$ | async as user; else notFound">
+        <div
+          class="p-2 hover:bg-gray-300 rounded-xl cursor-pointer transition flex items-center gap-2 dark:hover:bg-gray-800 mt-2"
+          (click)="onFoundedUser({nick: user.nickName, image: user.image})"
+        >
+          <img
+            [src]="user.image"
+            alt="Avatar"
+            class="w-10 h-10 rounded-full object-cover"
+          />
+          <span class="font-medium">{{ user.nickName }}</span>
+        </div>
+      </ng-container>
+      <ng-template #notFound>
+        <div class="flex items-center justify-center p-4 text-gray-500">
+          Not found users ;(
+        </div>
+      </ng-template>
+    </ng-container>
+  </div>  
+
+  <ng-container *ngIf="searchQuery && isSearchFocused; else fallback">
+    <div class="flex-1 overflow-y-auto p-2">
+      <div
+        *ngFor="let result of searchResults"
+        (click)="onStartChat(result, image)"
+        class="p-2 hover:bg-gray-300 rounded-xl cursor-pointer transition flex items-center gap-2 dark:hover:bg-gray-800"
+      >
+        <span class="text-blue-400">🔎</span>
+        <span class="font-medium">{{ result }}</span>
+      </div>
+    </div>
+  </ng-container>
+
+  <ng-template #fallback>
+    <ng-container *ngIf="loading$ | async; else notLoading">
+      <div class="flex-grow flex items-center justify-center text-gray-500">
+        Loading...
+      </div>
+    </ng-container>
+
+    <ng-template #notLoading>
+      <ng-container *ngIf="error$ | async as error; else showChats">
+        <div class="flex-grow flex items-center justify-center text-red-500 px-4">
+          Error: {{ error }}
+        </div>
+      </ng-container>
+    </ng-template>
+
+    <ng-template #showChats>
+      <ul
+        *ngIf="!isSearchFocused"
+        class="flex-grow overflow-y-auto border border-white dark:border-transparent"
+      >
+        <li *ngIf="(chats$ | async)?.length === 0" class="p-4 text-center text-black dark:text-gray-500">
+          {{ emptyListText }}
+        </li>
+    
+        <shared-list-item
+          *ngFor="let chat of sortedChats$ | async; trackBy: trackByFn"
+          [name]="getChatDisplayName(chat)"
+          [image]="getChatImage(chat) ?? 'default-image.png'"
+          [active]="isChatActive(chat)"
+          (click)="onChatClick(chat)"
+        >
+          <ng-container *ngIf="isSavedMessagesChat(chat)" icon>
+            <svg width="40" height="40" fill="none" viewBox="0 0 24 24" stroke="currentColor"
+              class="w-10 h-10 rounded-full mr-3 bg-blue-500 p-2">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M5 5v14l7-7 7 7V5a2 2 0 00-2-2H7a2 2 0 00-2 2z"/>
+            </svg>
+          </ng-container>
+        </shared-list-item>
+      </ul>
+    </ng-template>    
+  </ng-template>
+</aside>
+
+

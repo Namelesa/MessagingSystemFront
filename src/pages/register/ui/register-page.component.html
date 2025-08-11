@@ -1,0 +1,180 @@
+<auth-page-layout
+  [title]="'Create Account'"
+  [subtitle]="'Join to start secure conversations'"
+  [bottomText]="'Already have an account?'"
+  [bottomLink]="{ href: '/login', text: 'Sign in' }"
+  [isPasswordVisible]="isPasswordVisible"
+  [passwordLength]="passwordLength"
+>
+<app-toast></app-toast>
+
+<form (ngSubmit)="onSubmit()" #form="ngForm">
+  <app-input
+    [(ngModel)]="formData.firstName"
+    name="firstName"
+    [required]="true"
+    placeholder="First Name"
+    [errors]="getFieldErrors('firstName')"
+    (ngModelChange)="onFirstNameChange($event)"
+  ></app-input>
+
+  <app-input
+    [(ngModel)]="formData.lastName"
+    name="lastName"
+    [required]="true"
+    placeholder="Last Name"
+    [errors]="getFieldErrors('lastName')"
+    (ngModelChange)="onLastNameChange($event)"
+  ></app-input>
+
+  <app-input
+    [(ngModel)]="formData.login"
+    name="login"
+    [required]="true"
+    placeholder="Login"
+    [errors]="getFieldErrors('login')"
+    (ngModelChange)="onLoginChange($event)"
+  ></app-input>
+
+  <app-input
+    [(ngModel)]="formData.email"
+    name="email"
+    [required]="true"
+    type="email"
+    placeholder="Email"
+    [errors]="getFieldErrors('email')"
+    (ngModelChange)="onEmailChange($event)"
+  ></app-input>
+
+  <app-input
+    [(ngModel)]="formData.nickName"
+    name="nickName"
+    [required]="true"
+    placeholder="Nick Name"
+    [errors]="getFieldErrors('nickName')"
+    (ngModelChange)="onNickNameChange($event)"
+  ></app-input>
+
+  <app-input
+  [type]="isPasswordVisible ? 'text' : 'password'"
+  [placeholder]="'Password'"
+  [required]="true"
+  [(ngModel)]="formData.password"
+  [name]="'password'"
+  (ngModelChange)="onPasswordInput($event)"
+  [hasSuffix]="true"
+  [errors]="getFieldErrors('password')"
+>
+  <button
+    type="button"
+    (click)="togglePasswordVisibility()"
+    class="flex items-center text-gray-500 hover:text-gray-700 focus:outline-none z-10 p-1 rounded transition-colors duration-200"
+  >
+    <lucide-icon [img]="EyeIcon" *ngIf="!isPasswordVisible" size="20"></lucide-icon>
+    <lucide-icon [img]="EyeOffIcon" *ngIf="isPasswordVisible" size="20"></lucide-icon>
+  </button>
+</app-input>
+
+  <div class="mb-4">
+    <input
+      #fileInput
+      (change)="onFileChange($event)"
+      type="file"
+      accept="image/*"
+      name="image"
+      class="hidden"
+    />
+    
+    <div class="relative">
+      <button
+        type="button"
+        (click)="fileInput.click()"
+        class="w-full px-4 py-3 rounded-lg text-left
+               transition-all duration-300
+               focus:outline-none focus:ring-2 focus:ring-blue-500
+               border-2 border-dashed"
+        [class.bg-gray-50]="!getFieldErrors('image').length && !formData.image"
+        [class.dark:bg-gray-800]="!getFieldErrors('image').length && !formData.image"
+        [class.text-gray-600]="!getFieldErrors('image').length && !formData.image"
+        [class.dark:text-gray-400]="!getFieldErrors('image').length && !formData.image"
+        [class.border-gray-300]="!getFieldErrors('image').length && !formData.image"
+        [class.dark:border-gray-600]="!getFieldErrors('image').length && !formData.image"
+        [class.hover:bg-gray-100]="!getFieldErrors('image').length && !formData.image"
+        [class.dark:hover:bg-gray-700]="!getFieldErrors('image').length && !formData.image"
+        [class.hover:border-gray-400]="!getFieldErrors('image').length && !formData.image"
+        [class.dark:hover:border-gray-500]="!getFieldErrors('image').length && !formData.image"
+        [class.bg-green-50]="!getFieldErrors('image').length && formData.image"
+        [class.dark:bg-green-900]="!getFieldErrors('image').length && formData.image"
+        [class.text-green-700]="!getFieldErrors('image').length && formData.image"
+        [class.dark:text-green-400]="!getFieldErrors('image').length && formData.image"
+        [class.border-green-300]="!getFieldErrors('image').length && formData.image"
+        [class.dark:border-green-600]="!getFieldErrors('image').length && formData.image"
+        [class.hover:bg-green-100]="!getFieldErrors('image').length && formData.image"
+        [class.dark:hover:bg-green-900]="!getFieldErrors('image').length && formData.image"
+        [class.bg-red-50]="getFieldErrors('image').length > 0"
+        [class.dark:bg-red-900]="getFieldErrors('image').length > 0"
+        [class.text-red-600]="getFieldErrors('image').length > 0"
+        [class.dark:text-red-400]="getFieldErrors('image').length > 0"
+        [class.border-red-300]="getFieldErrors('image').length > 0"
+        [class.dark:border-red-600]="getFieldErrors('image').length > 0"
+        [class.hover:bg-red-100]="getFieldErrors('image').length > 0"
+        [class.dark:hover:bg-red-900]="getFieldErrors('image').length > 0"
+      >
+        <div class="flex items-center justify-center space-x-2">
+          <svg *ngIf="!formData.image" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+          </svg>
+          
+          <svg *ngIf="formData.image && !getFieldErrors('image').length" class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+          </svg>
+          
+          <svg *ngIf="getFieldErrors('image').length > 0" class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+          </svg>
+          
+          <div class="text-center">
+            <div *ngIf="!formData.image" class="font-medium">Upload Avatar</div>
+            <div *ngIf="formData.image && !getFieldErrors('image').length" class="font-medium">
+              {{ formData.image.name }}
+            </div>
+            <div *ngIf="getFieldErrors('image').length > 0" class="font-medium">
+              Fix image error
+            </div>
+            <div class="text-xs opacity-75 mt-1">
+              <span *ngIf="!formData.image">JPEG, PNG, GIF, WebP, SVG (max 5MB)</span>
+              <span *ngIf="formData.image && !getFieldErrors('image').length">Click to change</span>
+              <span *ngIf="getFieldErrors('image').length > 0">Click to select a valid image</span>
+            </div>
+          </div>
+        </div>
+      </button>
+    </div>
+  </div>
+
+    <div *ngIf="getFieldErrors('image').length > 0" class="mt-2">
+      <div *ngFor="let error of getFieldErrors('image')" 
+           class="text-sm text-red-600 dark:text-red-400 flex items-center">
+        <svg class="w-4 h-4 mr-1 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+          <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+        </svg>
+        {{ error }}
+      </div>
+    </div>
+
+  <app-button
+    type="submit"
+    [disabled]="isSubmitting || !isFormValid"
+  >
+    <span *ngIf="!isSubmitting">Sign up</span>
+    <span *ngIf="isSubmitting" class="flex items-center">
+      <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+      </svg>
+      Signing up...
+    </span>
+  </app-button>
+</form>
+
+</auth-page-layout>

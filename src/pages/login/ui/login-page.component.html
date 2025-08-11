@@ -1,0 +1,64 @@
+<auth-page-layout
+  [title]="'Sign in to WhisperNet'"
+  [subtitle]="'Access your secure chats and contacts'"
+  [bottomText]="'Don’t have an account?'"
+  [bottomLink]="{ href: '/register', text: 'Sign up' }"
+  [isPasswordVisible]="isPasswordVisible"
+  [passwordLength]="passwordLength"
+>
+  <app-toast></app-toast>
+
+  <form (ngSubmit)="onSubmit()" #form="ngForm">
+    <app-input
+      [(ngModel)]="formData.login"
+      name="login"
+      [required]="true"
+      placeholder="Login"
+      [errors]="getFieldErrors('login')"
+      (ngModelChange)="onLoginChange($event)"
+    ></app-input>
+
+    <app-input
+      [(ngModel)]="formData.nickName"
+      name="nickName"
+      [required]="true"
+      placeholder="Nick Name"
+      [errors]="getFieldErrors('nickName')"
+      (ngModelChange)="onNickNameChange($event)"
+    ></app-input>
+
+    <app-input
+      [type]="isPasswordVisible ? 'text' : 'password'"
+      [placeholder]="'Password'"
+      [required]="true"
+      [(ngModel)]="formData.password"
+      [name]="'password'"
+      (ngModelChange)="onPasswordInput($event)"
+      [hasSuffix]="true"
+      [errors]="getFieldErrors('password')"
+    >
+      <button
+        type="button"
+        (click)="togglePasswordVisibility()"
+        class="flex items-center text-gray-500 hover:text-gray-700 focus:outline-none z-10 p-1 rounded transition-colors duration-200"
+      >
+        <lucide-icon [img]="EyeIcon" *ngIf="!isPasswordVisible" size="20"></lucide-icon>
+        <lucide-icon [img]="EyeOffIcon" *ngIf="isPasswordVisible" size="20"></lucide-icon>
+      </button>
+    </app-input>
+
+    <app-button
+      type="submit"
+      [disabled]="isSubmitting || !isFormValid"
+    >
+      <span *ngIf="!isSubmitting">Sign in</span>
+      <span *ngIf="isSubmitting" class="flex items-center">
+        <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+        Signing in...
+      </span>
+    </app-button>
+  </form>
+</auth-page-layout>
