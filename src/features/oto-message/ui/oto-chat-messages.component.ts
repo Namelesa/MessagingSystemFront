@@ -13,7 +13,6 @@ import {
 import { CommonModule } from '@angular/common';
 import { Subject } from 'rxjs';
 import { takeUntil, filter } from 'rxjs/operators';
-// Cross-feature import removed to comply with FSD
 import { OtoMessage } from '../../../entities/oto-message';
 
 @Component({
@@ -81,7 +80,6 @@ export class OtoChatMessagesComponent implements OnChanges, AfterViewInit, OnDes
   }
 
   private subscribeToUserDeletion() {
-    // Listen to global deletion notifications if provided by composition
     const global$ = (window as any).__otoUserInfoDeleted$ as any;
     if (global$ && typeof global$.pipe === 'function') {
       global$

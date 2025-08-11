@@ -3,14 +3,16 @@ import { Component,  Input, ViewChild, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
+import { GroupMessagesApiService } from '../api/group-messages.api';
 import { GroupMember } from '../../../entities/group-member';
+import { GroupMessage } from '../../../entities/group-message';
 import { AuthService } from '../../../entities/session';
 import { SearchUser } from '../../../entities/search-user';
 import { GroupChatListComponent, GroupChatApiService } from '../../../features/group-chat';
-import { GroupMessage, GroupMessagesComponent, GroupMessagesApiService } from '../../../features/group-message';
 import { GroupInfoModalComponent, GroupInfoApiService } from '../../../features/group-info';
 import { FindUserStore } from '../../../features/search-user';
 import { ChatLayoutComponent } from '../../../widgets/chat-layout';
+import { GroupMessagesWidget } from '../../../widgets/chat-messages';
 import { BaseChatPageComponent } from '../../../shared/chat';
 import { SendAreaComponent } from '../../../shared/send-message-area';
 
@@ -19,7 +21,7 @@ import { SendAreaComponent } from '../../../shared/send-message-area';
   standalone: true,
   imports: [CommonModule, GroupChatListComponent, 
     FormsModule, ChatLayoutComponent, GroupInfoModalComponent, 
-    GroupMessagesComponent, SendAreaComponent],
+    GroupMessagesWidget, SendAreaComponent],
   templateUrl: './group-chat-page.html',
 })
 export class GroupChatPageComponent extends BaseChatPageComponent {
@@ -41,7 +43,7 @@ export class GroupChatPageComponent extends BaseChatPageComponent {
 
   @Input() edit: string = '';
 
-  @ViewChild(GroupMessagesComponent) messagesComponent?: GroupMessagesComponent;
+  @ViewChild(GroupMessagesWidget) messagesComponent?: GroupMessagesWidget;
   @ViewChild(GroupChatListComponent) chatListComponent?: GroupChatListComponent;
 
   user$: Observable<SearchUser | null>;
@@ -49,7 +51,7 @@ export class GroupChatPageComponent extends BaseChatPageComponent {
 
   constructor(
     private groupChatApi: GroupChatApiService, 
-    private groupMessages: GroupMessagesApiService,
+    public groupMessages: GroupMessagesApiService,
     private authService: AuthService, 
     private groupInfoApi: GroupInfoApiService,
     private cdr: ChangeDetectorRef,

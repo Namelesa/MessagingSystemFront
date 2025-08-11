@@ -18,15 +18,19 @@
     <ng-container *ngIf="selectedChat; else noChatSelected">
       <div class="flex flex-col h-full">
         <div class="flex-1 overflow-y-auto">
-          <app-group-messages 
+          <widgets-group-messages 
             #messagesComponent
             *ngIf="selectedGroupId"
             [groupId]="selectedGroupId"
             [members]="groupMembers"
+             [currentUserNickName]="currentUserNickName"
+             [messages$]="groupMessages.messages$"
+             [userInfoChanged$]="groupMessages.userInfoChanged$"
+             [loadHistory]="groupMessages.loadChatHistory.bind(groupMessages)"
             (editMessage)="onEditMessage($event)"
             (deleteMessage)="onDeleteMessage($event)"
             (replyToMessage)="onReplyToMessage($event)">
-          </app-group-messages>
+          </widgets-group-messages>
         </div>
         <shared-send-message-area
           [editingMessage]="editingMessage"

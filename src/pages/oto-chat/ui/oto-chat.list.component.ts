@@ -6,14 +6,14 @@ import { CommonModule } from '@angular/common';
 import { OtoChatApiService } from '../api/oto-chat-hub.api';
 import { OtoChat } from '../../../entities/oto-chat';
 import { SearchUser } from '../../../entities/search-user';
-import { BaseChatListComponent } from '../../../shared/chat';
-import { ListItemComponent} from '../../../shared/list';
-import { SearchInputComponent } from '../../../shared/search';
+import { BaseChatListComponent } from '../../../shared/chat/component/base.chat.list';
+import { ListItemComponent } from '../../../shared/list/component/list-item.component';
+import { SearchInputComponent } from '../../../shared/search/component/search-input.component';
 
 @Component({
   selector: 'app-oto-chat-list',
   standalone: true,
-  imports: [CommonModule, FormsModule, ListItemComponent, SearchInputComponent],
+  imports: [FormsModule, ListItemComponent, SearchInputComponent, CommonModule],
   templateUrl: './oto-chat.list.component.html',
 })
 export class OtoChatListComponent extends BaseChatListComponent<OtoChat> implements OnInit, OnDestroy {
@@ -26,8 +26,8 @@ export class OtoChatListComponent extends BaseChatListComponent<OtoChat> impleme
   public image: string | null = null;
   public isSearchFocused = false;
   public search = '';
-  public override searchQuery = ''; 
-  public override searchResults: string[] = []; 
+  public override searchQuery = '';
+  public override searchResults: string[] = [];
 
   private subscriptions: Subscription[] = [];
   private _selectedNickname?: string;
@@ -37,7 +37,7 @@ export class OtoChatListComponent extends BaseChatListComponent<OtoChat> impleme
   @Input() emptyListText = 'Chats not found ;(';
   @Input() currentUserNickName!: string;
   
-  @Input() 
+  @Input()
   override selectedNickname: string | undefined = undefined;
   
   @Output() chatSelected = new EventEmitter<OtoChat>();
@@ -77,6 +77,7 @@ export class OtoChatListComponent extends BaseChatListComponent<OtoChat> impleme
       });
 
     const chatsSubscription = this.chats$.subscribe(chats => {
+      void chats;
     });
 
     this.subscriptions.push(userInfoSubscription, chatsSubscription);
@@ -92,7 +93,6 @@ export class OtoChatListComponent extends BaseChatListComponent<OtoChat> impleme
   }
 
   private handleUserDeletion(deletedUserInfo: { userName: string }) {
-
     if (this.selectedNickname === deletedUserInfo.userName) {
       this.selectedNickname = undefined;
       this.chatClosedDueToUserDeletion.emit();
@@ -281,3 +281,5 @@ export class OtoChatListComponent extends BaseChatListComponent<OtoChat> impleme
     return chat.nickName || index.toString();
   }
 }
+
+

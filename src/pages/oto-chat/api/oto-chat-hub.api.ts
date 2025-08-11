@@ -20,12 +20,10 @@ export class OtoChatApiService extends BaseChatApiService<OtoChat> {
     }
     super.connect();
     this.isConnected = true;
-    // Expose connection for composition usage (similar to group chat)
     (window as any).__otoChatConnection = (this as any).connection;
-    // Expose streams for composition consumers (oto-messages UI)
-    ;(window as any).__otoMessages$ = this.messages$;
-    ;(window as any).__otoUserInfoDeleted$ = this.userInfoDeleted$;
-    ;(window as any).__otoLoadHistory = (nick: string, take: number, skip: number) => this.loadChatHistory(nick, take, skip);
+    (window as any).__otoMessages$ = this.messages$;
+    (window as any).__otoUserInfoDeleted$ = this.userInfoDeleted$;
+    (window as any).__otoLoadHistory = (nick: string, take: number, skip: number) => this.loadChatHistory(nick, take, skip);
   }
 
   override disconnect(): void {
@@ -50,6 +48,7 @@ export class OtoChatApiService extends BaseChatApiService<OtoChat> {
     super.handleUserInfoChanged(userInfo);
 
     const currentUser = this.getCurrentUser();
+    void currentUser; // suppress unused var warning if not used further
   }
 
   protected override updateChatUserInfo(userInfo: { NewUserName: string, Image?: string, UpdatedAt: string, OldNickName: string }): void {    
@@ -79,3 +78,5 @@ export class OtoChatApiService extends BaseChatApiService<OtoChat> {
     }
   }
 }
+
+

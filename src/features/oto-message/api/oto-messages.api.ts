@@ -1,6 +1,5 @@
 import { Injectable } from '@angular/core';
 import * as signalR from '@microsoft/signalr';
-// Cross-feature dependency removed; connection is provided via composition
 
 @Injectable({ providedIn: 'root' })
 export class OtoMessagesService {

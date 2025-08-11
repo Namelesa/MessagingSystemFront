@@ -7,9 +7,11 @@ import { OtoChat } from '../../../entities/oto-chat';
 import { OtoMessage } from '../../../entities/oto-message';
 import { AuthService } from '../../../entities/session';
 import { SearchUser } from '../../../entities/search-user';
-import { OtoChatListComponent, OtoChatApiService } from '../../../features/oto-chat';
-import { OtoChatMessagesComponent, OtoMessagesService} from '../../../features/oto-message';
+import { OtoChatListComponent } from './oto-chat.list.component';
+import { OtoChatApiService } from '../api/oto-chat-hub.api';
+import { OtoMessagesService} from '../../../features/oto-message';
 import { FindUserStore } from '../../../features/search-user';
+import { OtoChatMessagesWidget } from '../../../widgets/chat-messages';
 import { ChatLayoutComponent } from '../../../widgets/chat-layout';
 import { BaseChatPageComponent} from '../../../shared/chat';
 import { SendAreaComponent } from '../../../shared/send-message-area';
@@ -17,8 +19,8 @@ import { SendAreaComponent } from '../../../shared/send-message-area';
 @Component({
   selector: 'app-oto-chat-page',
   standalone: true,
-  imports: [CommonModule, OtoChatListComponent, FormsModule, 
-     ChatLayoutComponent, OtoChatMessagesComponent, SendAreaComponent],
+   imports: [CommonModule, OtoChatListComponent, FormsModule, 
+     ChatLayoutComponent, OtoChatMessagesWidget, SendAreaComponent],
   templateUrl: './oto-chat-page.html',
 })
 export class OtoChatPageComponent extends BaseChatPageComponent implements OnInit, OnDestroy {
@@ -43,7 +45,7 @@ export class OtoChatPageComponent extends BaseChatPageComponent implements OnIni
   @Input() foundedUser?: { nick: string, image: string };
   @Input() edit: string = '';
 
-  @ViewChild(OtoChatMessagesComponent) messagesComponent?: OtoChatMessagesComponent;
+  @ViewChild(OtoChatMessagesWidget) messagesComponent?: OtoChatMessagesWidget;
   @ViewChild(OtoChatListComponent) chatListComponent?: OtoChatListComponent;
   
   private subscriptions: Subscription[] = [];

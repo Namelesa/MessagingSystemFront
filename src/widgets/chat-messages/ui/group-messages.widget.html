@@ -1,0 +1,73 @@
+<div #scrollContainer (scroll)="onScroll()" class="overflow-y-auto h-full relative scroll-smooth">
+  <ng-container *ngFor="let group of groupedMessages">
+    <div class="flex justify-center my-4">
+      <span class="inline-block bg-gray-400 text-white px-3 py-1 rounded-full opacity-80 text-sm dark:bg-gray-500 dark:text-white shadow-md">
+        {{ isToday(group.messages[0].sendTime) ? 'Today' : (group.messages[0].sendTime | date:'d MMMM yyyy') }}
+      </span>
+    </div>
+    <ng-container *ngFor="let msg of group.messages; let i = index">
+      <div class="flex flex-col mb-1 relative cursor-pointer message-container px-4"
+           [ngClass]="isMyMessage(msg) ? 'items-end' : 'items-start'"
+           [attr.data-message-id]="msg.id"
+           (contextmenu)="onMessageRightClick($event, msg)">
+        <div class="flex items-end gap-2 max-w-[75%]" [ngClass]="isMyMessage(msg) ? 'flex-row-reverse ml-auto' : 'flex-row mr-auto'">
+          <div *ngIf="!isMyMessage(msg)" class="flex-shrink-0">
+            <img [src]="getMessageAvatar(msg)" [alt]="msg.sender" class="w-8 h-8 rounded-full object-cover" />
+          </div>
+          <div class="relative flex-1">
+            <div class="px-3 py-2 rounded-2xl shadow-sm text-sm min-w-[48px] min-h-[32px] message-block transition-all duration-300"
+                 [ngClass]="[
+                   isMyMessage(msg) ? 'bg-blue-500 text-white rounded-br-md' : 'bg-gray-200 text-gray-900 dark:bg-gray-600 dark:text-white rounded-bl-md',
+                   isMessageHighlighted(msg.id) ? 'ring-2 ring-blue-400 ring-opacity-80 shadow-md' : ''
+                 ]"
+                 style="word-break: break-word;">
+              <div *ngIf="msg.replyFor && getRepliedMessage(msg.replyFor)"
+                   class="mb-2 p-2 rounded-lg border-l-2 cursor-pointer transition-colors"
+                   [ngClass]="isMyMessage(msg) ? 'bg-blue-400/20 border-blue-200 hover:bg-blue-400/30' : 'bg-gray-300/50 dark:bg-gray-500/30 border-gray-400 dark:border-gray-500 hover:bg-gray-300/70 dark:hover:bg-gray-500/50'"
+                   (click)="scrollToMessage(msg.replyFor!)">
+                <div class="flex items-center space-x-1 mb-1">
+                  <svg class="w-3 h-3 opacity-75" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"></path>
+                  </svg>
+                  <span class="text-xs font-medium opacity-75">{{ getRepliedMessage(msg.replyFor!)?.sender }}</span>
+                </div>
+                <p class="text-xs opacity-75 line-clamp-2">{{ truncateText(getRepliedMessage(msg.replyFor!)?.content || '') }}</p>
+              </div>
+              <div *ngIf="!isMyMessage(msg) && shouldShowSenderName(group.messages, i)" class="text-xs mb-1 text-left font-bold text-gray-700 dark:text-gray-200">{{ msg.sender }}</div>
+              <div class="whitespace-pre-line break-words">{{ getMessageContent(msg) }}</div>
+              <div class="flex items-center gap-1 mt-1 text-xs justify-end"
+                   [ngClass]="isMyMessage(msg) ? 'text-blue-200 dark:text-gray-200' : 'text-gray-500 dark:text-gray-200'">
+                <span>{{ msg.sendTime | date:'shortTime' }}</span>
+                <ng-container *ngIf="msg.isEdited && msg.editTime">
+                  <span class="mx-1">•</span>
+                  <span class="italic opacity-75">edited {{ msg.editTime | date:'shortTime' }}</span>
+                </ng-container>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </ng-container>
+  </ng-container>
+
+  <div *ngIf="showContextMenu"
+       class="fixed bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg py-1 z-50 min-w-[150px]"
+       [style.left.px]="contextMenuPosition.x"
+       [style.top.px]="contextMenuPosition.y"
+       (click)="$event.stopPropagation()">
+    <button class="w-full px-3 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2" (click)="onReplyToMessage()">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"></path></svg>
+      Reply
+    </button>
+    <button *ngIf="canEditOrDelete()" class="w-full px-3 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2" (click)="onEditMessage()">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+      Edit
+    </button>
+    <button *ngIf="canEditOrDelete()" class="w-full px-3 py-2 text-left text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-2" (click)="onDeleteMessage()">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+      Delete
+    </button>
+  </div>
+</div>
+
+

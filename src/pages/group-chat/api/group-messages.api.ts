@@ -2,8 +2,7 @@ import { Injectable } from '@angular/core';
 import * as signalR from '@microsoft/signalr';
 import { BehaviorSubject, from, Observable, Subject } from 'rxjs';
 import { tap } from 'rxjs/operators';
-import { GroupMessage } from '../model/group-message.model';
-// Removed cross-feature import to comply with FSD. Parent should pass connection or orchestrate via page.
+import { GroupMessage } from '../../../entities/group-message';
 
 @Injectable({ providedIn: 'root' })
 export class GroupMessagesApiService {

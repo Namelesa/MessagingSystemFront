@@ -1,5 +1,4 @@
 import { CommonModule } from '@angular/common';
-import { GroupChat } from '../api/group.chat';
 import { FormsModule } from '@angular/forms';
 import { Component, Input, OnInit, Output, EventEmitter } from '@angular/core';
 import { Observable, map, combineLatest } from 'rxjs';
@@ -8,6 +7,7 @@ import { GroupCreateRequest } from '../api/group-create';
 import { validateCreateGroupForm } from '../model/validate-group';
 import { SearchUser } from '../../../entities/search-user';
 import { AuthService } from '../../../entities/session';
+import { GroupChat } from '../model/group.chat';
 import { InputComponent, ToastService, ToastComponent } from '../../../shared/ui-elements';
 import { SearchInputComponent } from '../../../shared/search';
 import { BaseChatListComponent } from '../../../shared/chat';
