@@ -1,13 +1,13 @@
 <app-toast></app-toast>
 
-<div *ngIf="isLoading" class="text-center text-gray-600 dark:text-gray-300 transition-colors duration-300">
+<div *ngIf="store.isLoading" class="text-center text-gray-600 dark:text-gray-300 transition-colors duration-300">
   Loading...
 </div>
-<div *ngIf="hasError" class="text-center text-red-600 dark:text-red-400 transition-colors duration-300">
+<div *ngIf="store.hasError" class="text-center text-red-600 dark:text-red-400 transition-colors duration-300">
   Error loading profile
 </div>
 
-<div *ngIf="userProfile && !isLoading && !hasError"
+<div *ngIf="store.userProfile && !store.isLoading && !store.hasError"
      class="px-4 py-8 dark:bg-gray-900 text-gray-900 dark:text-white transition-colors duration-300">
 
   <div class="max-w-3xl mx-auto">
@@ -16,12 +16,12 @@
       <div class="relative mb-6">
         <div class="relative w-32 h-32 rounded-full overflow-hidden"
              [ngClass]="{
-               'ring-2 ring-red-400': hasFieldError('imageFile'),
-               'ring-2 ring-green-400': isFieldValid('imageFile')
+               'ring-2 ring-red-400': store.hasFieldError('imageFile'),
+               'ring-2 ring-green-400': store.isFieldValid('imageFile')
              }">
           <img
-            *ngIf="userProfile.image; else initials"
-            [src]="userProfile.image"
+            *ngIf="store.userProfile.image; else initials"
+            [src]="store.userProfile.image"
             alt="Avatar"
             class="object-cover w-full h-full rounded-full"
           />
@@ -29,12 +29,12 @@
             <div
               class="w-full h-full flex items-center justify-center bg-blue-500 dark:bg-blue-600 text-white text-4xl font-bold rounded-full"
             >
-              {{ userProfile.nickName }}
+              {{ store.userProfile.nickName }}
             </div>
           </ng-template>
         
           <label
-            *ngIf="isEditing"
+            *ngIf="store.isEditing"
             for="avatarInput"
             class="absolute inset-0 bg-black bg-opacity-40 dark:bg-opacity-60 rounded-full flex flex-col items-center justify-center
                    text-white opacity-0 hover:opacity-100 cursor-pointer transition-opacity duration-300"
@@ -55,24 +55,24 @@
           <input
             type="file"
             id="avatarInput"
-            (change)="onAvatarChange($event)"
+            (change)="store.updateAvatar($event)"
             accept="image/*"
             class="hidden"
           />
         </div>
         
-        <div *ngIf="hasFieldError('imageFile')" 
+        <div *ngIf="store.hasFieldError('imageFile')" 
              class="absolute -top-2 -right-2 group">
           <div class="w-6 h-6 bg-red-500 rounded-full flex items-center justify-center cursor-help">
             <span class="text-white text-xs">!</span>
           </div>
           <div class="absolute bottom-full right-0 mb-2 px-2 py-1 bg-red-500 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-10">
-            <div *ngFor="let error of getFieldErrors('imageFile')">{{ error }}</div>
+            <div *ngFor="let error of store.getFieldErrors('imageFile')">{{ error }}</div>
           </div>
         </div>
       </div>
       <p class="text-gray-700 dark:text-gray-300 mb-2 transition-colors duration-300">
-        {{ userProfile.nickName }}
+        {{ store.userProfile.nickName }}
       </p>
       <p class="text-green-500 dark:text-green-400 text-sm font-medium transition-colors duration-300">
         Online
@@ -87,20 +87,20 @@
         📋 Personal Information
         <button
           type="button"
-          (click)="toggleEdit()"
+          (click)="store.toggleEdit()"
           aria-label="Edit profile"
-          *ngIf="!isEditing"
+          *ngIf="!store.isEditing"
           class="ml-auto text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-colors duration-200"
         >
         ✏️
         </button>
       </h3>
 
-      <div *ngIf="isEditing"
+      <div *ngIf="store.isEditing"
            class="absolute top-4 right-4 flex gap-2">
         <button
           type="button"
-          (click)="saveChanges()"
+          (click)="store.saveChanges()"
           aria-label="Save"
           class="text-green-600 hover:text-green-800 dark:text-green-400 dark:hover:text-green-600 transition-colors duration-200"
         >
@@ -111,7 +111,7 @@
         </button>
         <button
           type="button"
-          (click)="cancelEdit()"
+          (click)="store.cancelEdit()"
           aria-label="Cancel"
           class="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-600 transition-colors duration-200"
         >
@@ -127,21 +127,21 @@
         <div class="flex items-center">
           <span class="text-gray-500 dark:text-gray-400 w-24 transition-colors duration-300">First Name</span>
           <div class="flex flex-1 justify-end">
-            <ng-container *ngIf="isEditing; else firstNameView">
+            <ng-container *ngIf="store.isEditing; else firstNameView">
               <app-input
-                [ngModel]="editableProfile.firstName"
-                (ngModelChange)="onFieldChange('firstName', $event)"
-                (blur)="onFieldBlur('firstName')"
+                [ngModel]="store.editableProfile.firstName"
+                (ngModelChange)="store.updateField('firstName', $event)"
+                (blur)="store.onFieldBlur('firstName')"
                 name="firstName"
                 [required]="true"
                 placeholder="First Name"
-                [errors]="getFieldErrors('firstName')"
+                [errors]="store.getFieldErrors('firstName')"
                 class="max-w-xs"
               ></app-input>          
             </ng-container>
             <ng-template #firstNameView>
               <span class="text-gray-900 dark:text-white transition-colors duration-300">
-                {{ userProfile.firstName }}
+                {{ store.userProfile.firstName }}
               </span>
             </ng-template>
           </div>
@@ -150,21 +150,21 @@
         <div class="flex items-center">
           <span class="text-gray-500 dark:text-gray-400 w-24 transition-colors duration-300">Last Name</span>
           <div class="flex flex-1 justify-end">
-            <ng-container *ngIf="isEditing; else lastNameView">
+            <ng-container *ngIf="store.isEditing; else lastNameView">
               <app-input
-                [ngModel]="editableProfile.lastName"
-                (ngModelChange)="onFieldChange('lastName', $event)"
-                (blur)="onFieldBlur('lastName')"
+                [ngModel]="store.editableProfile.lastName"
+                (ngModelChange)="store.updateField('lastName', $event)"
+                (blur)="store.onFieldBlur('lastName')"
                 name="lastName"
                 [required]="true"
                 placeholder="Last Name"
-                [errors]="getFieldErrors('lastName')"
+                [errors]="store.getFieldErrors('lastName')"
                 class="max-w-xs"
               ></app-input>         
             </ng-container>
             <ng-template #lastNameView>
               <span class="text-gray-900 dark:text-white transition-colors duration-300">
-                {{ userProfile.lastName }}
+                {{ store.userProfile.lastName }}
               </span>
             </ng-template>
           </div>
@@ -173,21 +173,21 @@
         <div class="flex items-center">
           <span class="text-gray-500 dark:text-gray-400 w-24 transition-colors duration-300">NickName</span>
           <div class="flex flex-1 justify-end">
-            <ng-container *ngIf="isEditing; else nickNameView">
+            <ng-container *ngIf="store.isEditing; else nickNameView">
               <app-input
-                [ngModel]="editableProfile.nickName"
-                (ngModelChange)="onFieldChange('nickName', $event)"
-                (blur)="onFieldBlur('nickName')"
+                [ngModel]="store.editableProfile.nickName"
+                (ngModelChange)="store.updateField('nickName', $event)"
+                (blur)="store.onFieldBlur('nickName')"
                 name="nickName"
                 [required]="true"
                 placeholder="NickName"
-                [errors]="getFieldErrors('nickName')"
+                [errors]="store.getFieldErrors('nickName')"
                 class="max-w-xs"
               ></app-input>
             </ng-container>
             <ng-template #nickNameView>
               <span class="text-gray-900 dark:text-white transition-colors duration-300">
-                {{ userProfile.nickName }}
+                {{ store.userProfile.nickName }}
               </span>
             </ng-template>
           </div>
@@ -196,32 +196,32 @@
         <div class="flex items-center">
           <span class="text-gray-500 dark:text-gray-400 w-24 transition-colors duration-300">Email</span>
           <div class="flex flex-1 justify-end">
-            <ng-container *ngIf="isEditing; else emailView">
+            <ng-container *ngIf="store.isEditing; else emailView">
               <app-input
-                [ngModel]="editableProfile.email"
-                (ngModelChange)="onFieldChange('email', $event)"
-                (blur)="onFieldBlur('email')"
+                [ngModel]="store.editableProfile.email"
+                (ngModelChange)="store.updateField('email', $event)"
+                (blur)="store.onFieldBlur('email')"
                 name="email"
                 [required]="true"
                 placeholder="Email"
-                [errors]="getFieldErrors('email')"
+                [errors]="store.getFieldErrors('email')"
                 type="email"
                 class="max-w-xs"
               ></app-input>
             </ng-container>
             <ng-template #emailView>
               <span class="text-gray-900 dark:text-white transition-colors duration-300">
-                {{ userProfile.email }}
+                {{ store.userProfile.email }}
               </span>
             </ng-template>
           </div>
         </div>
 
-        <ng-container *ngIf="!isEditing">
+        <ng-container *ngIf="!store.isEditing">
           <div class="pt-6">
             <button
               type="button"
-              (click)="onDeleteAccount()"
+              (click)="store.showDeleteConfirmation()"
               class="w-full py-3 text-sm font-semibold rounded-xl border border-red-600 text-red-600 
                      hover:bg-red-600 hover:text-white transition-colors duration-300 dark:border-red-500 dark:text-red-400 dark:hover:bg-red-500">
               🗑️ Delete Account
@@ -233,9 +233,9 @@
   </div>
 </div>
 
-<div *ngIf="showDeleteModal" class="fixed inset-0 z-50 flex items-center justify-center">
+<div *ngIf="store.showDeleteModal" class="fixed inset-0 z-50 flex items-center justify-center">
   <div class="absolute inset-0 bg-black bg-opacity-50 backdrop-blur-sm transition-opacity duration-300" 
-       (click)="cancelDelete()"></div>
+       (click)="store.cancelDelete()"></div>
   
   <div class="relative bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-md w-full mx-4 p-6 transform transition-all duration-300 scale-100 animate-in fade-in-0 zoom-in-95">
     <div class="flex items-center justify-center w-16 h-16 mx-auto mb-6 bg-red-100 dark:bg-red-900/20 rounded-full">
@@ -257,7 +257,7 @@
     <div class="flex gap-3">
       <button
         type="button"
-        (click)="cancelDelete()"
+        (click)="store.cancelDelete()"
         class="flex-1 px-4 py-3 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 
                hover:bg-gray-200 dark:hover:bg-gray-600 rounded-xl transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-gray-300"
       >
@@ -265,7 +265,7 @@
       </button>
       <button
         type="button"
-        (click)="confirmDelete()"
+        (click)="store.confirmDelete()"
         class="flex-1 px-4 py-3 text-sm font-medium text-white bg-red-600 hover:bg-red-700 
                rounded-xl transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-red-500 shadow-lg"
       >

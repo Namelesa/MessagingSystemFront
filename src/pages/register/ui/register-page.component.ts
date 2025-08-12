@@ -2,7 +2,7 @@ import { Component, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { LucideAngularModule, Eye, EyeOff } from 'lucide-angular';
-import { RegisterPageStore } from '../api/register.store';
+import { RegisterPageStore } from '../model/register.store';
 import { AuthPageLayoutComponent } from '../../../widgets/auth-layout';
 import { ButtonComponent, InputComponent, ToastComponent } from '../../../shared/ui-elements';
 

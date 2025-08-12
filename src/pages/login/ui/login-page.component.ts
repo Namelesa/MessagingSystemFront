@@ -4,7 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { LucideAngularModule, Eye, EyeOff } from 'lucide-angular';
 import { AuthPageLayoutComponent } from '../../../widgets/auth-layout';
 import { ButtonComponent, InputComponent, ToastComponent, ToastService } from '../../../shared/ui-elements';
-import { LoginPageStore } from '../api/login.store';
+import { LoginPageStore } from '../model/login.store';
 
 @Component({
   selector: 'app-login-page',
