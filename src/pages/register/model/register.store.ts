@@ -1,7 +1,8 @@
 import { Injectable } from '@angular/core';
 import { Router } from '@angular/router';
 import { Subscription, Observable } from 'rxjs';
-import { RegisterApi, RegisterContract, RegisterFormStore } from '../../../entities/user';
+import { RegisterContract } from '../../../entities/user';
+import { RegisterApi, RegisterFormStore } from '../../../features/auth';
 import { ToastService } from '../../../shared/ui-elements';
 
 @Injectable()

@@ -1,6 +1,7 @@
 import { Subscription, Observable } from 'rxjs';
 import { Injectable } from '@angular/core';
-import { LoginApi, LoginContract, LoginFormStore } from '../../../entities/user';
+import { LoginContract } from '../../../entities/user';
+import { LoginApi, LoginFormStore } from '../../../features/auth';
 import { AuthService } from '../../../entities/session';
 import { ToastService } from '../../../shared/ui-elements';
 import { Router } from '@angular/router';

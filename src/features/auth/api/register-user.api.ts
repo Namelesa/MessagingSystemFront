@@ -1,8 +1,7 @@
 import { Observable } from 'rxjs';
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { AuthApiResult } from './auth-api-result';
-import { RegisterContract } from '../model/register-contract';
+import { AuthApiResult, RegisterContract } from '../../../entities/user';
 import { environment } from '../../../shared/api-urls';
 
 @Injectable({ providedIn: 'root' })

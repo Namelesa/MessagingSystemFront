@@ -5,7 +5,7 @@ import {
   validateLastName,
   validateNickName,
   validateLogin,
-} from './validators';
+} from '../../../shared/validators';
 
 export class RegisterFieldValidationHelper {
   private static readonly FIELD_VALIDATORS = {

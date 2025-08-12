@@ -1,4 +1,4 @@
-import { validateLogin, validateNickName, validatePassword } from './validators';
+import { validateLogin, validateNickName, validatePassword } from '../../../shared/validators';
 
 export class LoginFieldValidationHelper {
   private static readonly FIELD_VALIDATORS = {
@@ -37,5 +37,3 @@ export class LoginFieldValidationHelper {
     return Object.values(fieldErrors).flat();
   }
 }
-
-

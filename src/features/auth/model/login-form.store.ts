@@ -1,9 +1,9 @@
 import { BehaviorSubject, Subject, combineLatest, merge, Observable, of, defer } from 'rxjs';
 import { debounceTime, distinctUntilChanged, map, startWith, switchMap, shareReplay, take, finalize } from 'rxjs/operators';
-import { LoginContract } from '../model/login-contract';
+import { LoginContract } from '../../../../entities/user';
 import { LoginApi } from '../api/login-user.api';
 import { LoginFieldValidationHelper as V } from '../lib/login-validation';
-import { AuthApiResult } from '../api/auth-api-result';
+import { AuthApiResult } from '../../../../entities/user';
 
 type LoginField = 'login' | 'nickName' | 'password';
 
@@ -97,5 +97,3 @@ export class LoginFormStore {
 
   getValue(): LoginContract { return this.formData$.value; }
 }
-
-
