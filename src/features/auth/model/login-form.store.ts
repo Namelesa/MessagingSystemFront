@@ -1,9 +1,9 @@
 import { BehaviorSubject, Subject, combineLatest, merge, Observable, of, defer } from 'rxjs';
 import { debounceTime, distinctUntilChanged, map, startWith, switchMap, shareReplay, take, finalize } from 'rxjs/operators';
-import { LoginContract } from '../../../../entities/user';
+import { LoginContract } from '../../../entities/user';
+import { AuthApiResult } from '../../../entities/user';
 import { LoginApi } from '../api/login-user.api';
 import { LoginFieldValidationHelper as V } from '../lib/login-validation';
-import { AuthApiResult } from '../../../../entities/user';
 
 type LoginField = 'login' | 'nickName' | 'password';
 

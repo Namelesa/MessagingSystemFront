@@ -1,9 +1,9 @@
 import { BehaviorSubject, Subject, combineLatest, merge, Observable, of, defer } from 'rxjs';
 import { debounceTime, distinctUntilChanged, map, startWith, switchMap, shareReplay, take, finalize } from 'rxjs/operators';
-import { RegisterContract } from '../../../../entities/user';
-import { RegisterApi } from '../api/register-user.api';
 import { RegisterFieldValidationHelper as V } from '../lib/register-validation';
-import { AuthApiResult } from '../../../../entities/user';
+import { RegisterApi } from '../api/register-user.api';
+import { AuthApiResult } from '../../../entities/user';
+import { RegisterContract } from '../../../entities/user';
 
 type RegisterField = 'firstName' | 'lastName' | 'login' | 'email' | 'nickName' | 'password' | 'image';
 
