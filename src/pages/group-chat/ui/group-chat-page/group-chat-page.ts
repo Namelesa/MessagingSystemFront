@@ -3,20 +3,20 @@ import { Component,  Input, ViewChild, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-import { GroupMessagesApiService } from '../api/group-messages.api';
-import { GroupInfoApiService } from '../api/group-info.api';
-import { GroupChatApiService } from '../api/group-chat-hub.api';
-import { GroupMember } from '../model/group-info.model';
-import { GroupChatListComponent } from './group-chat.list.component';
-import { GroupMessage } from '../../../entities/group-message';
-import { AuthService } from '../../../entities/session';
-import { SearchUser } from '../../../entities/search-user';
-import { GroupInfoModalComponent } from './group-info-modal.component';
-import { FindUserStore } from '../../../features/search-user';
-import { ChatLayoutComponent } from '../../../widgets/chat-layout';
-import { GroupMessagesWidget } from '../../../widgets/chat-messages';
-import { BaseChatPageComponent } from '../../../shared/chat';
-import { SendAreaComponent } from '../../../shared/send-message-area';
+import { GroupMessagesApiService } from '../../api/group-message/group-messages.api';
+import { GroupInfoApiService } from '../../api/group-chat/group-info.api';
+import { GroupChatApiService } from '../../api/group-chat/group-chat-hub.api';
+import { GroupMember } from '../../model/group-info.model';
+import { GroupChatListComponent } from '../group-chat-list/group-chat.list.component';
+import { GroupMessage } from '../../../../entities/group-message';
+import { AuthService } from '../../../../entities/session';
+import { SearchUser } from '../../../../entities/search-user';
+import { GroupInfoModalComponent } from '../group-info-modal/group-info-modal.component';
+import { FindUserStore } from '../../../../features/search-user';
+import { ChatLayoutComponent } from '../../../../widgets/chat-layout';
+import { GroupMessagesWidget } from '../../../../widgets/chat-messages';
+import { BaseChatPageComponent } from '../../../../shared/chat';
+import { SendAreaComponent } from '../../../../shared/send-message-area';
 
 @Component({
   selector: 'app-group-chat-page',

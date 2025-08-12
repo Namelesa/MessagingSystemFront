@@ -1,5 +1,5 @@
 import { validateGroupName, validateGroupDescription } from '../../../shared/validators';
-import { GroupCreateRequest } from '../api/group-create';
+import { GroupCreateRequest } from '../api/group-chat/group-create';
 import { GroupInfoEditData } from './group-info-edit.model';
 
 export function validateCreateGroupForm(data: GroupCreateRequest): string[] {

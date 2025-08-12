@@ -3,18 +3,18 @@ import { Router } from '@angular/router';
 import { Component, Input, ViewChild, OnInit, ChangeDetectorRef, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { OtoChat } from '../model/oto.chat';
-import { OtoMessage } from '../../../entities/oto-message';
-import { AuthService } from '../../../entities/session';
-import { SearchUser } from '../../../entities/search-user';
-import { OtoChatListComponent } from './oto-chat.list.component';
-import { OtoChatApiService } from '../api/oto-chat-hub.api';
-import { OtoMessagesService} from '../api/oto-messages.api';
-import { FindUserStore } from '../../../features/search-user';
-import { OtoChatMessagesWidget } from '../../../widgets/chat-messages';
-import { ChatLayoutComponent } from '../../../widgets/chat-layout';
-import { BaseChatPageComponent} from '../../../shared/chat';
-import { SendAreaComponent } from '../../../shared/send-message-area';
+import { OtoChat } from '../../model/oto.chat';
+import { OtoChatApiService } from '../../api/oto-chat/oto-chat-hub.api';
+import { OtoMessagesService} from '../../api/oto-message/oto-messages.api';
+import { OtoChatListComponent } from '../list/oto-chat.list.component';
+import { OtoMessage } from '../../../../entities/oto-message';
+import { AuthService } from '../../../../entities/session';
+import { SearchUser } from '../../../../entities/search-user';
+import { FindUserStore } from '../../../../features/search-user';
+import { OtoChatMessagesWidget } from '../../../../widgets/chat-messages';
+import { ChatLayoutComponent } from '../../../../widgets/chat-layout';
+import { BaseChatPageComponent} from '../../../../shared/chat';
+import { SendAreaComponent } from '../../../../shared/send-message-area';
 
 @Component({
   selector: 'app-oto-chat-page',

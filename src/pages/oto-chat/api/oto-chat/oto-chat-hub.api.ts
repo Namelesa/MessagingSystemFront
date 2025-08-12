@@ -1,8 +1,8 @@
 import { Injectable } from '@angular/core';
-import { OtoChat } from '../model/oto.chat';
-import { AuthService } from '../../../entities/session';
-import { environment } from '../../../shared/api-urls';
-import { BaseChatApiService } from '../../../shared/chat';
+import { OtoChat } from '../../model/oto.chat';
+import { AuthService } from '../../../../entities/session';
+import { environment } from '../../../../shared/api-urls';
+import { BaseChatApiService } from '../../../../shared/chat';
 
 @Injectable({
   providedIn: 'root'
@@ -48,7 +48,7 @@ export class OtoChatApiService extends BaseChatApiService<OtoChat> {
     super.handleUserInfoChanged(userInfo);
 
     const currentUser = this.getCurrentUser();
-    void currentUser; // suppress unused var warning if not used further
+    void currentUser;
   }
 
   protected override updateChatUserInfo(userInfo: { NewUserName: string, Image?: string, UpdatedAt: string, OldNickName: string }): void {    
@@ -78,5 +78,3 @@ export class OtoChatApiService extends BaseChatApiService<OtoChat> {
     }
   }
 }
-
-

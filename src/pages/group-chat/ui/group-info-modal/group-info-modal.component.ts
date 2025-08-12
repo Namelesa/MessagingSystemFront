@@ -9,17 +9,17 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { GroupInfoApiService } from '../api/group-info.api';
-import { GroupInfoEditData } from '../model/group-info-edit.model';
-import { GroupInfoData } from '../model/group-info.model';
-import { validateEditGroupForm } from '../model/validate-group';
-import { SearchUser } from '../../../entities/search-user';
-import { AuthService } from '../../../entities/session';
-import { InputComponent, ToastComponent, ToastService } from '../../../shared/ui-elements';
-import { ModalHeaderComponent } from './group-chat-ui-elements/modal-header/modal.header';
-import { AvatarComponent } from './group-chat-ui-elements/avatar/avatar';
-import { UserListComponent } from './group-chat-ui-elements/user-list/user.list';
-import { SelectedUsersComponent } from './group-chat-ui-elements/selected-users/selected.users';
+import { GroupInfoApiService } from '../../api/group-chat/group-info.api';
+import { GroupInfoEditData } from '../../model/group-info-edit.model';
+import { GroupInfoData } from '../../model/group-info.model';
+import { validateEditGroupForm } from '../../model/validate-group';
+import { SearchUser } from '../../../../entities/search-user';
+import { AuthService } from '../../../../entities/session';
+import { InputComponent, ToastComponent, ToastService } from '../../../../shared/ui-elements';
+import { ModalHeaderComponent } from '../group-chat-page/group-chat-ui-elements/modal-header/modal.header';
+import { AvatarComponent } from '../group-chat-page/group-chat-ui-elements/avatar/avatar';
+import { UserListComponent } from '../group-chat-page/group-chat-ui-elements/user-list/user.list';
+import { SelectedUsersComponent } from '../group-chat-page/group-chat-ui-elements/selected-users/selected.users';
 
 @Component({
   selector: 'app-group-info-modal',

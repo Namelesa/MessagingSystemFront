@@ -3,9 +3,9 @@ import { tap } from 'rxjs/operators';
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
-import { GroupInfoResponse } from '../model/group-info.model';
-import { GroupInfoEditData } from '../model/group-info-edit.model';
-import { environment } from '../../../shared/api-urls';
+import { GroupInfoResponse } from '../../model/group-info.model';
+import { GroupInfoEditData } from '../../model/group-info-edit.model';
+import { environment } from '../../../../shared/api-urls';
 
 @Injectable({ providedIn: 'root' })
 export class GroupInfoApiService {

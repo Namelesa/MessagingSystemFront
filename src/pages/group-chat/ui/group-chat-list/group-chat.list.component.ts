@@ -2,16 +2,16 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Component, Input, OnInit, Output, EventEmitter } from '@angular/core';
 import { Observable, map, combineLatest } from 'rxjs';
-import { GroupChatApiService } from '../api/group-chat-hub.api';
-import { GroupCreateRequest } from '../api/group-create';
-import { validateCreateGroupForm } from '../model/validate-group';
-import { SearchUser } from '../../../entities/search-user';
-import { AuthService } from '../../../entities/session';
-import { GroupChat } from '../model/group.chat';
-import { InputComponent, ToastService, ToastComponent } from '../../../shared/ui-elements';
-import { SearchInputComponent } from '../../../shared/search';
-import { BaseChatListComponent } from '../../../shared/chat';
-import { ListItemComponent } from '../../../shared/list';
+import { GroupChatApiService } from '../../api/group-chat/group-chat-hub.api';
+import { GroupCreateRequest } from '../../api/group-chat/group-create';
+import { validateCreateGroupForm } from '../../model/validate-group';
+import { SearchUser } from '../../../../entities/search-user';
+import { AuthService } from '../../../../entities/session';
+import { GroupChat } from '../../model/group.chat';
+import { InputComponent, ToastService, ToastComponent } from '../../../../shared/ui-elements';
+import { SearchInputComponent } from '../../../../shared/search';
+import { BaseChatListComponent } from '../../../../shared/chat';
+import { ListItemComponent } from '../../../../shared/list';
 
 @Component({
   selector: 'app-group-chat-list',

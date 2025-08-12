@@ -3,12 +3,12 @@ import { map, filter } from 'rxjs/operators';
 import { Component, Input, Output, EventEmitter, ElementRef, ViewChild, HostListener, OnInit, OnDestroy } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
-import { OtoChatApiService } from '../api/oto-chat-hub.api';
-import { OtoChat } from '../model/oto.chat';
-import { SearchUser } from '../../../entities/search-user';
-import { BaseChatListComponent } from '../../../shared/chat';
-import { ListItemComponent } from '../../../shared/list';
-import { SearchInputComponent } from '../../../shared/search';
+import { OtoChatApiService } from '../../api/oto-chat/oto-chat-hub.api';
+import { OtoChat } from '../../model/oto.chat';
+import { SearchUser } from '../../../../entities/search-user';
+import { BaseChatListComponent } from '../../../../shared/chat';
+import { ListItemComponent } from '../../../../shared/list';
+import { SearchInputComponent } from '../../../../shared/search';
 
 @Component({
   selector: 'app-oto-chat-list',
