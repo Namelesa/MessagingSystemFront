@@ -1,141 +1,90 @@
-import { Subscription } from 'rxjs';
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Component, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
 import { LucideAngularModule, Eye, EyeOff } from 'lucide-angular';
-import { RegisterApi, RegisterContract, RegisterFormStore } from '../../../entities/user';
+import { RegisterPageStore } from '../api/register.store';
 import { AuthPageLayoutComponent } from '../../../widgets/auth-layout';
-import { ButtonComponent, InputComponent, ToastService, ToastComponent } from '../../../shared/ui-elements';
+import { ButtonComponent, InputComponent, ToastComponent } from '../../../shared/ui-elements';
 
 @Component({
   selector: 'app-register-page',
   standalone: true,
-  imports: [AuthPageLayoutComponent, ButtonComponent, InputComponent, ToastComponent, CommonModule, FormsModule, LucideAngularModule],
+  imports: [
+    AuthPageLayoutComponent,
+    ButtonComponent,
+    InputComponent,
+    ToastComponent,
+    CommonModule,
+    FormsModule,
+    LucideAngularModule
+  ],
+  providers: [RegisterPageStore],
   templateUrl: './register-page.component.html',
 })
-export class RegisterPageComponent implements OnInit, OnDestroy {
+export class RegisterPageComponent implements OnDestroy {
   isPasswordVisible = false;
-  passwordLength = 0;
-
   readonly EyeIcon = Eye;
   readonly EyeOffIcon = EyeOff;
-  readonly FolderIcon = undefined as unknown as never;
+  readonly bottomText = "Already have an account?";
 
-  formData: RegisterContract = {
-    firstName: '',
-    lastName: '',
-    email: '',
-    login: '',
-    nickName: '',
-    password: '',
-    image: undefined,
-  };
+  constructor(public store: RegisterPageStore) {}
 
-  fieldErrors: { [key: string]: string[] } = {
-    firstName: [],
-    lastName: [],
-    login: [],
-    email: [],
-    nickName: [],
-    password: [],
-    image: [],
-  };
-
-  isSubmitting = false;
-  isFormValid = false;
-
-  private store: RegisterFormStore;
-  private subs = new Subscription();
-
-  constructor(
-    api: RegisterApi,
-    private toastService: ToastService,
-    private router: Router,
-  ) {
-    this.store = new RegisterFormStore(api);
+  get formData() {
+    return this.store.formData;
   }
 
-  ngOnInit(): void {
-    this.subs.add(this.store.allErrors$.subscribe(e => this.fieldErrors = e));
-    this.subs.add(this.store.isSubmitting$.subscribe(v => this.isSubmitting = v));
-    this.subs.add(this.store.isFormValid$.subscribe(v => this.isFormValid = v));
-  }
-
-  ngOnDestroy(): void {
-    this.subs.unsubscribe();
+  get passwordLength() {
+    return this.store.passwordLength;
   }
 
   getFieldErrors(fieldName: string): string[] {
-    return this.fieldErrors[fieldName] || [];
-  }
-
-  onFirstNameChange(value: string) {
-    this.formData.firstName = value;
-    this.store.updateField('firstName', value);
-  }
-
-  onLastNameChange(value: string) {
-    this.formData.lastName = value;
-    this.store.updateField('lastName', value);
-  }
-
-  onLoginChange(value: string) {
-    this.formData.login = value;
-    this.store.updateField('login', value);
-  }
-
-  onEmailChange(value: string) {
-    this.formData.email = value;
-    this.store.updateField('email', value);
-  }
-
-  onNickNameChange(value: string) {
-    this.formData.nickName = value;
-    this.store.updateField('nickName', value);
-  }
-
-  onPasswordInput(value: string) {
-    this.formData.password = value;
-    this.passwordLength = value.length;
-    this.store.updateField('password', value);
+    return this.store.getFieldErrors(fieldName);
   }
 
   togglePasswordVisibility() {
     this.isPasswordVisible = !this.isPasswordVisible;
   }
 
+  onFirstNameChange(value: string) {
+    this.store.updateField('firstName', value);
+  }
+
+  onLastNameChange(value: string) {
+    this.store.updateField('lastName', value);
+  }
+
+  onLoginChange(value: string) {
+    this.store.updateField('login', value);
+  }
+
+  onEmailChange(value: string) {
+    this.store.updateField('email', value);
+  }
+
+  onNickNameChange(value: string) {
+    this.store.updateField('nickName', value);
+  }
+
+  onPasswordInput(value: string) {
+    this.store.updateField('password', value);
+  }
+
   onFileChange(event: Event) {
     const input = event.target as HTMLInputElement;
     const file = input.files && input.files.length ? input.files[0] : undefined;
-    this.formData.image = file;
     this.store.updateImage(file);
   }
 
   onSubmit() {
-    this.store.markAllTouched();
     this.store.submit().subscribe({
-      next: (result) => {
-        if (result?.message === 'User registered and need to confirm email') {
-          this.toastService.show('Registration successfull. Please confirm email', 'success');
-          this.resetForm();
-          setTimeout(() => this.router.navigate(['/login']), 3000);
-        } else if (result?.message === 'Invalid form') {
-          this.toastService.show('Please fix form errors before submitting', 'error');
-        } else {
-          this.toastService.show('Registration failed. Please try again.', 'error');
-        }
-      },
+      next: (result) => this.store.handleRegisterResult(result),
       error: () => {
-        this.toastService.show('An unexpected error occurred.', 'error');
+        this.store.toastService.show('An unexpected error occurred.', 'error');
       }
     });
   }
 
-  private resetForm() {
-    this.formData = {
-      firstName: '', lastName: '', email: '', login: '', nickName: '', password: '', image: undefined,
-    };
-    this.store.reset();
+  ngOnDestroy(): void {
+    this.store.dispose();
   }
 }

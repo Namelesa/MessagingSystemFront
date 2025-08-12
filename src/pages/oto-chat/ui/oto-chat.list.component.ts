@@ -281,5 +281,3 @@ export class OtoChatListComponent extends BaseChatListComponent<OtoChat> impleme
     return chat.nickName || index.toString();
   }
 }
-
-
