@@ -1,6 +1,6 @@
 <app-chat-layout
-  [selectedChat]="displayChatName"
-  [selectedChatImage]="displayChatImage"
+  [selectedChat]="(displayChatInfo$ | async)?.displayName || ''"
+  [selectedChatImage]="(displayChatInfo$ | async)?.displayImage || ''"
 >
   <app-oto-chat-list
     chat-sidebar
@@ -9,24 +9,23 @@
     (userSearchQueryChange)="onUserSearchQueryChange($event)"
     (userSearchFocus)="onUserSearchFocus()"
     (userSearchClear)="onUserSearchClear()"
-    [currentUserNickName]="currentUserNickName"
-    [selectedNickname]="selectedOtoChat?.nickName"
+    [selectedNickname]="(chatState$ | async)?.selectedOtoChat?.nickName"
     (chatSelected)="onOtoChatSelected($event)"
     (foundedUser)="onFoundedUser($event)"
     (userInfoUpdated)="onUserInfoUpdated($event)"
-    (selectedChatUserUpdated)="onSelectedChatUserUpdated($event)"
+    (selectedChatUserUpdated)="onSelectedChatUserUpdated()"
     (userDeleted)="onUserDeleted($event)"
     (chatClosedDueToUserDeletion)="onChatClosedDueToUserDeletion()"
   ></app-oto-chat-list>
 
   <ng-container chat-content>
-    <ng-container *ngIf="selectedOtoChat; else noChatSelected">
+    <ng-container *ngIf="(chatState$ | async)?.selectedOtoChat as selectedChat; else noChatSelected">
       <div class="flex flex-col h-full">
         <div class="flex-1 overflow-hidden">
           <widgets-oto-chat-messages 
             #messagesComponent
-            [chatNickName]="selectedOtoChat.nickName" 
-            [currentUserNickName]="currentUserNickName"
+            [chatNickName]="selectedChat.nickName" 
+            [currentUserNickName]="(chatState$ | async)?.currentUserNickName || ''"
             (editMessage)="onEditMessage($event)"
             (deleteMessage)="onDeleteMessage($event)"
             (replyToMessage)="onReplyToMessage($event)"
@@ -62,8 +61,8 @@
     <div class="flex items-center mb-4">
       <div class="relative mr-3">
         <img 
-          [src]="displayChatImage || 'assets/default-avatar.png'" 
-          [alt]="displayChatName"
+          [src]="(displayChatInfo$ | async)?.displayImage || 'assets/default-avatar.png'" 
+          [alt]="(displayChatInfo$ | async)?.displayName || ''"
           class="w-12 h-12 rounded-full object-cover border-2 border-gray-200 dark:border-gray-600"
         >
       </div>
