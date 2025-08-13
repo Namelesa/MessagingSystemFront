@@ -1,5 +1,5 @@
 import { Observable } from 'rxjs';
-import { Component,  Input, ViewChild, ChangeDetectorRef } from '@angular/core';
+import { Component,  Input, ViewChild, ChangeDetectorRef, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -281,4 +281,18 @@ export class GroupChatPageComponent extends BaseChatPageComponent {
       }
     });
   }
+
+  @HostListener('document:keydown.escape')
+  onEscapePressed() {
+  this.resetSelectedChat();
+}
+
+private resetSelectedChat(): void {
+  this.selectedChat = undefined;
+  this.selectedChatImage = undefined;
+  this.editingMessage = undefined;
+  this.replyingToMessage = undefined;
+  this.closeDeleteModal();
+  this.cdr.detectChanges();
+}
 }

@@ -1,6 +1,6 @@
 import { Observable, Subscription } from 'rxjs';
 import { Router } from '@angular/router';
-import { Component, Input, ViewChild, OnInit, ChangeDetectorRef, OnDestroy } from '@angular/core';
+import { Component, Input, ViewChild, OnInit, ChangeDetectorRef, OnDestroy, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { OtoChat } from '../../model/oto.chat';
@@ -325,4 +325,19 @@ export class OtoChatPageComponent extends BaseChatPageComponent implements OnIni
       this.messagesComponent.scrollToMessage(messageId);
     }
   }
+
+  @HostListener('document:keydown.escape')
+onEscapePressed() {
+  this.resetSelectedChat();
+}
+
+private resetSelectedChat(): void {
+  this.selectedChat = undefined;
+  this.selectedChatImage = undefined;
+  this.selectedOtoChat = undefined;
+  this.editingMessage = undefined;
+  this.replyingToMessage = undefined;
+  this.closeDeleteModal();
+  this.cdr.detectChanges();
+}
 }
