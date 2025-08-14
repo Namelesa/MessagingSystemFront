@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import * as signalR from '@microsoft/signalr';
-import { SignalRConnectionRegistryService } from '../../../../shared/chat/service/signalr-connection-registry';
+import { SignalRConnectionRegistryService } from '../../../../shared/chat';
 import { BehaviorSubject, from, Observable, Subject } from 'rxjs';
 import { tap } from 'rxjs/operators';
 import { GroupMessage } from '../../../../entities/group-message';
@@ -184,8 +184,6 @@ export class GroupMessagesApiService {
     };
 
     this.userInfoChangedSubject.next(mappedUserInfo);
-
-    // Upstream notification should be orchestrated by parent (page/widget)
   }
 
   private getConnection(): signalR.HubConnection | null {

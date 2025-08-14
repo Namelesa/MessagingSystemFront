@@ -19,8 +19,6 @@ export class GroupInfoApiService {
     private http: HttpClient,
     private router: Router
   ) {}
-
-  // Subscriptions to user info changes are now handled at composition level (page/widget)
  
   getGroupInfo(groupId: string): Observable<GroupInfoResponse> {
     this.currentGroupId = groupId;
@@ -48,7 +46,6 @@ export class GroupInfoApiService {
       }).pipe(
         tap(updatedGroupInfo => {
           this.groupInfoSubject.next(updatedGroupInfo);
-          // Refreshing chat lists is handled by the page via GroupChatApiService
         })
       );
   }

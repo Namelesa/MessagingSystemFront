@@ -70,7 +70,6 @@ export class GroupChatPageComponent extends BaseChatPageComponent {
       if (updatedGroup && updatedGroup.groupId === selectedId) {
         this.selectedChat = updatedGroup.groupName;
         this.selectedChatImage = updatedGroup.image;
-        // state is reactive; no manual detectChanges
       }
     });
   }
@@ -189,7 +188,6 @@ export class GroupChatPageComponent extends BaseChatPageComponent {
     this.groupMessageState.resetAll();
   }
 
-  // Derived state for template
   get selectedGroupId(): string | undefined {
     return this.groupUserState.getSelectedGroupId();
   }
@@ -222,5 +220,4 @@ export class GroupChatPageComponent extends BaseChatPageComponent {
   }
 }
 
-// Expose derived state for template bindings
 export interface __GroupChatPageBindings {}

@@ -2,7 +2,7 @@ import { Subject, Observable } from 'rxjs';
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import * as signalR from '@microsoft/signalr';
-import { SignalRConnectionRegistryService } from '../../../../shared/chat/service/signalr-connection-registry';
+import { SignalRConnectionRegistryService } from '../../../../shared/chat';
 import { GroupChat } from '../../model/group.chat';
 import { GroupCreateRequest } from './group-create';
 import { AuthApiResult } from '../../../../entities/user';
