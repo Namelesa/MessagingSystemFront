@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Component, Input, OnInit, Output, EventEmitter, HostListener, ChangeDetectorRef } from '@angular/core';
-import { Observable, map, combineLatest } from 'rxjs';
+import { Observable, map, combineLatest, BehaviorSubject } from 'rxjs';
 import { GroupChatApiService } from '../../api/group-chat/group-chat-hub.api';
 import { GroupCreateRequest } from '../../api/group-chat/group-create';
 import { validateCreateGroupForm } from '../../model/validate-group';
@@ -11,6 +11,7 @@ import { GroupChat } from '../../model/group.chat';
 import { InputComponent, ToastService, ToastComponent } from '../../../../shared/ui-elements';
 import { SearchInputComponent } from '../../../../shared/search';
 import { BaseChatListComponent } from '../../../../shared/chat';
+import { GroupSearchService } from '../../service/group-search.service';
 import { ListItemComponent } from '../../../../shared/list';
 
 @Component({
@@ -32,7 +33,8 @@ export class GroupChatListComponent extends BaseChatListComponent<GroupChat> imp
     private groupChatApi: GroupChatApiService, 
     private toastService: ToastService, 
     private authService: AuthService,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
+    private groupSearch: GroupSearchService
   ) {
     super();
     this.apiService = this.groupChatApi;
@@ -53,6 +55,7 @@ export class GroupChatListComponent extends BaseChatListComponent<GroupChat> imp
   newGroupImage: File | null = null;
   errors: string[] = [];
 
+  private searchQuerySubject = new BehaviorSubject<string>('');
   search = '';
   isSearchActive = false;
 
@@ -62,24 +65,20 @@ export class GroupChatListComponent extends BaseChatListComponent<GroupChat> imp
 
   filteredChats$: Observable<GroupChat[]> = combineLatest([
     this.chats$,
-    new Observable<string>(subscriber => {
-      subscriber.next(this.search);
-    })
+    this.searchQuerySubject.asObservable()
   ]).pipe(
     map(([chats, query]) => {
-      if (!query.trim()) {
-        return chats || [];
-      }
-      return (chats || []).filter(chat => 
-        this.getChatName(chat).toLowerCase().includes(query.toLowerCase())
-      );
+      const trimmed = (query || '').trim();
+      if (!trimmed) return chats || [];
+      const lower = trimmed.toLowerCase();
+      return (chats || []).filter(chat => this.getChatName(chat).toLowerCase().includes(lower));
     })
   );
 
   onSearchQueryChange(query: string) {
     this.search = query;
     this.isSearchActive = query.trim().length > 0;
-    this.updateFilteredChats();
+    this.searchQuerySubject.next(query);
   }
 
   onSearchFocus() {
@@ -89,29 +88,16 @@ export class GroupChatListComponent extends BaseChatListComponent<GroupChat> imp
   clearSearching() {
     this.search = '';
     this.isSearchActive = false;
-    this.updateFilteredChats();
+    this.searchQuerySubject.next('');
   }
 
-  private updateFilteredChats() {
-    this.filteredChats$ = combineLatest([
-      this.chats$,
-      new Observable<string>(subscriber => subscriber.next(this.search))
-    ]).pipe(
-      map(([chats, query]) => {
-        if (!query.trim()) {
-          return chats || [];
-        }
-        return (chats || []).filter(chat => 
-          this.getChatName(chat).toLowerCase().includes(query.toLowerCase())
-        );
-      })
-    );
-  }
+  private updateFilteredChats() { /* no-op: kept for compatibility */ }
 
   onUserSearchQueryChange(query: string) {
     this.userSearchQuery = query;
     const trimmed = query.trim();
     this.isUserSearchActive = !!trimmed;
+    this.groupSearch.onSearchQueryChange(query);
     this.userSearchQueryChange.emit(query);
   }
 
@@ -122,6 +108,7 @@ export class GroupChatListComponent extends BaseChatListComponent<GroupChat> imp
   onUserSearchFocus() {
     this.isUserSearchActive = true;
     this.userSearchQuery = '';
+    this.groupSearch.onFocus();
     this.userSearchFocus.emit();
   }
 
@@ -147,6 +134,7 @@ export class GroupChatListComponent extends BaseChatListComponent<GroupChat> imp
   onUserClear() {
     this.userSearchQuery = '';
     this.isUserSearchActive = false;
+    this.groupSearch.clear();
     this.userSearchClear.emit();
   }
 
