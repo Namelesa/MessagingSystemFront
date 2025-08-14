@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable, combineLatest } from 'rxjs';
 import { map, shareReplay } from 'rxjs/operators';
-import { GroupMember } from '../model/group-info.model';
+import { GroupMember } from './group-info.model';
 import { GroupInfoApiService } from '../api/group-chat/group-info.api';
 import { GroupChatApiService } from '../api/group-chat/group-chat-hub.api';
 import { AuthService } from '../../../entities/session';
@@ -59,7 +59,6 @@ export class GroupUserStateService {
       this.currentUserNickNameSubject.next(this.authService.getNickName() || '');
     });
 
-    // React on external group updates
     this.groupChatApi.groupUpdated$.subscribe((updatedGroup) => {
       const selectedId = this.selectedGroupIdSubject.value;
       if (updatedGroup && updatedGroup.groupId && updatedGroup.groupId === selectedId) {
@@ -117,26 +116,12 @@ export class GroupUserStateService {
     this.clearSelection();
   }
 
-  // getters for current values
-  getSelectedGroupId(): string | undefined {
-    return this.selectedGroupIdSubject.value;
-  }
-
-  getMembers(): GroupMember[] {
-    return this.membersSubject.value;
-  }
-
-  getCurrentUserNickName(): string {
-    return this.currentUserNickNameSubject.value;
-  }
-
-  getSelectedChatName(): string | undefined {
-    return this.selectedChatNameSubject.value;
-  }
-
-  getSelectedChatImage(): string | undefined {
-    return this.selectedChatImageSubject.value;
-  }
+  getSelectedGroupId(): string | undefined { return this.selectedGroupIdSubject.value; }
+  getMembers(): GroupMember[] { return this.membersSubject.value; }
+  getCurrentUserNickName(): string { return this.currentUserNickNameSubject.value; }
+  getSelectedChatName(): string | undefined { return this.selectedChatNameSubject.value; }
+  getSelectedChatImage(): string | undefined { return this.selectedChatImageSubject.value; }
 }
+
 
 

@@ -1,12 +1,12 @@
 import { Subscription } from 'rxjs';
 import { map } from 'rxjs/operators';
-import { Component, Input, ViewChild, OnInit, ChangeDetectorRef, OnDestroy, HostListener, inject } from '@angular/core';
+import { Component, Input, ViewChild, OnInit, OnDestroy, HostListener, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { OtoChat } from '../../model/oto.chat';
 import { OtoChatApiService } from '../../api/oto-chat/oto-chat-hub.api';
-import { ChatFacadeService } from '../../service/chat-facade';
-import { UserDeletionInfo, UserUpdateInfo } from '../../service/user-state.service';
+import { ChatFacadeService } from '../../model/chat-facade';
+import { UserDeletionInfo, UserUpdateInfo } from '../../model/user-state.service';
 import { OtoChatListComponent } from '../list/oto-chat.list.component';
 import { OtoMessage } from '../../../../entities/oto-message';
 import { OtoChatMessagesWidget } from '../../../../widgets/chat-messages';
@@ -79,7 +79,6 @@ export class OtoChatPageComponent extends BaseChatPageComponent implements OnIni
 
   constructor(
     private otoChatApi: OtoChatApiService,
-    private cdr: ChangeDetectorRef,
   ) {
     super();
     this.apiService = this.otoChatApi;
@@ -90,9 +89,7 @@ export class OtoChatPageComponent extends BaseChatPageComponent implements OnIni
     this.chatFacade.initializeChat();
     this.subscribeToEvents();
     
-    setTimeout(() => {
-      this.chatFacade.handlePendingChatUser(this.chatListComponent);
-    }, 100);
+    this.chatFacade.handlePendingChatUser(this.chatListComponent);
   }
 
   override ngOnDestroy(): void {
@@ -129,12 +126,10 @@ export class OtoChatPageComponent extends BaseChatPageComponent implements OnIni
   
   onOtoChatSelected(chat: OtoChat): void {
     this.chatFacade.selectChat(chat);
-    this.cdr.detectChanges();
   }
 
   onFoundedUser(userData: { nick: string, image: string }): void {
     this.chatFacade.selectFoundUser(userData);
-    this.cdr.detectChanges();
   }
 
   onOpenChatWithUser(userData: { nickName: string, image: string }): void {
@@ -162,22 +157,17 @@ export class OtoChatPageComponent extends BaseChatPageComponent implements OnIni
 
   private closeChatWithDeletedUser(): void {
     this.messagesComponent?.clearMessagesForDeletedUser();
-    this.cdr.detectChanges();
   }
 
   onChatClosedDueToUserDeletion(): void {
     this.chatFacade.closeCurrentChat();
-    this.cdr.detectChanges();
   }
 
   onChatUserDeletedFromMessages(): void {
     this.chatFacade.closeCurrentChat();
-    this.cdr.detectChanges();
   }
 
-  onSelectedChatUserUpdated(): void {
-    this.cdr.detectChanges();
-  }
+  onSelectedChatUserUpdated(): void {}
 
   onUserDeleted = (deletedUserInfo: { userName: string }) => {};
   onUserInfoUpdated = (userInfo: { userName: string, image?: string, updatedAt: string, oldNickName: string }) => {};
@@ -185,6 +175,5 @@ export class OtoChatPageComponent extends BaseChatPageComponent implements OnIni
   @HostListener('document:keydown.escape')
   onEscapePressed(): void {
     this.chatFacade.closeCurrentChat();
-    this.cdr.detectChanges();
   }
 }

@@ -1,5 +1,6 @@
 import { Injectable } from '@angular/core';
 import * as signalR from '@microsoft/signalr';
+import { SignalRConnectionRegistryService } from '../../../../shared/chat/service/signalr-connection-registry';
 import { BehaviorSubject, from, Observable, Subject } from 'rxjs';
 import { tap } from 'rxjs/operators';
 import { GroupMessage } from '../../../../entities/group-message';
@@ -20,7 +21,7 @@ export class GroupMessagesApiService {
   private currentGroupId: string | null = null;
   private listenersSetup = false;
 
-  constructor() {}
+  constructor(private registry: SignalRConnectionRegistryService) {}
 
   private setupMessageListener() {
     const connection = this.getConnection();
@@ -188,7 +189,7 @@ export class GroupMessagesApiService {
   }
 
   private getConnection(): signalR.HubConnection | null {
-    const connection = (window as any).__groupChatConnection as signalR.HubConnection | undefined;
+    const connection = this.registry.getConnection('groupChat');
     if (connection && connection.state === signalR.HubConnectionState.Connected) {
       return connection;
     }
@@ -199,17 +200,8 @@ export class GroupMessagesApiService {
     let connection = this.getConnection();
     if (connection) return connection;
 
-    // try to trigger connect via global service if available
-    if ((window as any).__groupChatService && typeof (window as any).__groupChatService.connect === 'function') {
-      try { (window as any).__groupChatService.connect(); } catch {}
-    }
-
-    for (let i = 0; i < 10; i++) {
-      await new Promise(resolve => setTimeout(resolve, 150));
-      connection = this.getConnection();
-      if (connection) return connection;
-    }
-    throw new Error('SignalR connection not established');
+    connection = await this.registry.waitForConnection('groupChat', 20, 150);
+    return connection;
   }
 
   loadChatHistory(groupId: string, take = 20, skip = 0): Observable<GroupMessage[]> {

@@ -212,9 +212,7 @@ export class UserStateService implements OnDestroy {
   }
 
   refreshChats(): void {
-    setTimeout(() => {
-      this.otoChatApi.refreshChats();
-    }, 100);
+    this.otoChatApi.refreshChats();
   }
 
   isChatWithCurrentUser(chatNickName: string): boolean {

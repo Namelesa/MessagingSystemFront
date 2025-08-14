@@ -226,9 +226,7 @@ export abstract class BaseChatApiService<TChat> {
     }
     this.updateChatUserInfo(userInfo);
     
-    setTimeout(() => {
-      this.refreshChats();
-    }, 50);
+    queueMicrotask(() => this.refreshChats());
 
     const mappedUserInfo = {
       userName: userInfo.NewUserName,
@@ -349,9 +347,7 @@ export abstract class BaseChatApiService<TChat> {
     
     this.updateChatUserInfo(normalizedUserInfo);
     
-    setTimeout(() => {
-      this.refreshChats();
-    }, 50);
+    queueMicrotask(() => this.refreshChats());
     
     this.userInfoUpdatedSubject.next(userInfo);
   }

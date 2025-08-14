@@ -9,8 +9,8 @@ import { SearchUser } from '../../../../entities/search-user';
 import { BaseChatListComponent } from '../../../../shared/chat';
 import { ListItemComponent } from '../../../../shared/list';
 import { SearchInputComponent } from '../../../../shared/search';
-import { UserStateService, UserDeletionInfo, UserUpdateInfo } from '../../service/user-state.service';
-import { UserSearchService, UserSearchState } from '../../service/user-search.service';
+import { UserStateService, UserDeletionInfo, UserUpdateInfo } from '../../model/user-state.service';
+import { UserSearchService, UserSearchState } from '../../model/user-search.service';
 
 @Component({
   selector: 'app-oto-chat-list',
@@ -118,14 +118,9 @@ export class OtoChatListComponent extends BaseChatListComponent<OtoChat> impleme
     if (result.shouldUpdateSelectedChat && result.selectedChatUpdateInfo) {
       this.selectedChatUserUpdated.emit(result.selectedChatUpdateInfo);
       
-      setTimeout(() => {
-        const currentChats = (this.apiService as any).chatsSubject?.value || [];
-        const updatedChat = currentChats.find((chat: OtoChat) => chat.nickName === userInfo.userName);
-        
-        if (updatedChat) {
-          this.chatSelected.emit(updatedChat);
-        }
-      }, 100);
+      const currentChats = (this.apiService as any).chatsSubject?.value || [];
+      const updatedChat = currentChats.find((chat: OtoChat) => chat.nickName === userInfo.userName);
+      if (updatedChat) this.chatSelected.emit(updatedChat);
     }
   }
 

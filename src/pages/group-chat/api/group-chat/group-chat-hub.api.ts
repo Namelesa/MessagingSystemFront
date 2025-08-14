@@ -2,6 +2,7 @@ import { Subject, Observable } from 'rxjs';
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import * as signalR from '@microsoft/signalr';
+import { SignalRConnectionRegistryService } from '../../../../shared/chat/service/signalr-connection-registry';
 import { GroupChat } from '../../model/group.chat';
 import { GroupCreateRequest } from './group-create';
 import { AuthApiResult } from '../../../../entities/user';
@@ -18,7 +19,8 @@ export class GroupChatApiService extends BaseChatApiService<GroupChat> {
 
   constructor(
     private http: HttpClient,
-    private authService: AuthService
+    private authService: AuthService,
+    private registry: SignalRConnectionRegistryService
   ) {
     super(environment.groupChatHubUrl, 'GetAllGroupForUserAsync', 'LoadChatHistoryAsync');
   }
@@ -29,7 +31,7 @@ export class GroupChatApiService extends BaseChatApiService<GroupChat> {
     }
     this.isConnected = true;
 
-    (window as any).__groupChatConnection = this.connection;
+    this.registry.setConnection('groupChat', this.connection);
 
     this.connection.onreconnected(() => {
     });
@@ -389,8 +391,7 @@ export class GroupChatApiService extends BaseChatApiService<GroupChat> {
     if (this.isConnected) {
       super.disconnect();
       this.isConnected = false;
-      // Clear exposed connection reference
-      (window as any).__groupChatConnection = undefined;
+      this.registry.setConnection('groupChat', undefined);
     }
   }
 }

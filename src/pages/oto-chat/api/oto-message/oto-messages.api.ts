@@ -1,12 +1,13 @@
 import { Injectable } from '@angular/core';
 import * as signalR from '@microsoft/signalr';
+import { SignalRConnectionRegistryService } from '../../../../shared/chat';
 
 @Injectable({ providedIn: 'root' })
 export class OtoMessagesService {
-  constructor() {}
+  constructor(private registry: SignalRConnectionRegistryService) {}
 
   private getConnection(): signalR.HubConnection | null {
-    const connection = (window as any).__otoChatConnection as signalR.HubConnection | undefined;
+    const connection = this.registry.getConnection('otoChat');
     if (connection && connection.state === signalR.HubConnectionState.Connected) {
       return connection;
     }

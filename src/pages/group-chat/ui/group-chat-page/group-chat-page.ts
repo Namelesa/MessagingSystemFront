@@ -1,8 +1,8 @@
 import { Observable } from 'rxjs';
-import { Component,  Input, ViewChild, ChangeDetectorRef, HostListener } from '@angular/core';
+import { Component,  Input, ViewChild, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+ 
 import { GroupMessagesApiService } from '../../api/group-message/group-messages.api';
 import { GroupChatApiService } from '../../api/group-chat/group-chat-hub.api';
 import { GroupMember } from '../../model/group-info.model';
@@ -17,10 +17,10 @@ import { ChatLayoutComponent } from '../../../../widgets/chat-layout';
 import { GroupMessagesWidget } from '../../../../widgets/chat-messages';
 import { BaseChatPageComponent } from '../../../../shared/chat';
 import { SendAreaComponent } from '../../../../shared/send-message-area';
-import { GroupUserStateService } from '../../service/group-user-state.service';
-import { GroupMessageStateService } from '../../service/group-message-state.service';
-import { GroupNavigationService } from '../../service/group-navigation.service';
-import { GroupSearchService } from '../../service/group-search.service';
+import { GroupUserStateService } from '../../model/group-user-state.service';
+import { GroupMessageStateService } from '../../model/group-message-state.service';
+import { GroupNavigationService } from '../../model/group-navigation.service';
+import { GroupSearchService } from '../../model/group-search.service';
 
 @Component({
   selector: 'app-group-chat-page',
@@ -47,9 +47,8 @@ export class GroupChatPageComponent extends BaseChatPageComponent {
     private groupChatApi: GroupChatApiService,
     public groupMessages: GroupMessagesApiService,
     
-    private cdr: ChangeDetectorRef,
     private findUserStore: FindUserStore,
-    private router: Router,
+    
     public groupUserState: GroupUserStateService,
     public groupMessageState: GroupMessageStateService,
     private groupNavigation: GroupNavigationService,
@@ -71,7 +70,7 @@ export class GroupChatPageComponent extends BaseChatPageComponent {
       if (updatedGroup && updatedGroup.groupId === selectedId) {
         this.selectedChat = updatedGroup.groupName;
         this.selectedChatImage = updatedGroup.image;
-        this.cdr.detectChanges();
+        // state is reactive; no manual detectChanges
       }
     });
   }
@@ -95,9 +94,7 @@ export class GroupChatPageComponent extends BaseChatPageComponent {
 
   onGroupUpdated() {
     const groupId = this.groupUserState.getSelectedGroupId();
-    if (groupId) {
-      setTimeout(() => this.groupUserState.loadGroupInfo(groupId), 100);
-    }
+    if (groupId) this.groupUserState.loadGroupInfo(groupId);
   }
 
   onUserSearchQueryChange(query: string) {
@@ -145,10 +142,8 @@ export class GroupChatPageComponent extends BaseChatPageComponent {
   }
 
   onOpenChatWithUser(userData: { nickName: string, image: string }) {
-    this.router.navigate(['/otoChats'], {
-      state: { openChatWithUser: userData },
-      queryParams: { openChatUser: userData.nickName, openChatImage: userData.image || '' },
-    });
+    const url = `/otoChats?openChatUser=${encodeURIComponent(userData.nickName)}&openChatImage=${encodeURIComponent(userData.image || '')}`;
+    window.location.assign(url);
   }
 
   sendMessage(message: string) {
@@ -192,7 +187,6 @@ export class GroupChatPageComponent extends BaseChatPageComponent {
     this.selectedChat = undefined;
     this.selectedChatImage = undefined;
     this.groupMessageState.resetAll();
-    this.cdr.detectChanges();
   }
 
   // Derived state for template

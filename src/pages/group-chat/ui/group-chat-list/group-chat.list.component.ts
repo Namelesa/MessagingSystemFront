@@ -11,7 +11,7 @@ import { GroupChat } from '../../model/group.chat';
 import { InputComponent, ToastService, ToastComponent } from '../../../../shared/ui-elements';
 import { SearchInputComponent } from '../../../../shared/search';
 import { BaseChatListComponent } from '../../../../shared/chat';
-import { GroupSearchService } from '../../service/group-search.service';
+import { GroupSearchService } from '../../model/group-search.service';
 import { ListItemComponent } from '../../../../shared/list';
 
 @Component({

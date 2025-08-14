@@ -12,7 +12,7 @@ import { FormsModule } from '@angular/forms';
 import { GroupInfoApiService } from '../../api/group-chat/group-info.api';
 import { GroupInfoEditData } from '../../model/group-info-edit.model';
 import { GroupInfoData } from '../../model/group-info.model';
-import { validateEditGroupForm } from '../../model/validate-group';
+import { validateEditGroupForm, validateImageFile, validateMembersCount } from '../../model/validate-group';
 import { SearchUser } from '../../../../entities/search-user';
 import { AuthService } from '../../../../entities/session';
 import { InputComponent, ToastComponent, ToastService } from '../../../../shared/ui-elements';
@@ -68,8 +68,6 @@ export class GroupInfoModalComponent implements OnChanges, OnInit {
 
   private readonly MIN_MEMBERS = 3;
   private readonly MAX_MEMBERS = 40;
-  private readonly MAX_IMAGE_SIZE = 5 * 1024 * 1024; 
-  private readonly ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
 
   constructor(
     private groupInfoApi: GroupInfoApiService,
@@ -176,42 +174,12 @@ export class GroupInfoModalComponent implements OnChanges, OnInit {
     this.isAddingMember = this.isAddingModeOnly;
   }  
 
-  private validateImage(file: File): string[] {
-    const errors: string[] = [];
-    
-    if (!this.ALLOWED_IMAGE_TYPES.includes(file.type)) {
-      errors.push('Image must be in JPEG, PNG, GIF or WebP format');
-    }
-    
-    if (file.size > this.MAX_IMAGE_SIZE) {
-      errors.push('Image size must not exceed 5MB');
-    }
-    
-    return errors;
-  }
+  private validateImage(file: File): string[] { return validateImageFile(file); }
 
   private validateMemberCount(): string[] {
-    const errors: string[] = [];
     const currentMemberCount = this.groupInfo?.members?.length || 0;
     const selectedCount = this.selectedUsers.length;
-    
-    if (this.isMembersMode) {
-      const totalAfterAddition = currentMemberCount + selectedCount;
-      
-      if (totalAfterAddition > this.MAX_MEMBERS) {
-        errors.push(`Total members cannot exceed ${this.MAX_MEMBERS}. Current: ${currentMemberCount}, adding: ${selectedCount}`);
-      }
-    } else {
-      if (currentMemberCount < this.MIN_MEMBERS) {
-        errors.push(`Group must have at least ${this.MIN_MEMBERS} members (including admin)`);
-      }
-      
-      if (currentMemberCount > this.MAX_MEMBERS) {
-        errors.push(`Group cannot have more than ${this.MAX_MEMBERS} members (including admin)`);
-      }
-    }
-    
-    return errors;
+    return validateMembersCount(currentMemberCount, selectedCount, { min: this.MIN_MEMBERS, max: this.MAX_MEMBERS, mode: this.isMembersMode ? 'add' : 'create' });
   }
 
   private validateForm(): string[] {

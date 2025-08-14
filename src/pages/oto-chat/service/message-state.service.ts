@@ -132,10 +132,7 @@ export class MessageStateService {
 
   forceMessageComponentReload(): void {
     this.updateState({ forceMessageComponentReload: true });
-    
-    setTimeout(() => {
-      this.updateState({ forceMessageComponentReload: false });
-    }, 0);
+    queueMicrotask(() => this.updateState({ forceMessageComponentReload: false }));
   }
 
   resetAllStates(): void {

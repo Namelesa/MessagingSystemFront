@@ -3,6 +3,7 @@ import { OtoChat } from '../../model/oto.chat';
 import { AuthService } from '../../../../entities/session';
 import { environment } from '../../../../shared/api-urls';
 import { BaseChatApiService } from '../../../../shared/chat';
+import { SignalRConnectionRegistryService } from '../../../../shared/chat';
 
 @Injectable({
   providedIn: 'root'
@@ -10,7 +11,7 @@ import { BaseChatApiService } from '../../../../shared/chat';
 export class OtoChatApiService extends BaseChatApiService<OtoChat> {
   private isConnected = false;
 
-  constructor(private authService: AuthService) {
+  constructor(private authService: AuthService, private registry: SignalRConnectionRegistryService) {
     super(environment.otoChatHubUrl, 'GetChatsAsync', 'LoadChatHistoryAsync');
   }
 
@@ -20,17 +21,14 @@ export class OtoChatApiService extends BaseChatApiService<OtoChat> {
     }
     super.connect();
     this.isConnected = true;
-    (window as any).__otoChatConnection = (this as any).connection;
-    (window as any).__otoMessages$ = this.messages$;
-    (window as any).__otoUserInfoDeleted$ = this.userInfoDeleted$;
-    (window as any).__otoLoadHistory = (nick: string, take: number, skip: number) => this.loadChatHistory(nick, take, skip);
+    this.registry.setConnection('otoChat', (this as any).connection);
   }
 
   override disconnect(): void {
     if (this.isConnected) {
       super.disconnect();
       this.isConnected = false;
-      (window as any).__otoChatConnection = undefined;
+      this.registry.setConnection('otoChat', undefined as any);
     }
   }
 
