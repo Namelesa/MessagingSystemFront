@@ -26,6 +26,9 @@ export class SendAreaComponent implements OnChanges {
 
   message = '';
   readonly maxLength = 2000;
+  readonly maxBytes = 8000;
+  private lastSentAt = 0;
+  private minIntervalMs = 400;
   
   ngOnChanges(changes: SimpleChanges) {
     if (changes['editingMessage']) {
@@ -85,6 +88,9 @@ export class SendAreaComponent implements OnChanges {
   emitMessage() {
     const text = this.message.trim();
     if (!text || this.isTooLong) return;
+    if (new Blob([text]).size > this.maxBytes) return;
+    const now = Date.now();
+    if (now - this.lastSentAt < this.minIntervalMs) return;
 
     if (this.isEditing && this.editingMessage) {
       this.editComplete.emit({
@@ -96,6 +102,7 @@ export class SendAreaComponent implements OnChanges {
     }
     
     this.message = '';
+    this.lastSentAt = now;
   }
 
   cancelEdit() {

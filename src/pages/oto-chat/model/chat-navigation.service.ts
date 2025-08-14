@@ -1,4 +1,1 @@
-export * from '../service/chat-navigation.service';
-
-
-
+export * from './chat-navigation.service';

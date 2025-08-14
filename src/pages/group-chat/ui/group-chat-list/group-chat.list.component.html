@@ -206,7 +206,7 @@
           </li>
 
           <shared-list-item
-            *ngFor="let chat of chats$ | async"
+            *ngFor="let chat of chats$ | async; trackBy: trackByChat"
             [name]="getChatName(chat)"
             [image]="chat.image"
             [active]="selectedNickname === getChatName(chat)"
@@ -232,7 +232,7 @@
             </li>
 
             <shared-list-item
-              *ngFor="let chat of filteredChats$ | async"
+              *ngFor="let chat of filteredChats$ | async; trackBy: trackByChat"
               [name]="getChatName(chat)"
               [image]="chat.image"
               [active]="selectedNickname === getChatName(chat)"

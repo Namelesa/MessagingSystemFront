@@ -15,7 +15,7 @@ import { GroupInfoModalComponent } from '../group-info-modal/group-info-modal.co
 import { FindUserStore } from '../../../../features/search-user';
 import { ChatLayoutComponent } from '../../../../widgets/chat-layout';
 import { GroupMessagesWidget } from '../../../../widgets/chat-messages';
-import { BaseChatPageComponent } from '../../../../shared/chat';
+import { BaseChatPageComponent } from '../../../../shared/realtime';
 import { SendAreaComponent } from '../../../../shared/send-message-area';
 import { GroupUserStateService } from '../../model/group-user-state.service';
 import { GroupMessageStateService } from '../../model/group-message-state.service';

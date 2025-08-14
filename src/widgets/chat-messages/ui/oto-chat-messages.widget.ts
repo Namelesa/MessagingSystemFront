@@ -1,15 +1,16 @@
-import { Component, Input, Output, EventEmitter, ViewChild, ElementRef, OnChanges, SimpleChanges, AfterViewInit, OnDestroy } from '@angular/core';
+import { Component, Input, Output, EventEmitter, ViewChild, ElementRef, OnChanges, SimpleChanges, AfterViewInit, OnDestroy, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Subject } from 'rxjs';
 import { takeUntil, filter } from 'rxjs/operators';
 import { OtoMessage } from '../../../entities/oto-message';
-import { isToday, truncateText, computeContextMenuPosition } from '../../../shared/chat';
+import { isToday, truncateText, computeContextMenuPosition } from '../../../shared/realtime';
 
 @Component({
   selector: 'widgets-oto-chat-messages',
   standalone: true,
   imports: [CommonModule],
   templateUrl: './oto-chat-messages.widget.html',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class OtoChatMessagesWidget implements OnChanges, AfterViewInit, OnDestroy {
   @Input() chatNickName!: string;
@@ -90,6 +91,9 @@ export class OtoChatMessagesWidget implements OnChanges, AfterViewInit, OnDestro
     }
     return groups;
   }
+
+  trackByGroup = (_: number, group: { date: string; messages: OtoMessage[] }) => group.date;
+  trackByMessageId = (_: number, msg: OtoMessage) => msg.messageId;
 
   isToday = isToday;
   truncateText = truncateText;

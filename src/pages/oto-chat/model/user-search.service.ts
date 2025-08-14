@@ -1,4 +1,1 @@
-export * from '../service/user-search.service';
-
-
-
+export * from './user-search.service';

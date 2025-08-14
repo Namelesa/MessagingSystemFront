@@ -1,4 +1,5 @@
-import { Observable } from 'rxjs';
+import { Observable, throwError } from 'rxjs';
+import { retryWhen, scan, delay, catchError } from 'rxjs/operators';
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { AuthService, ProfileApiResult } from '../../../entities/session';
@@ -15,12 +16,20 @@ export class UserProfileApi {
       throw new Error('Nickname is not set in AuthService');
     }
 
+    const maxRetries = 3;
+    const baseDelayMs = 300;
     return this.http.get<ProfileApiResult>(
       `${environment.apiUrl}user/profile`,
       {
         withCredentials: true,
         params: { nickName }
       }
+    ).pipe(
+      retryWhen(errors => errors.pipe(
+        scan((acc, err) => { if (acc >= maxRetries) throw err; return acc + 1; }, 0),
+        delay(baseDelayMs)
+      )),
+      catchError(err => throwError(() => err))
     );
   }
 
@@ -38,6 +47,8 @@ export class UserProfileApi {
       }
     });
   
+    const maxRetries = 3;
+    const baseDelayMs = 300;
     return this.http.put<AuthApiResult>(
       `${environment.apiUrl}user/edit`,
       formData,
@@ -45,6 +56,12 @@ export class UserProfileApi {
         params: { nickName: oldNickName },
         withCredentials: true
       }
+    ).pipe(
+      retryWhen(errors => errors.pipe(
+        scan((acc, err) => { if (acc >= maxRetries) throw err; return acc + 1; }, 0),
+        delay(baseDelayMs)
+      )),
+      catchError(err => throwError(() => err))
     );
   }
   
@@ -56,11 +73,19 @@ export class UserProfileApi {
   
     const queryString = `nickName=${encodeURIComponent(nickName)}`;
     
+    const maxRetries = 3;
+    const baseDelayMs = 300;
     return this.http.delete<AuthApiResult>(
       `${environment.apiUrl}user/delete?${queryString}`,
       {
         withCredentials: true
       }
+    ).pipe(
+      retryWhen(errors => errors.pipe(
+        scan((acc, err) => { if (acc >= maxRetries) throw err; return acc + 1; }, 0),
+        delay(baseDelayMs)
+      )),
+      catchError(err => throwError(() => err))
     );
   }
 }

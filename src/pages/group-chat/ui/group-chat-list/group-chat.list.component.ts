@@ -1,6 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Component, Input, OnInit, Output, EventEmitter, HostListener, ChangeDetectorRef } from '@angular/core';
+import { Component, Input, OnInit, Output, EventEmitter, HostListener, ChangeDetectorRef, ChangeDetectionStrategy } from '@angular/core';
 import { Observable, map, combineLatest, BehaviorSubject } from 'rxjs';
 import { GroupChatApiService } from '../../api/group-chat/group-chat-hub.api';
 import { GroupCreateRequest } from '../../api/group-chat/group-create';
@@ -10,7 +10,7 @@ import { AuthService } from '../../../../entities/session';
 import { GroupChat } from '../../model/group.chat';
 import { InputComponent, ToastService, ToastComponent } from '../../../../shared/ui-elements';
 import { SearchInputComponent } from '../../../../shared/search';
-import { BaseChatListComponent } from '../../../../shared/chat';
+import { BaseChatListComponent } from '../../../../shared/realtime';
 import { GroupSearchService } from '../../model/group-search.service';
 import { ListItemComponent } from '../../../../shared/list';
 
@@ -19,6 +19,7 @@ import { ListItemComponent } from '../../../../shared/list';
   standalone: true,
   imports: [CommonModule, FormsModule, ListItemComponent, SearchInputComponent, InputComponent, ToastComponent],
   templateUrl: './group-chat.list.component.html',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class GroupChatListComponent extends BaseChatListComponent<GroupChat> implements OnInit {
   protected apiService: GroupChatApiService;
@@ -38,6 +39,21 @@ export class GroupChatListComponent extends BaseChatListComponent<GroupChat> imp
   ) {
     super();
     this.apiService = this.groupChatApi;
+  }
+
+  override ngOnInit(): void {
+    super.ngOnInit();
+    this.filteredChats$ = combineLatest([
+      this.chats$,
+      this.searchQuerySubject.asObservable()
+    ]).pipe(
+      map(([chats, query]) => {
+        const trimmed = (query || '').trim();
+        if (!trimmed) return chats || [];
+        const lower = trimmed.toLowerCase();
+        return (chats || []).filter(chat => (this.getChatName(chat) || '').toLowerCase().includes(lower));
+      })
+    );
   }
 
   public image: string | null = null;
@@ -63,32 +79,27 @@ export class GroupChatListComponent extends BaseChatListComponent<GroupChat> imp
   selectedUsers: Array<{nickName: string, image: string}> = [];
   isUserSearchActive = false;
 
-  filteredChats$: Observable<GroupChat[]> = combineLatest([
-    this.chats$,
-    this.searchQuerySubject.asObservable()
-  ]).pipe(
-    map(([chats, query]) => {
-      const trimmed = (query || '').trim();
-      if (!trimmed) return chats || [];
-      const lower = trimmed.toLowerCase();
-      return (chats || []).filter(chat => this.getChatName(chat).toLowerCase().includes(lower));
-    })
-  );
+  filteredChats$!: Observable<GroupChat[]>;
+
+  trackByChat = (index: number, chat: GroupChat) => chat.groupId || chat.groupName || index;
 
   onSearchQueryChange(query: string) {
     this.search = query;
     this.isSearchActive = query.trim().length > 0;
     this.searchQuerySubject.next(query);
+    this.cdr.markForCheck();
   }
 
   onSearchFocus() {
     this.isSearchActive = true;
+    this.cdr.markForCheck();
   }
 
   clearSearching() {
     this.search = '';
     this.isSearchActive = false;
     this.searchQuerySubject.next('');
+    this.cdr.markForCheck();
   }
 
   private updateFilteredChats() { /* no-op: kept for compatibility */ }

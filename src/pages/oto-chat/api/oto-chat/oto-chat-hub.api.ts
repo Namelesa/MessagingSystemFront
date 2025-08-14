@@ -2,8 +2,8 @@ import { Injectable } from '@angular/core';
 import { OtoChat } from '../../model/oto.chat';
 import { AuthService } from '../../../../entities/session';
 import { environment } from '../../../../shared/api-urls';
-import { BaseChatApiService } from '../../../../shared/chat';
-import { SignalRConnectionRegistryService } from '../../../../shared/chat';
+import { BaseChatApiService } from '../../../../shared/realtime';
+import { SignalRConnectionRegistryService } from '../../../../shared/realtime';
 
 @Injectable({
   providedIn: 'root'

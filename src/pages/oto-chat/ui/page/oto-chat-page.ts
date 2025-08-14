@@ -11,7 +11,7 @@ import { OtoChatListComponent } from '../list/oto-chat.list.component';
 import { OtoMessage } from '../../../../entities/oto-message';
 import { OtoChatMessagesWidget } from '../../../../widgets/chat-messages';
 import { ChatLayoutComponent } from '../../../../widgets/chat-layout';
-import { BaseChatPageComponent} from '../../../../shared/chat';
+import { BaseChatPageComponent} from '../../../../shared/realtime';
 import { SendAreaComponent } from '../../../../shared/send-message-area';
 
 @Component({

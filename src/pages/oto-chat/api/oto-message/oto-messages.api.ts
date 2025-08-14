@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import * as signalR from '@microsoft/signalr';
-import { SignalRConnectionRegistryService } from '../../../../shared/chat';
+import { SignalRConnectionRegistryService } from '../../../../shared/realtime';
 
 @Injectable({ providedIn: 'root' })
 export class OtoMessagesService {
@@ -16,10 +16,7 @@ export class OtoMessagesService {
 
   async sendMessage(recipient: string, content: string) {
     try {
-      const connection = this.getConnection();
-      if (!connection) {
-        throw new Error('Connection not established');
-      }
+      const connection = this.getConnection() || await this.registry.waitForConnection('otoChat', 20, 150);
       await connection.invoke('SendMessageAsync', recipient, content);
     } catch (error) {
       console.error('Error sending message:', error);
@@ -29,10 +26,7 @@ export class OtoMessagesService {
 
   async editMessage(messageId: string, content: string) {
     try {
-      const connection = this.getConnection();
-      if (!connection) {
-        throw new Error('Connection not established');
-      }
+      const connection = this.getConnection() || await this.registry.waitForConnection('otoChat', 20, 150);
       await connection.invoke('EditMessageAsync', messageId, content);
     } catch (error) {
       console.error('Error editing message:', error);
@@ -42,10 +36,7 @@ export class OtoMessagesService {
 
   async deleteMessage(messageId: string, deleteType: 'soft' | 'hard') {
     try {
-      const connection = this.getConnection();
-      if (!connection) {
-        throw new Error('Connection not established');
-      }
+      const connection = this.getConnection() || await this.registry.waitForConnection('otoChat', 20, 150);
       await connection.invoke('DeleteMessageAsync', messageId, deleteType);
     } catch (error) {
       console.error('Error deleting message:', error);
@@ -55,10 +46,7 @@ export class OtoMessagesService {
 
   async replyToMessage(messageId: string, content: string, recipient: string) {
     try {
-      const connection = this.getConnection();
-      if (!connection) {
-        throw new Error('Connection not established');
-      }
+      const connection = this.getConnection() || await this.registry.waitForConnection('otoChat', 20, 150);
       await connection.invoke('ReplyToMessageAsync', recipient, content, messageId);
     } catch (error) {
       console.error('Error replying to message:', error);

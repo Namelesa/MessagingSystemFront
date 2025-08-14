@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import * as signalR from '@microsoft/signalr';
-import { SignalRConnectionRegistryService } from '../../../../shared/chat';
+import { SignalRConnectionRegistryService } from '../../../../shared/realtime';
 import { BehaviorSubject, from, Observable, Subject } from 'rxjs';
 import { tap } from 'rxjs/operators';
 import { GroupMessage } from '../../../../entities/group-message';

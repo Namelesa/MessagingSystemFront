@@ -1,4 +1,5 @@
-import { Observable } from 'rxjs';
+import { Observable, throwError } from 'rxjs';
+import { retryWhen, scan, delay, catchError } from 'rxjs/operators';
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { AuthApiResult, RegisterContract } from '../../../entities/user';
@@ -16,6 +17,17 @@ export class RegisterApi {
       }
     });
 
-    return this.http.post<AuthApiResult>(`${environment.apiUrl}auth/register`, formData);
+    const maxRetries = 3;
+    const baseDelayMs = 300;
+    return this.http.post<AuthApiResult>(`${environment.apiUrl}auth/register`, formData).pipe(
+      retryWhen(errors => errors.pipe(
+        scan((acc, err) => {
+          if (acc >= maxRetries) throw err;
+          return acc + 1;
+        }, 0),
+        delay(baseDelayMs)
+      )),
+      catchError(err => throwError(() => err))
+    );
   }
 }

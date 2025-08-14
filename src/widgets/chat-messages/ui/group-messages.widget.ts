@@ -1,15 +1,16 @@
-import { Component, Input, Output, EventEmitter, ViewChild, ElementRef, OnChanges, SimpleChanges, AfterViewInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
+import { Component, Input, Output, EventEmitter, ViewChild, ElementRef, OnChanges, SimpleChanges, AfterViewInit, OnDestroy, ChangeDetectorRef, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Observable, Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import { GroupMessage } from '../../../entities/group-message';
-import { isToday, truncateText, computeContextMenuPosition } from '../../../shared/chat';
+import { isToday, truncateText, computeContextMenuPosition } from '../../../shared/realtime';
 
 @Component({
   selector: 'widgets-group-messages',
   standalone: true,
   imports: [CommonModule],
   templateUrl: './group-messages.widget.html',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class GroupMessagesWidget implements OnChanges, AfterViewInit, OnDestroy {
   @Input() groupId!: string;
@@ -142,6 +143,9 @@ export class GroupMessagesWidget implements OnChanges, AfterViewInit, OnDestroy 
     }
     return groups;
   }
+
+  trackByGroup = (_: number, group: { date: string; messages: GroupMessage[] }) => group.date;
+  trackByMessageId = (_: number, msg: GroupMessage) => msg.id;
 
   isToday = isToday;
   truncateText = truncateText;

@@ -1,11 +1,11 @@
 <div #scrollContainer (scroll)="onScroll()" class="overflow-y-auto h-full relative scroll-smooth">
-  <ng-container *ngFor="let group of groupedMessages">
+  <ng-container *ngFor="let group of groupedMessages; trackBy: trackByGroup">
     <div class="flex justify-center my-4">
       <span class="inline-block bg-gray-400 text-white px-3 py-1 rounded-full opacity-80 text-sm dark:bg-gray-500 dark:text-white shadow-md">
         {{ isToday(group.messages[0].sentAt) ? 'Today' : (group.messages[0].sentAt | date:'d MMMM yyyy') }}
       </span>
     </div>
-    <ng-container *ngFor="let msg of group.messages">
+    <ng-container *ngFor="let msg of group.messages; trackBy: trackByMessageId">
       <div
         class="flex flex-col mb-1 relative cursor-pointer message-container px-4" 
         [ngClass]="isMyMessage(msg) ? 'items-end' : 'items-start'"

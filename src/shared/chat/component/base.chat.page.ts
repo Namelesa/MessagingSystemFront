@@ -1,9 +1,10 @@
 import { BehaviorSubject } from 'rxjs';
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectionStrategy } from '@angular/core';
 import { BaseChatApiService } from '../service/base.chat.hub.api';
 
 @Component({
-  template: '' 
+  template: '',
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 
 export abstract class BaseChatPageComponent implements OnInit, OnDestroy {
