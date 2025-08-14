@@ -1,6 +1,6 @@
 import { Observable, Subscription } from 'rxjs';
 import { map } from 'rxjs/operators';
-import { Component, Input, Output, EventEmitter, ElementRef, ViewChild, HostListener, OnInit, OnDestroy, ChangeDetectionStrategy } from '@angular/core';
+import { Component, Input, Output, EventEmitter, ElementRef, ViewChild, HostListener, OnInit, OnDestroy, ChangeDetectionStrategy, Inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { CommonModule, AsyncPipe } from '@angular/common';
 import { OtoChatApiService } from '../../api/oto-chat/oto-chat-hub.api';
@@ -49,7 +49,7 @@ export class OtoChatListComponent extends BaseChatListComponent<OtoChat> impleme
 
   constructor(
     private otoChatApi: OtoChatApiService,
-    private userStateService: UserStateService,
+    @Inject(UserStateService) private userStateService: UserStateService,
     private userSearchService: UserSearchService
   ) {
     super();
