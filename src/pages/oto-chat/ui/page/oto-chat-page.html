@@ -26,6 +26,7 @@
             #messagesComponent
             [chatNickName]="selectedChat.nickName" 
             [currentUserNickName]="(chatState$ | async)?.currentUserNickName || ''"
+            [loadHistory]="otoChatApi.loadChatHistory.bind(otoChatApi)"
             (editMessage)="onEditMessage($event)"
             (deleteMessage)="onDeleteMessage($event)"
             (replyToMessage)="onReplyToMessage($event)"

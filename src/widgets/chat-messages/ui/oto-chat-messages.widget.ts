@@ -15,6 +15,7 @@ import { isToday, truncateText, computeContextMenuPosition } from '../../../shar
 export class OtoChatMessagesWidget implements OnChanges, AfterViewInit, OnDestroy {
   @Input() chatNickName!: string;
   @Input() currentUserNickName!: string;
+  @Input() loadHistory?: (nick: string, take: number, skip: number) => any;
 
   @Output() editMessage = new EventEmitter<OtoMessage>();
   @Output() deleteMessage = new EventEmitter<OtoMessage>();
@@ -177,6 +178,7 @@ export class OtoChatMessagesWidget implements OnChanges, AfterViewInit, OnDestro
     this.shouldScrollToBottom = true;
     this.loadMore();
 
+    // Use global messages$ or wait for it to be set
     const messages$ = (window as any).__otoMessages$ as any;
     if (!messages$ || typeof messages$.pipe !== 'function') return;
     messages$.pipe(takeUntil(this.destroy$)).subscribe((newMsgs: OtoMessage[]) => {
@@ -211,12 +213,16 @@ export class OtoChatMessagesWidget implements OnChanges, AfterViewInit, OnDestro
   private loadMore() {
     if (this.loading || this.allLoaded) return;
     this.loading = true;
-    const loadHistory = (window as any).__otoLoadHistory as ((nick: string, take: number, skip: number) => any) | undefined;
-    if (!loadHistory) {
+    
+    // Use passed loadHistory function or fallback to global variable
+    const loadHistoryFn = this.loadHistory || (window as any).__otoLoadHistory as ((nick: string, take: number, skip: number) => any) | undefined;
+    
+    if (!loadHistoryFn) {
       this.loading = false;
       return;
     }
-    loadHistory(this.chatNickName, this.take, this.skip)
+    
+    loadHistoryFn(this.chatNickName, this.take, this.skip)
       .pipe(takeUntil(this.destroy$))
       .subscribe((newMsgs: OtoMessage[]) => {
         const filtered = newMsgs.filter(m => !m.isDeleted || !this.isMyMessage(m));

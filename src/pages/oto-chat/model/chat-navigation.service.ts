@@ -4,6 +4,7 @@ import { BehaviorSubject } from 'rxjs';
 import { OtoChat } from './oto.chat';
 import { UserStateService } from './user-state.service';
 import { MessageStateService } from './message-state.service';
+import { OtoChatApiService } from '../api/oto-chat/oto-chat-hub.api';
 
 export interface NavigationState {
   pendingChatUser?: { nickName: string; image: string };
@@ -21,7 +22,8 @@ export class ChatNavigationService {
   constructor(
     private router: Router,
     private userStateService: UserStateService,
-    private messageStateService: MessageStateService
+    private messageStateService: MessageStateService,
+    private otoChatApi: OtoChatApiService
   ) {}
 
   getCurrentNavigationState(): NavigationState {
@@ -72,6 +74,9 @@ export class ChatNavigationService {
     this.userStateService.setSelectedChat(chat.nickName, chat.image, chat);
     this.messageStateService.resetEditingStates();
     this.messageStateService.forceMessageComponentReload();
+    
+    // Load chat history when selecting a chat
+    this.otoChatApi.loadChatHistory(chat.nickName, 20, 0).subscribe();
     
     this.updateState({ isNavigating: false });
   }

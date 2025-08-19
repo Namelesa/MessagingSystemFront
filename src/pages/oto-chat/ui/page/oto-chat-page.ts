@@ -78,7 +78,7 @@ export class OtoChatPageComponent extends BaseChatPageComponent implements OnIni
   }
 
   constructor(
-    private otoChatApi: OtoChatApiService,
+    public otoChatApi: OtoChatApiService,
   ) {
     super();
     this.apiService = this.otoChatApi;
@@ -90,6 +90,9 @@ export class OtoChatPageComponent extends BaseChatPageComponent implements OnIni
     this.subscribeToEvents();
     
     this.chatFacade.handlePendingChatUser(this.chatListComponent);
+    
+    // Set up global variables for oto-chat messages widget
+    this.setupGlobalVariables();
   }
 
   override ngOnDestroy(): void {
@@ -175,5 +178,15 @@ export class OtoChatPageComponent extends BaseChatPageComponent implements OnIni
   @HostListener('document:keydown.escape')
   onEscapePressed(): void {
     this.chatFacade.closeCurrentChat();
+  }
+
+  private setupGlobalVariables(): void {
+    // Set up global loadHistory function
+    (window as any).__otoLoadHistory = (nick: string, take: number, skip: number) => {
+      return this.otoChatApi.loadChatHistory(nick, take, skip);
+    };
+
+    // Set up global messages$ observable
+    (window as any).__otoMessages$ = this.otoChatApi.messages$;
   }
 }
