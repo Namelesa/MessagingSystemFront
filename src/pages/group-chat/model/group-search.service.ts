@@ -20,6 +20,3 @@ export class GroupSearchService {
   onFocus(): void { this.update({ isSearchFocused: true }); this.findUserStore.clearUser(); }
   clear(): void { this.update({ isSearchFocused: false, searchQuery: '' }); this.findUserStore.clearUser(); }
 }
-
-
-

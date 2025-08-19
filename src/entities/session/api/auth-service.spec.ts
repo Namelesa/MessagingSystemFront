@@ -23,10 +23,19 @@ describe('AuthService', () => {
     image: 'https://example.com/avatar.jpg'
   };
 
+  const mockProfileWithoutImage: ProfileApiResult = {
+    statusCode: '200',
+    firstName: 'Test',
+    lastName: 'User',
+    login: 'testUser',
+    email: 'test@example.com',
+    nickName: 'testUser',
+    image: undefined
+  };
+
   beforeEach(async () => {
     const storageServiceSpy = jasmine.createSpyObj('StorageService', ['get', 'set', 'remove']);
     
-    // Настройка дефолтных возвращаемых значений для мока
     storageServiceSpy.get.and.returnValue(Promise.resolve(null));
     storageServiceSpy.set.and.returnValue(Promise.resolve());
     storageServiceSpy.remove.and.returnValue(Promise.resolve());
@@ -50,7 +59,6 @@ describe('AuthService', () => {
 
   describe('Initialization', () => {
     it('should create the service', (done) => {
-      // Ждем инициализации перед проверкой
       service = TestBed.inject(AuthService);
       service.waitForAuthInit().subscribe(() => {
         expect(service).toBeTruthy();
@@ -70,7 +78,7 @@ describe('AuthService', () => {
       });
     });
 
-    it('should initialize with stored nickname and check auth', (done) => {
+    it('should initialize with stored nickname and successful auth check', (done) => {
       storageServiceMock.get.and.returnValue(Promise.resolve('storedUser'));
       
       const newService = new AuthService(httpClient, storageServiceMock);
@@ -81,10 +89,26 @@ describe('AuthService', () => {
         done();
       });
 
-      // Ждем HTTP запрос и отвечаем на него
       setTimeout(() => {
         const req = httpMock.expectOne(`${environment.apiUrl}user/profile?nickName=storedUser`);
         req.flush(mockProfile);
+      });
+    });
+
+    it('should initialize with stored nickname and failed auth check', (done) => {
+      storageServiceMock.get.and.returnValue(Promise.resolve('storedUser'));
+      
+      const newService = new AuthService(httpClient, storageServiceMock);
+
+      newService.waitForAuthInit().subscribe(result => {
+        expect(result).toBe(true);
+        expect(newService.getNickName()).toBe('storedUser');
+        done();
+      });
+
+      setTimeout(() => {
+        const req = httpMock.expectOne(`${environment.apiUrl}user/profile?nickName=storedUser`);
+        req.error(new ErrorEvent('Auth failed'));
       });
     });
   });
@@ -103,6 +127,18 @@ describe('AuthService', () => {
       expect(service.getNickName()).toBe('newUser');
       expect(storageServiceMock.set).toHaveBeenCalledWith('nickName', 'newUser');
     });
+
+    it('should handle storage error when setting nickname', async () => {
+      const storageError = new Error('Storage error');
+      storageServiceMock.set.and.returnValue(Promise.reject(storageError));
+
+      try {
+        await service.setNickName('newUser');
+        fail('Should have thrown an error');
+      } catch (error) {
+        expect(error).toBe(storageError);
+      }
+    });
   });
 
   describe('getNickName', () => {
@@ -112,9 +148,7 @@ describe('AuthService', () => {
     });
 
     it('should return current nickname', async () => {
-      storageServiceMock.set.and.returnValue(Promise.resolve('testUser'));
       await service.setNickName('testUser');
-
       expect(service.getNickName()).toBe('testUser');
     });
 
@@ -133,6 +167,15 @@ describe('AuthService', () => {
       service.setNickName('testUser').then(() => {
         service.getUserProfile().subscribe(profile => {
           expect(profile).toEqual(mockProfile);
+          
+          service.isLoggedIn$.subscribe(isLoggedIn => {
+            expect(isLoggedIn).toBe(true);
+          });
+          
+          service.userProfile$.subscribe(userProfile => {
+            expect(userProfile).toEqual(mockProfile);
+          });
+          
           done();
         });
 
@@ -153,15 +196,17 @@ describe('AuthService', () => {
           error: (error) => {
             expect(error).toBeDefined();
             
-            service.isLoggedIn$.subscribe(isLoggedIn => {
-              expect(isLoggedIn).toBe(false);
+            setTimeout(() => {
+              service.isLoggedIn$.subscribe(isLoggedIn => {
+                expect(isLoggedIn).toBe(false);
+              });
+              
+              service.userProfile$.subscribe(profile => {
+                expect(profile).toBeNull();
+              });
+              
+              done();
             });
-            
-            service.userProfile$.subscribe(profile => {
-              expect(profile).toBeNull();
-            });
-            
-            done();
           }
         });
 
@@ -267,8 +312,6 @@ describe('AuthService', () => {
     });
 
     it('should set logged in status to false and clear data', (done) => {
-      storageServiceMock.remove.and.returnValue(Promise.resolve());
-      
       service.setNickName('testUser').then(() => {
         return service.setLoggedIn(false);
       }).then(() => {
@@ -284,6 +327,20 @@ describe('AuthService', () => {
         expect(storageServiceMock.remove).toHaveBeenCalledWith('nickName');
         done();
       });
+    });
+
+    it('should handle storage error when setting logged in to false', async () => {
+      const storageError = new Error('Storage remove error');
+      storageServiceMock.remove.and.returnValue(Promise.reject(storageError));
+      
+      await service.setNickName('testUser');
+      
+      try {
+        await service.setLoggedIn(false);
+        fail('Should have thrown an error');
+      } catch (error) {
+        expect(error).toBe(storageError);
+      }
     });
   });
 
@@ -310,6 +367,19 @@ describe('AuthService', () => {
       const avatarUrl = service.getUserAvatarUrl();
       expect(avatarUrl).toBeUndefined();
     });
+
+    it('should return undefined when profile has no image', (done) => {
+      service.setNickName('testUser').then(() => {
+        service.getUserProfile().subscribe(() => {
+          const avatarUrl = service.getUserAvatarUrl();
+          expect(avatarUrl).toBeUndefined();
+          done();
+        });
+
+        const req = httpMock.expectOne(`${environment.apiUrl}user/profile?nickName=testUser`);
+        req.flush(mockProfileWithoutImage);
+      });
+    });
   });
 
   describe('logout', () => {
@@ -319,8 +389,6 @@ describe('AuthService', () => {
     });
 
     it('should clear auth data and return true', (done) => {
-      storageServiceMock.remove.and.returnValue(Promise.resolve());
-      
       service.setNickName('testUser').then(() => {
         service.logout().subscribe(result => {
           expect(result).toBe(true);
@@ -339,20 +407,50 @@ describe('AuthService', () => {
         });
       });
     });
+
+    it('should handle storage error during logout', (done) => {
+      const storageError = new Error('Storage error during logout');
+      storageServiceMock.remove.and.returnValue(Promise.reject(storageError));
+      
+      service.setNickName('testUser').then(() => {
+        service.logout().subscribe({
+          error: (error) => {
+            expect(error).toBe(storageError);
+            done();
+          }
+        });
+      });
+    });
   });
 
   describe('waitForAuthInit', () => {
     it('should return true immediately if auth is already initialized', (done) => {
       service = TestBed.inject(AuthService);
       
-      // Ждем инициализации
       service.waitForAuthInit().subscribe(() => {
-        // Теперь проверяем, что повторный вызов сразу возвращает true
         service.waitForAuthInit().subscribe(result => {
           expect(result).toBe(true);
           done();
         });
       });
+    });
+
+    it('should wait for auth init when not initialized yet', (done) => {
+      storageServiceMock.get.and.returnValue(new Promise(() => {})); 
+      
+      const newService = new AuthService(httpClient, storageServiceMock);
+      
+      let resolved = false;
+      newService.waitForAuthInit().subscribe(() => {
+        resolved = true;
+        done();
+      });
+      
+      setTimeout(() => {
+        expect(resolved).toBe(false);
+        (newService as any).authInitialized = true;
+        (newService as any).authInitSubject.next(true);
+      }, 10);
     });
   });
 
@@ -401,72 +499,264 @@ describe('AuthService', () => {
     });
   });
 
-  describe('Extra coverage', () => {
+  describe('clearLocalAuthData (private method coverage)', () => {
     beforeEach((done) => {
       service = TestBed.inject(AuthService);
       service.waitForAuthInit().subscribe(() => done());
     });
-  
-    it('should handle error in checkAuth() when called from constructor', (done) => {
-      // storageService.get вернет ник
-      storageServiceMock.get.and.returnValue(Promise.resolve('nickFromStorage'));
-  
-      // создаем сервис заново
+
+    it('should clear all auth data when clearLocalAuthData is called', (done) => {
+      service.setNickName('testUser').then(() => {
+        service.getUserProfile().subscribe(() => {
+          service.logout().subscribe(() => {
+            expect(service.getNickName()).toBeNull();
+            expect(service.getCurrentProfile()).toBeNull();
+            
+            service.isLoggedIn$.subscribe(status => {
+              expect(status).toBe(false);
+            });
+            
+            done();
+          });
+        });
+
+        const req = httpMock.expectOne(`${environment.apiUrl}user/profile?nickName=testUser`);
+        req.flush(mockProfile);
+      });
+    });
+  });
+
+  describe('Error handling in constructor', () => {
+    it('should handle storage service error during initialization', (done) => {
+      storageServiceMock.get.and.returnValue(Promise.reject('Storage error'));
+      
       const newService = new AuthService(httpClient, storageServiceMock);
-  
-      setTimeout(() => {
-        const req = httpMock.expectOne(`${environment.apiUrl}user/profile?nickName=nickFromStorage`);
-        req.error(new ErrorEvent('Auth failed')); // simulate error
+      
+      newService.waitForAuthInit().subscribe(result => {
+        expect(result).toBe(true);
+        expect(newService.getNickName()).toBeNull();
         done();
       });
     });
-  
-    it('should propagate error from getUserProfile()', (done) => {
+  });
+
+  describe('Complete initialization flow coverage', () => {
+    it('should properly handle successful auth during initialization', (done) => {
+      storageServiceMock.get.and.returnValue(Promise.resolve('storedNick'));
+      
+      const newService = new AuthService(httpClient, storageServiceMock);
+      
+      newService.waitForAuthInit().subscribe(() => {
+        newService.isLoggedIn$.subscribe(isLoggedIn => {
+          expect(isLoggedIn).toBe(true);
+        });
+        
+        newService.userProfile$.subscribe(profile => {
+          expect(profile).toEqual(mockProfile);
+        });
+        
+        done();
+      });
+      
+      setTimeout(() => {
+        const req = httpMock.expectOne(`${environment.apiUrl}user/profile?nickName=storedNick`);
+        req.flush(mockProfile);
+      });
+    });
+  });
+
+  describe('Additional edge cases for 100% coverage', () => {
+    beforeEach((done) => {
+      service = TestBed.inject(AuthService);
+      service.waitForAuthInit().subscribe(() => done());
+    });
+
+    it('should handle multiple consecutive setLoggedIn calls', async () => {
+      await service.setNickName('testUser');
+      
+      await service.setLoggedIn(true);
+      let isLoggedIn = false;
+      service.isLoggedIn$.subscribe(status => isLoggedIn = status);
+      expect(isLoggedIn).toBe(true);
+      
+      await service.setLoggedIn(false);
+      expect(service.getNickName()).toBeNull();
+      
+      await service.setLoggedIn(true);
+      service.isLoggedIn$.subscribe(status => isLoggedIn = status);
+      expect(isLoggedIn).toBe(true);
+    });
+
+    it('should handle checkAuth with empty response', (done) => {
+      service.setNickName('testUser').then(() => {
+        service.checkAuth().subscribe(result => {
+          expect(result).toBe(true);
+          done();
+        });
+
+        const req = httpMock.expectOne(`${environment.apiUrl}user/profile?nickName=testUser`);
+        req.flush(null);
+      });
+    });
+
+    it('should handle getUserProfile with different HTTP errors', (done) => {
       service.setNickName('testUser').then(() => {
         service.getUserProfile().subscribe({
-          next: () => fail('Should not succeed'),
-          error: (err) => {
-            expect(err).toBeDefined();
-            expect(service.getNickName()).toBe('testUser');
-            expect(service.getCurrentProfile()).toBeNull();
+          error: (error) => {
+            expect(error.status).toBe(401);
+            
+            service.isLoggedIn$.subscribe(isLoggedIn => {
+              expect(isLoggedIn).toBe(false);
+            });
+            
             done();
           }
         });
-  
+
         const req = httpMock.expectOne(`${environment.apiUrl}user/profile?nickName=testUser`);
-        req.error(new ErrorEvent('Network error'));
+        req.flush('Unauthorized', { status: 401, statusText: 'Unauthorized' });
       });
     });
-  
-    it('should handle error when storageService.remove fails in setLoggedIn(false)', async () => {
-      storageServiceMock.remove.and.returnValue(Promise.reject('remove failed'));
-      await service.setNickName('toRemove');
-      try {
-        await service.setLoggedIn(false);
-      } catch (e) {
-        expect(e).toBe('remove failed');
-      }
-    });
-  
-    it('should return undefined from getUserAvatarUrl() if profile has no image', () => {
-      (service as any).userProfileSubject.next({ 
-        statusCode: '200', firstName: 'No', lastName: 'Image', 
-        login: 'noimage', email: '', nickName: 'noimage', image: undefined 
+
+    it('should handle switchMap in constructor with checkAuth returning false', (done) => {
+      storageServiceMock.get.and.returnValue(Promise.resolve('badUser'));
+      
+      const newService = new AuthService(httpClient, storageServiceMock);
+      
+      newService.waitForAuthInit().subscribe(result => {
+        expect(result).toBe(true);
+        expect(newService.getNickName()).toBe('badUser');
+      
+        newService.isLoggedIn$.subscribe(isLoggedIn => {
+          expect(isLoggedIn).toBe(false);
+        });
+        
+        done();
       });
-      expect(service.getUserAvatarUrl()).toBeUndefined();
+      
+      setTimeout(() => {
+        const req = httpMock.expectOne(`${environment.apiUrl}user/profile?nickName=badUser`);
+        req.error(new ErrorEvent('Unauthorized'));
+      });
     });
-  
-    it('should wait for auth init when not initialized yet', (done) => {
+
+    it('should properly handle tap operator in getUserProfile', (done) => {
+      service.setNickName('testUser').then(() => {
+        let profileUpdated = false;
+        let loginStatusUpdated = false;
+        
+        service.userProfile$.subscribe(profile => {
+          if (profile) profileUpdated = true;
+        });
+        
+        service.isLoggedIn$.subscribe(status => {
+          if (status) loginStatusUpdated = true;
+        });
+        
+        service.getUserProfile().subscribe(profile => {
+          expect(profile).toEqual(mockProfile);
+          expect(profileUpdated).toBe(true);
+          expect(loginStatusUpdated).toBe(true);
+          done();
+        });
+
+        const req = httpMock.expectOne(`${environment.apiUrl}user/profile?nickName=testUser`);
+        req.flush(mockProfile);
+      });
+    });
+
+    it('should handle clearLocalAuthData method completely', async () => {
+      await service.setNickName('testUser');
+      
+      (service as any).userProfileSubject.next(mockProfile);
+      (service as any).isLoggedInSubject.next(true);
+      
+      expect(service.getCurrentProfile()).toEqual(mockProfile);
+      
+      service.logout().subscribe(result => {
+        expect(result).toBe(true);
+      });
+      
+      expect(service.getNickName()).toBeNull();
+      expect(service.getCurrentProfile()).toBeNull();
+    });
+
+    it('should handle from() operator in constructor error path', (done) => {
+      const storageError = new Error('Storage connection failed');
+      storageServiceMock.get.and.returnValue(Promise.reject(storageError));
+      
+      const newService = new AuthService(httpClient, storageServiceMock);
+      
+      newService.waitForAuthInit().subscribe(result => {
+        expect(result).toBe(true);
+        expect(newService.getNickName()).toBeNull();
+        done();
+      });
+    });
+
+    it('should handle all branches in setLoggedIn method', async () => {
+      await service.setLoggedIn(true);
+      let currentStatus = false;
+      service.isLoggedIn$.subscribe(status => currentStatus = status);
+      expect(currentStatus).toBe(true);
+      
+      await service.setNickName('testUser');
+      (service as any).userProfileSubject.next(mockProfile);
+      
+      await service.setLoggedIn(false);
+      
+      service.isLoggedIn$.subscribe(status => currentStatus = status);
+      expect(currentStatus).toBe(false);
+      expect(service.getNickName()).toBeNull();
+      expect(service.getCurrentProfile()).toBeNull();
+    });
+
+    it('should test filter and take operators in waitForAuthInit', (done) => {
       const newService = Object.create(AuthService.prototype);
       newService.authInitialized = false;
       newService.authInitSubject = new BehaviorSubject<boolean>(false);
-      // подписка
-      newService.waitForAuthInit().subscribe((res: boolean) => {
-        expect(res).toBe(true);
+      
+      let subscriptionCount = 0;
+      
+      newService.waitForAuthInit().subscribe((result: boolean) => {
+        subscriptionCount++;
+        expect(result).toBe(true);
+        
+        if (subscriptionCount === 2) {
+          done();
+        }
+      });
+
+      newService.waitForAuthInit().subscribe((result: boolean) => {
+        subscriptionCount++;
+        expect(result).toBe(true);
+        
+        if (subscriptionCount === 2) {
+          done();
+        }
+      });
+      
+      setTimeout(() => {
+        newService.authInitSubject.next(false); 
+        newService.authInitSubject.next(true);  
+        newService.authInitSubject.next(true); 
+      }, 10);
+    });
+
+    it('should handle HTTP request parameters correctly', (done) => {
+      service.setNickName('user@test.com').then(() => {
+        service.getUserProfile().subscribe();
+
+        const req = httpMock.expectOne((request) => {
+          return request.url === `${environment.apiUrl}user/profile` &&
+                 request.params.get('nickName') === 'user@test.com' &&
+                 request.withCredentials === true;
+        });
+        
+        expect(req.request.method).toBe('GET');
+        req.flush(mockProfile);
         done();
       });
-      // эмулируем init
-      newService.authInitSubject.next(true);
     });
-  });  
+  });
 });

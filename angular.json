@@ -21,6 +21,7 @@
         "build": {
           "builder": "@angular/build:application",
           "options": {
+            "index": "src/app/index.html",
             "browser": "src/app/main.ts",
             "polyfills": [
               "zone.js"

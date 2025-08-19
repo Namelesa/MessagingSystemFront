@@ -1,5 +1,5 @@
 import { Observable, throwError } from 'rxjs';
-import { retry, retryWhen, scan, delay, catchError } from 'rxjs/operators';
+import { retryWhen, scan, delay, catchError } from 'rxjs/operators';
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { AuthApiResult, LoginContract } from '../../../entities/user';

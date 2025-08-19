@@ -93,6 +93,3 @@ export class ChatFacadeService {
   resetAllStates(): void { this.chatNavigationService.resetSelectedChat(); }
   resetEditingStates(): void { this.messageStateService.resetEditingStates(); }
 }
-
-
-

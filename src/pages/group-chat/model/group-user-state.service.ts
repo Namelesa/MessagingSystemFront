@@ -122,6 +122,3 @@ export class GroupUserStateService {
   getSelectedChatName(): string | undefined { return this.selectedChatNameSubject.value; }
   getSelectedChatImage(): string | undefined { return this.selectedChatImageSubject.value; }
 }
-
-
-

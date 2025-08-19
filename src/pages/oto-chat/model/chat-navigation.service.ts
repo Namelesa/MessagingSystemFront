@@ -97,5 +97,3 @@ export class ChatNavigationService {
     this.resetSelectedChat();
   }
 }
-
-export * from './chat-navigation.service';

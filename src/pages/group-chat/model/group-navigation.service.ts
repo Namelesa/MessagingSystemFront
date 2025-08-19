@@ -46,6 +46,3 @@ export class GroupNavigationService {
     this.messageState.resetAll();
   }
 }
-
-
-
