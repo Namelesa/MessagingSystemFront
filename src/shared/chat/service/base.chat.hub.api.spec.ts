@@ -39,6 +39,23 @@ class TestChatService extends BaseChatApiService<any> {
   public getTestUserInfoDeleted() { return this['userInfoDeletedSubject'] as BehaviorSubject<any>; }
 }
 
+function ensureHubBuilderMockReturns(mockConn: any) {
+  const proto: any = (signalR as any).HubConnectionBuilder.prototype;
+  if (!jasmine.isSpy(proto.withUrl)) {
+    spyOn(proto, 'withUrl').and.callFake(function(this: any) { return this; });
+  }
+  if (!jasmine.isSpy(proto.withAutomaticReconnect)) {
+    spyOn(proto, 'withAutomaticReconnect').and.callFake(function(this: any) { return this; });
+  }
+  let buildSpy: any;
+  if (jasmine.isSpy(proto.build)) {
+    buildSpy = proto.build;
+  } else {
+    buildSpy = spyOn(proto, 'build');
+  }
+  buildSpy.and.returnValue(mockConn);
+}
+
 describe('BaseChatApiService full coverage', () => {
   let service: TestChatService;
   let mockConnection: MockHubConnection;
@@ -458,4 +475,239 @@ describe('BaseChatApiService full coverage', () => {
       expect(messages[0].senderImage).toBe('new.png');
     });
   });
+
+  it('should wire SignalR handlers in connect() and react to onclose/onreconnected/onreconnecting', async () => {
+    ensureHubBuilderMockReturns(mockConnection as any);
+
+    const spyRefresh = spyOn(service, 'refreshChats').and.callThrough();
+
+    service.connect();
+
+    expect((mockConnection.onclose as jasmine.Spy).calls.count()).toBeGreaterThan(0);
+    expect((mockConnection.onreconnected as jasmine.Spy).calls.count()).toBeGreaterThan(0);
+    expect((mockConnection.onreconnecting as jasmine.Spy).calls.count()).toBeGreaterThan(0);
+
+    const onCloseHandler = (mockConnection.onclose as jasmine.Spy).calls.mostRecent().args[0] as Function;
+    (service as any).loadingSubject.next(true);
+    onCloseHandler();
+    expect(service.getTestLoading()).toBeFalse();
+
+    const onReconnectingHandler = (mockConnection.onreconnecting as jasmine.Spy).calls.mostRecent().args[0] as Function;
+    onReconnectingHandler();
+    expect(service.getTestLoading()).toBeTrue();
+
+    const onReconnectedHandler = (mockConnection.onreconnected as jasmine.Spy).calls.mostRecent().args[0] as Function;
+    (service as any).errorSubject.next('err');
+    (service as any).loadingSubject.next(true);
+    onReconnectedHandler();
+    expect(service.getTestLoading()).toBeFalse();
+    expect(service.getTestError()).toBeNull();
+    expect(spyRefresh).toHaveBeenCalled();
+  });
+
+  it('should handle ReceivePrivateMessage: append if new, ignore if duplicate, and refresh', () => {
+    ensureHubBuilderMockReturns(mockConnection as any);
+
+    const spyRefresh = spyOn(service, 'refreshChats').and.callThrough();
+    service.connect();
+
+    const allOnArgs = (mockConnection.on as jasmine.Spy).calls.allArgs();
+    const receiveArgs = allOnArgs.find(args => args[0] === 'ReceivePrivateMessage');
+    expect(receiveArgs).toBeTruthy();
+    const handler = receiveArgs![1] as Function;
+
+    const msg1 = { messageId: 'm1', content: 'hello' };
+    const msg2 = { messageId: 'm2', content: 'world' };
+    handler(msg1);
+    handler(msg2);
+    handler(msg1);
+
+    const messages = service.getTestMessages();
+    expect(messages.length).toBe(2);
+    expect(messages[0]).toEqual(jasmine.objectContaining(msg1));
+    expect(messages[1]).toEqual(jasmine.objectContaining(msg2));
+    expect(spyRefresh).toHaveBeenCalled();
+  });
+
+  it('should handle MessageEdited: update message content and mark as edited, then refresh', () => {
+    ensureHubBuilderMockReturns(mockConnection as any);
+
+    (service as any).messagesSubject.next([
+      { messageId: '42', content: 'old', isEdited: false },
+      { messageId: '99', content: 'untouched' }
+    ]);
+    const spyRefresh = spyOn(service, 'refreshChats').and.callThrough();
+
+    service.connect();
+
+    const allOnArgs = (mockConnection.on as jasmine.Spy).calls.allArgs();
+    const editedArgs = allOnArgs.find(args => args[0] === 'MessageEdited');
+    expect(editedArgs).toBeTruthy();
+    const handler = editedArgs![1] as Function;
+
+    handler({ messageId: '42', newContent: 'new', editedAt: 'now' });
+
+    const updated = service.getTestMessages();
+    expect(updated[0].content).toBe('new');
+    expect((updated[0] as any).isEdited).toBeTrue();
+    expect((updated[0] as any).editedAt).toBe('now');
+    expect(updated[1].content).toBe('untouched');
+    expect(spyRefresh).toHaveBeenCalled();
+  });
+
+  it('should handle MessageDeleted: soft delete marks message deleted, hard delete removes it', () => {
+    ensureHubBuilderMockReturns(mockConnection as any);
+
+    (service as any).messagesSubject.next([
+      { messageId: '1', content: 'toSoft' },
+      { messageId: '2', content: 'toHard' }
+    ]);
+    const spyRefresh = spyOn(service, 'refreshChats').and.callThrough();
+
+    service.connect();
+
+    const allOnArgs = (mockConnection.on as jasmine.Spy).calls.allArgs();
+    const deletedArgs = allOnArgs.find(args => args[0] === 'MessageDeleted');
+    const handler = deletedArgs![1] as Function;
+
+    handler({ messageId: '1', type: 'soft', deletedAt: 't1' });
+    let msgs = service.getTestMessages() as any[];
+    expect(msgs.find(m => m.messageId === '1').isDeleted).toBeTrue();
+    expect(msgs.find(m => m.messageId === '1').deletedAt).toBe('t1');
+
+    handler('2'); 
+    msgs = service.getTestMessages() as any[];
+    expect(msgs.some(m => m.messageId === '2')).toBeFalse();
+    expect(spyRefresh).toHaveBeenCalled();
+  });
+
+  it('should handle ReplyToMessageAsync: add reply if not exists; ignore duplicates', () => {
+    ensureHubBuilderMockReturns(mockConnection as any);
+
+    const spyRefresh = spyOn(service, 'refreshChats').and.callThrough();
+    service.connect();
+
+    const allOnArgs = (mockConnection.on as jasmine.Spy).calls.allArgs();
+    const replyArgs = allOnArgs.find(args => args[0] === 'ReplyToMessageAsync');
+    const handler = replyArgs![1] as Function;
+
+    const reply = { messageId: 'r1', sender: 'u', content: 'c', sentAt: 't', replyTo: 'orig' };
+    handler(reply);
+    handler(reply); 
+
+    const msgs = service.getTestMessages();
+    expect(msgs.length).toBe(1);
+    expect(msgs[0]).toEqual(jasmine.objectContaining({ messageId: 'r1', replyFor: 'orig' }));
+    expect(spyRefresh).toHaveBeenCalled();
+  });
+
+  it('should handle UpdateChats: set chats to provided value or empty array when nullish', () => {
+    ensureHubBuilderMockReturns(mockConnection as any);
+
+    service.connect();
+
+    const allOnArgs = (mockConnection.on as jasmine.Spy).calls.allArgs();
+    const updateArgs = allOnArgs.find(args => args[0] === 'UpdateChats');
+    const handler = updateArgs![1] as Function;
+
+    handler([{ id: 1 }]);
+    expect(service.getTestChats().length).toBe(1);
+    handler(null);
+    expect(service.getTestChats()).toEqual([]);
+  });
+
+  it('should handle UserInfoChanged: normalize payload and delegate to handleUserInfoChanged', () => {
+    ensureHubBuilderMockReturns(mockConnection as any);
+
+    const spyHandle = spyOn<any>(service, 'handleUserInfoChanged').and.callThrough();
+    service.connect();
+
+    const allOnArgs = (mockConnection.on as jasmine.Spy).calls.allArgs();
+    const args = allOnArgs.find(a => a[0] === 'UserInfoChanged');
+    const handler = args![1] as Function;
+
+    handler({ newUserName: 'n', image: 'i', updatedAt: 'u', oldNickName: 'o' });
+    expect(spyHandle).toHaveBeenCalledWith(jasmine.objectContaining({
+      NewUserName: 'n', Image: 'i', UpdatedAt: 'u', OldNickName: 'o'
+    }));
+  });
+
+  it('should handle UserInfoDeleted: normalize payload and delegate to handleUserInfoDeleted', () => {
+    ensureHubBuilderMockReturns(mockConnection as any);
+
+    const spyHandle = spyOn<any>(service, 'handleUserInfoDeleted').and.callThrough();
+    service.connect();
+
+    const allOnArgs = (mockConnection.on as jasmine.Spy).calls.allArgs();
+    const args = allOnArgs.find(a => a[0] === 'UserInfoDeleted');
+    const handler = args![1] as Function;
+
+    handler({ userInfo: { userName: 'x' } });
+    expect(spyHandle).toHaveBeenCalledWith(jasmine.objectContaining({ userName: 'x' }));
+  });
+
+  it('should set chats to [] when invoke returns null', async () => {
+    ensureHubBuilderMockReturns(mockConnection as any);
+    (mockConnection.invoke as jasmine.Spy).and.returnValue(Promise.resolve(null));
+  
+    service.connect();
+    await Promise.resolve();
+  
+    expect(service.getTestChats()).toEqual([]);
+    expect(service.getTestError()).toBeNull(); 
+  });
+
+  it('should handle error in connect invoke without message', async () => {
+    ensureHubBuilderMockReturns(mockConnection as any);
+    (mockConnection.invoke as jasmine.Spy).and.returnValue(Promise.reject({}));
+  
+    service.connect();
+    await Promise.resolve(); 
+    await Promise.resolve();
+  
+    expect(service.getTestChats()).toEqual([]); 
+    expect(service.getTestError()).toBe('Error with connection'); 
+    expect(service.getTestLoading()).toBeFalse();
+  });  
+
+  it('should refreshChats and push [] when invoke returns null', async () => {
+    ensureHubBuilderMockReturns(mockConnection as any);
+    (mockConnection.state as any) = signalR.HubConnectionState.Connected;
+    (mockConnection.invoke as jasmine.Spy).and.returnValue(Promise.resolve(null));
+  
+    service.refreshChats();
+    await Promise.resolve();
+  
+    expect(service.getTestChats()).toEqual([]);
+  });
+  
+  it('should push [] to messagesSubject when invoke returns null and skip = 0', async () => {
+    ensureHubBuilderMockReturns(mockConnection as any);
+    (mockConnection.state as any) = signalR.HubConnectionState.Connected;
+    (mockConnection.invoke as jasmine.Spy).and.returnValue(Promise.resolve(null));
+  
+    const results: any[] = [];
+    service.loadChatHistory('nick', 10, 0).subscribe(res => results.push(res));
+  
+    await Promise.resolve(); 
+  
+    expect(results).toEqual([null]); 
+    expect(service.getTestMessages()).toEqual([]); 
+  });
+  
+  it('should push [] to messagesSubject when loadGroupMessageHistory invoke returns null and skip = 0', async () => {
+    (service as any).connection = {
+      state: signalR.HubConnectionState.Connected,
+      invoke: jasmine.createSpy().and.returnValue(Promise.resolve(null))
+    } as any;
+  
+    const results: any[] = [];
+    service.loadGroupMessageHistory('group1', 10, 0).subscribe(res => results.push(res));
+  
+    await Promise.resolve();
+
+    expect(results).toEqual([null]);
+  
+    expect(service.getTestMessages()).toEqual([]);
+  });  
 });
