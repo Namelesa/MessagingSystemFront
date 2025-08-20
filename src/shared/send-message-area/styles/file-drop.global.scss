@@ -1,0 +1,55 @@
+/* Global File Drop Styles */
+.drag-over {
+  position: relative;
+}
+
+.drag-over::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(59, 130, 246, 0.1);
+  backdrop-filter: blur(2px);
+  z-index: 40;
+  pointer-events: none;
+}
+
+.drag-over::after {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border: 4px dashed #3b82f6;
+  z-index: 41;
+  pointer-events: none;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+/* Dark theme support */
+.dark .drag-over::before {
+  background: rgba(59, 130, 246, 0.15);
+}
+
+.dark .drag-over::after {
+  border-color: #60a5fa;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .drag-over::after {
+    border-width: 2px;
+  }
+}

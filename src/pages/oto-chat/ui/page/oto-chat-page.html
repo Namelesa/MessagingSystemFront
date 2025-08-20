@@ -1,6 +1,9 @@
 <app-chat-layout
   [selectedChat]="displayChatName"
   [selectedChatImage]="displayChatImage"
+  fileDrop
+  (fileDrop)="onFileUpload($event)"
+  (dragStateChange)="isDragOver = $event"
 >
   <app-oto-chat-list
     chat-sidebar
@@ -44,6 +47,7 @@
           (editComplete)="onEditComplete($event)"
           (editCancel)="onEditCancel()"
           (replyCancel)="onCancelReply()"
+          (fileUpload)="onFileUpload($event)"
         ></shared-send-message-area>
       </div>
     </ng-container>
@@ -104,3 +108,5 @@
     </div>
   </div>
 </div>
+
+<file-drop-overlay [isVisible]="isDragOver"></file-drop-overlay>

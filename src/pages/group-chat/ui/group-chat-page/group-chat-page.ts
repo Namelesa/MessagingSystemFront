@@ -14,7 +14,7 @@ import { FindUserStore } from '../../../../features/search-user';
 import { ChatLayoutComponent } from '../../../../widgets/chat-layout';
 import { GroupMessagesWidget } from '../../../../widgets/chat-messages';
 import { BaseChatPageComponent } from '../../../../shared/realtime';
-import { SendAreaComponent } from '../../../../shared/send-message-area';
+import { SendAreaComponent, FileDropDirective, FileDropOverlayComponent } from '../../../../shared/send-message-area';
 import { GroupUserStateService } from '../../model/group-user-state.service';
 import { GroupMessageStateService } from '../../model/group-message-state.service';
 import { GroupNavigationService } from '../../model/group-navigation.service';
@@ -26,13 +26,14 @@ import { Router } from '@angular/router';
   standalone: true,
   imports: [CommonModule, GroupChatListComponent, 
     FormsModule, ChatLayoutComponent, GroupInfoModalComponent, 
-    GroupMessagesWidget, SendAreaComponent],
+    GroupMessagesWidget, SendAreaComponent, FileDropDirective, FileDropOverlayComponent],
   templateUrl: './group-chat-page.html',
 })
 export class GroupChatPageComponent extends BaseChatPageComponent {
   protected apiService: GroupChatApiService;
 
   groupInfoModalOpen = false;
+  isDragOver = false;
 
   @Input() edit: string = '';
 
@@ -149,6 +150,26 @@ export class GroupChatPageComponent extends BaseChatPageComponent {
 
   sendMessage(message: string) {
     this.groupMessageState.sendMessage(message);
+  }
+
+  onFileUpload(fileUploadEvent: { files: File[]; message?: string }) {
+    if (this.selectedGroupId && fileUploadEvent.files.length > 0) {
+      // Здесь должна быть логика загрузки файлов
+      // Пока что просто логируем информацию о файлах
+      console.log('Files to upload to group:', fileUploadEvent.files);
+      console.log('Optional message:', fileUploadEvent.message);
+      
+      // TODO: Реализовать загрузку файлов через API
+      // Пример:
+      // fileUploadEvent.files.forEach(file => {
+      //   this.groupMessageState.uploadFile(this.selectedGroupId!, file, fileUploadEvent.message).catch(error => {
+      //     console.error('Error uploading file:', error);
+      //   });
+      // });
+      
+      // Показываем уведомление пользователю
+      alert(`Загружено ${fileUploadEvent.files.length} файлов в группу. Функция загрузки файлов находится в разработке.`);
+    }
   }
 
   onEditMessage(message: GroupMessage) {

@@ -9,6 +9,11 @@ interface BaseMessage {
   content: string;
 }
 
+interface FileUploadEvent {
+  files: File[];
+  message?: string;
+}
+
 @Component({
   selector: 'shared-send-message-area',
   standalone: true,
@@ -20,9 +25,12 @@ export class SendAreaComponent implements OnChanges {
   @Output() editComplete = new EventEmitter<{ messageId: string; content: string }>();
   @Output() editCancel = new EventEmitter<void>();
   @Output() replyCancel = new EventEmitter<void>();
+  @Output() fileUpload = new EventEmitter<FileUploadEvent>();
   
   @Input() editingMessage?: BaseMessage;
   @Input() replyingToMessage?: BaseMessage;
+  @Input() maxFileSize: number = 10 * 1024 * 1024; // 10MB по умолчанию
+  @Input() allowedFileTypes: string[] = ['image/*', 'video/*', 'audio/*', 'application/pdf', 'text/*'];
 
   message = '';
   readonly maxLength = 2000;
@@ -43,6 +51,55 @@ export class SendAreaComponent implements OnChanges {
       if (!this.replyingToMessage && !this.editingMessage) {
         this.message = '';
       }
+    }
+  }
+
+  // File handling methods
+  private handleFiles(files: File[]) {
+    const validFiles = files.filter(file => this.isFileValid(file));
+    
+    if (validFiles.length > 0) {
+      this.fileUpload.emit({
+        files: validFiles,
+        message: this.message.trim()
+      });
+      
+      // Clear message after file upload
+      this.message = '';
+    }
+  }
+
+  private isFileValid(file: File): boolean {
+    // Check file size
+    if (file.size > this.maxFileSize) {
+      console.warn(`File ${file.name} is too large. Max size: ${this.maxFileSize} bytes`);
+      return false;
+    }
+
+    // Check file type
+    const isValidType = this.allowedFileTypes.some(type => {
+      if (type.endsWith('/*')) {
+        const category = type.replace('/*', '');
+        return file.type.startsWith(category);
+      }
+      return file.type === type;
+    });
+
+    if (!isValidType) {
+      console.warn(`File type ${file.type} is not allowed`);
+      return false;
+    }
+
+    return true;
+  }
+
+  // File input handler for manual file selection
+  onFileInputChange(event: Event) {
+    const input = event.target as HTMLInputElement;
+    if (input.files && input.files.length > 0) {
+      this.handleFiles(Array.from(input.files));
+      // Reset input value to allow selecting the same file again
+      input.value = '';
     }
   }
   

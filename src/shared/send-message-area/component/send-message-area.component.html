@@ -52,7 +52,7 @@
         <textarea
           [(ngModel)]="message"
           [placeholder]="placeholderText"
-          class="w-full h-12 py-3 px-4 border border-gray-300 rounded-3xl resize-none text-sm outline-none bg-gray-100 focus:border-blue-400 dark:bg-gray-800 dark:border-gray-800 dark:text-gray-200"
+          class="w-full h-12 py-3 px-4 border border-gray-300 rounded-3xl resize-none text-sm outline-none bg-gray-100 focus:border-blue-400 dark:bg-gray-800 dark:border-gray-800 dark:text-gray-200 transition-all duration-200"
           [class.pr-16]="showCounter"
           [class.border-blue-400]="isEditing"
           [class.bg-blue-50]="isEditing"
@@ -73,10 +73,22 @@
         </div>
       </div>
 
+      <!-- File Upload Button -->
+      <input 
+        #fileInput
+        type="file" 
+        multiple 
+        [accept]="allowedFileTypes.join(',')"
+        (change)="onFileInputChange($event)"
+        class="hidden"
+      >
+      
       <button
         *ngIf="!isEditing && !isReplying"
-        class="flex-shrink-0 w-10 h-10 text-gray-500 hover:bg-gray-100 rounded-full flex items-center justify-center transition-colors dark:text-gray-250 hover:bg-gray-800"
+        (click)="fileInput.click()"
+        class="flex-shrink-0 w-10 h-10 text-gray-500 hover:bg-gray-100 hover:scale-105 rounded-full flex items-center justify-center transition-all duration-200 dark:text-gray-250 hover:bg-gray-800"
         type="button"
+        title="Attach files"
       >
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
           <path
@@ -91,8 +103,10 @@
 
       <button
         *ngIf="isEditing || isReplying"
-        class="flex-shrink-0 w-10 h-10 text-gray-500 hover:bg-gray-100 rounded-full flex items-center justify-center transition-colors dark:text-gray-250 hover:bg-gray-800"
+        (click)="fileInput.click()"
+        class="flex-shrink-0 w-10 h-10 text-gray-500 hover:bg-gray-100 hover:scale-105 rounded-full flex items-center justify-center transition-all duration-200 dark:text-gray-250 hover:bg-gray-800"
         type="button"
+        title="Attach files"
       >
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
         <path

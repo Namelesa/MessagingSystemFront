@@ -14,13 +14,13 @@ import { FindUserStore } from '../../../../features/search-user';
 import { OtoChatMessagesWidget } from '../../../../widgets/chat-messages';
 import { ChatLayoutComponent } from '../../../../widgets/chat-layout';
 import { BaseChatPageComponent} from '../../../../shared/chat';
-import { SendAreaComponent } from '../../../../shared/send-message-area';
+import { SendAreaComponent, FileDropDirective, FileDropOverlayComponent } from '../../../../shared/send-message-area';
 
 @Component({
   selector: 'app-oto-chat-page',
   standalone: true,
-   imports: [CommonModule, OtoChatListComponent, FormsModule, 
-     ChatLayoutComponent, OtoChatMessagesWidget, SendAreaComponent],
+     imports: [CommonModule, OtoChatListComponent, FormsModule, 
+    ChatLayoutComponent, OtoChatMessagesWidget, SendAreaComponent, FileDropDirective, FileDropOverlayComponent],
   templateUrl: './oto-chat-page.html',
 })
 export class OtoChatPageComponent extends BaseChatPageComponent implements OnInit, OnDestroy {
@@ -41,6 +41,7 @@ export class OtoChatPageComponent extends BaseChatPageComponent implements OnIni
   
   showUserDeletedNotification = false;
   deletedUserName = '';
+  isDragOver = false;
   
   @Input() foundedUser?: { nick: string, image: string };
   @Input() edit: string = '';
@@ -269,6 +270,26 @@ export class OtoChatPageComponent extends BaseChatPageComponent implements OnIni
           console.error('Error sending message:', error);
         });
       }
+    }
+  }
+
+  onFileUpload(fileUploadEvent: { files: File[]; message?: string }) {
+    if (this.selectedChat && fileUploadEvent.files.length > 0) {
+      // Здесь должна быть логика загрузки файлов
+      // Пока что просто логируем информацию о файлах
+      console.log('Files to upload:', fileUploadEvent.files);
+      console.log('Optional message:', fileUploadEvent.message);
+      
+      // TODO: Реализовать загрузку файлов через API
+      // Пример:
+      // fileUploadEvent.files.forEach(file => {
+      //   this.messageService.uploadFile(this.selectedChat!, file, fileUploadEvent.message).catch(error => {
+      //     console.error('Error uploading file:', error);
+      //   });
+      // });
+      
+      // Показываем уведомление пользователю
+      alert(`Загружено ${fileUploadEvent.files.length} файлов. Функция загрузки файлов находится в разработке.`);
     }
   }
 
