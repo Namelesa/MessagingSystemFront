@@ -1,37 +1,46 @@
-import { Subscription } from 'rxjs';
-import { map } from 'rxjs/operators';
-import { Component, Input, ViewChild, OnInit, OnDestroy, HostListener, inject } from '@angular/core';
+import { Observable, Subscription } from 'rxjs';
+import { Router } from '@angular/router';
+import { Component, Input, ViewChild, OnInit, ChangeDetectorRef, OnDestroy, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { OtoChat } from '../../model/oto.chat';
-import { OtoChatApiService } from '../../api/oto-chat/oto-chat-hub.api';
-import { ChatFacadeService } from '../../model/chat-facade';
-import { UserDeletionInfo, UserUpdateInfo } from '../../model/user-state.service';
-import { OtoChatListComponent } from '../list/oto-chat.list.component';
 import { OtoMessage } from '../../../../entities/oto-message';
+import { AuthService } from '../../../../entities/session';
+import { SearchUser } from '../../../../entities/search-user';
+import { OtoChatListComponent } from '../list/oto-chat.list.component';
+import { OtoChatApiService } from '../../api/oto-chat/oto-chat-hub.api';
+import { OtoMessagesService} from '../../api/oto-message/oto-messages.api';
+import { FindUserStore } from '../../../../features/search-user';
 import { OtoChatMessagesWidget } from '../../../../widgets/chat-messages';
 import { ChatLayoutComponent } from '../../../../widgets/chat-layout';
-import { BaseChatPageComponent} from '../../../../shared/realtime';
+import { BaseChatPageComponent} from '../../../../shared/chat';
 import { SendAreaComponent } from '../../../../shared/send-message-area';
 
 @Component({
   selector: 'app-oto-chat-page',
   standalone: true,
-  imports: [CommonModule, OtoChatListComponent, FormsModule, 
+   imports: [CommonModule, OtoChatListComponent, FormsModule, 
      ChatLayoutComponent, OtoChatMessagesWidget, SendAreaComponent],
   templateUrl: './oto-chat-page.html',
 })
 export class OtoChatPageComponent extends BaseChatPageComponent implements OnInit, OnDestroy {
-  protected override apiService = inject(OtoChatApiService);
-  private chatFacade = inject(ChatFacadeService);
-
-  completeChatState$ = this.chatFacade.completeChatState$;
-  chatState$ = this.chatFacade.chatState$;
-  displayChatInfo$ = this.chatFacade.displayChatInfo$;
-  userDeletedNotification$ = this.chatFacade.userDeletedNotification$;
-  messageState$ = this.chatFacade.messageState$;
-  searchState$ = this.chatFacade.searchState$;
-  user$ = this.chatFacade.user$;
+  protected override apiService: OtoChatApiService;
+ 
+  declare selectedChat?: string;
+  declare selectedChatImage?: string;
+  selectedOtoChat?: OtoChat;
+  currentUserNickName: string = '';
+  editingMessage?: OtoMessage;
+  
+  isDeleteModalOpen: boolean = false;
+  messageToDelete?: OtoMessage;
+  
+  replyingToMessage?: OtoMessage;
+  
+  forceMessageComponentReload = false;
+  
+  showUserDeletedNotification = false;
+  deletedUserName = '';
   
   @Input() foundedUser?: { nick: string, image: string };
   @Input() edit: string = '';
@@ -40,140 +49,306 @@ export class OtoChatPageComponent extends BaseChatPageComponent implements OnIni
   @ViewChild(OtoChatListComponent) chatListComponent?: OtoChatListComponent;
   
   private subscriptions: Subscription[] = [];
+  user$: Observable<SearchUser | null>;
  
-  editingMessage$ = this.messageState$.pipe(
-    map(state => state.editingMessage)
-  );
-
-  replyingToMessage$ = this.messageState$.pipe(
-    map(state => state.replyingToMessage)
-  );
-
-  isDeleteModalOpen$ = this.messageState$.pipe(
-    map(state => state.isDeleteModalOpen)
-  );
-
-  deleteForBoth$ = this.messageState$.pipe(
-    map(state => state.deleteForBoth)
-  );
-
-  get editingMessage(): OtoMessage | undefined {
-    return this.chatFacade.getCurrentMessageState().editingMessage;
-  }
-
-  get replyingToMessage(): OtoMessage | undefined {
-    return this.chatFacade.getCurrentMessageState().replyingToMessage;
-  }
-
-  get isDeleteModalOpen(): boolean {
-    return this.chatFacade.getCurrentMessageState().isDeleteModalOpen;
-  }
-
-  get deleteForBoth(): boolean {
-    return this.chatFacade.getCurrentMessageState().deleteForBoth;
-  }
-
-  set deleteForBoth(value: boolean) {
-    this.chatFacade.setDeleteForBoth(value);
-  }
-
   constructor(
-    private otoChatApi: OtoChatApiService,
+    public otoChatApi: OtoChatApiService, 
+    private authService: AuthService, 
+    private messageService: OtoMessagesService,
+    private router: Router,
+    private cdr: ChangeDetectorRef,
+    private findUserStore: FindUserStore
   ) {
     super();
     this.apiService = this.otoChatApi;
-    this.completeChatState$ = this.chatFacade.completeChatState$;
+    this.authService.waitForAuthInit().subscribe(() => {
+      this.currentUserNickName = this.authService.getNickName() || '';
+    });
+    this.user$ = this.findUserStore.user$;
   }
 
   override ngOnInit(): void {
-    this.chatFacade.initializeChat();
-    this.subscribeToEvents();
-    
-    this.chatFacade.handlePendingChatUser(this.chatListComponent);
+    super.ngOnInit();
+    this.checkForOpenChatUser();
+    this.subscribeToUserDeletion();
   }
 
   override ngOnDestroy(): void {
     this.subscriptions.forEach(sub => sub.unsubscribe());
   }
 
-  private subscribeToEvents(): void {
-    const userDeletedSub = this.chatFacade.subscribeToUserDeletion(
-      deletedUserInfo => this.handleUserDeletion(deletedUserInfo)
-    );
+  private subscribeToUserDeletion(): void {
+    const userDeletedSubscription = this.apiService.userInfoDeleted$.subscribe(deletedUserInfo => {
+      this.handleUserDeletion(deletedUserInfo);
+    });
 
-    const userInfoSub = this.chatFacade.subscribeToUserInfoUpdates(
-      userInfo => this.handleUserInfoUpdate(userInfo)
-    );
-
-    this.subscriptions.push(userDeletedSub, userInfoSub);
+    this.subscriptions.push(userDeletedSubscription);
   }
 
-  private handleUserDeletion(deletedUserInfo: UserDeletionInfo): void {
-    const result = this.chatFacade.handleUserDeletion(deletedUserInfo);
+  private handleUserDeletion(deletedUserInfo: { userName: string }): void {
     
-    if (result.shouldCloseChat) {
-      this.closeChatWithDeletedUser();
+    if (this.selectedChat === deletedUserInfo.userName) {
+      this.closeChatWithDeletedUser(deletedUserInfo.userName);
+
+      this.showUserDeletedNotification = true;
+      this.deletedUserName = deletedUserInfo.userName;
     }
   }
 
-  private handleUserInfoUpdate(userInfo: UserUpdateInfo): void {
-    this.chatFacade.handleUserInfoUpdate(userInfo);
-  }
-  
-  onUserSearchQueryChange = (query: string) => this.chatFacade.onSearchQueryChange(query);
-  onUserSearchFocus = () => this.chatFacade.onSearchFocus();
-  onUserSearchClear = () => this.chatFacade.clearSearch();
-  
-  onOtoChatSelected(chat: OtoChat): void {
-    this.chatFacade.selectChat(chat);
+  onUserSearchQueryChange(query: string) {
+    const trimmed = query.trim();
+    if (trimmed) this.findUserStore.findUser(trimmed);
+    else this.findUserStore.clearUser();
   }
 
-  onFoundedUser(userData: { nick: string, image: string }): void {
-    this.chatFacade.selectFoundUser(userData);
+  onUserSearchFocus() {
+    this.findUserStore.clearUser();
   }
 
-  onOpenChatWithUser(userData: { nickName: string, image: string }): void {
+  onUserSearchClear() {
+    this.findUserStore.clearUser();
+  }
+
+  private closeChatWithDeletedUser(userName: string): void {
+    this.selectedChat = undefined;
+    this.selectedChatImage = undefined;
+    this.selectedOtoChat = undefined;
+    
+    this.editingMessage = undefined;
+    this.replyingToMessage = undefined;
+    
+    this.closeDeleteModal();
+    
+    if (this.messagesComponent) {
+      this.messagesComponent.clearMessagesForDeletedUser();
+    }
+    
+    this.cdr.detectChanges();
+  }
+
+  onChatClosedDueToUserDeletion(): void {
+    this.selectedChat = undefined;
+    this.selectedChatImage = undefined;
+    this.selectedOtoChat = undefined;
+    this.editingMessage = undefined;
+    this.replyingToMessage = undefined;
+    this.closeDeleteModal();
+    this.cdr.detectChanges();
+  }
+
+  onUserDeleted(deletedUserInfo: { userName: string }): void {
+  }
+
+  onChatUserDeletedFromMessages(): void {
+    this.selectedChat = undefined;
+    this.selectedChatImage = undefined;
+    this.selectedOtoChat = undefined;
+    this.editingMessage = undefined;
+    this.replyingToMessage = undefined;
+    this.closeDeleteModal();
+    this.cdr.detectChanges();
+  }
+
+  onSelectedChatUserUpdated(updateInfo: { oldNickName: string, newNickName: string, image?: string }): void {
+    
+    if (this.selectedChat === updateInfo.oldNickName) {
+      this.selectedChat = updateInfo.newNickName;
+      
+      if (updateInfo.image) {
+        this.selectedChatImage = updateInfo.image;
+      }
+      
+      if (this.selectedOtoChat) {
+        this.selectedOtoChat = {
+          ...this.selectedOtoChat,
+          nickName: updateInfo.newNickName,
+          image: updateInfo.image || this.selectedOtoChat.image
+        };
+      }
+      
+      this.cdr.detectChanges();
+    }
+  }
+
+  private checkForOpenChatUser(): void {
+    const nav = this.router.getCurrentNavigation();
+    const stateFromNav = nav?.extras?.state as { openChatWithUser?: { nickName: string; image: string } } | undefined;
+    const stateFromHistory = (window.history?.state as any) || {};
+    const url = new URL(window.location.href);
+    const queryNick = url.searchParams.get('openChatUser');
+    const queryImage = url.searchParams.get('openChatImage');
+    const userData = stateFromNav?.openChatWithUser || stateFromHistory.openChatWithUser || (queryNick ? { nickName: queryNick, image: queryImage || '' } : undefined);
+    if (userData) {
+      setTimeout(() => {
+        this.onOpenChatWithUser(userData);
+        if (queryNick) {
+          this.router.navigate([], { queryParams: {}, replaceUrl: true });
+        }
+      }, 100);
+    }
+  }
+
+  onOpenChatWithUser(userData: { nickName: string, image: string }) {
     if (this.chatListComponent) {
       this.chatListComponent.openChatWithUser({ nick: userData.nickName, image: userData.image });
     } else {
       this.onFoundedUser({ nick: userData.nickName, image: userData.image });
     }
   }
-  
-  onSendMessage = (content: string) => this.chatFacade.sendMessage(content);
-  onEditMessage = (message: OtoMessage) => this.chatFacade.startEditMessage(message);
-  onEditComplete = (editData: { messageId: string; content: string }) => 
-    this.chatFacade.completeEdit(editData.messageId, editData.content);
-  onEditCancel = () => this.chatFacade.cancelEdit();
-  onDeleteMessage = (message: OtoMessage) => this.chatFacade.startDeleteMessage(message);
-  onConfirmDelete = () => this.chatFacade.confirmDelete();
-  closeDeleteModal = () => this.chatFacade.closeDeleteModal();
-  onReplyToMessage = (message: OtoMessage) => this.chatFacade.startReplyToMessage(message);
-  onCancelReply = () => this.chatFacade.cancelReply();
 
-  onScrollToMessage(messageId: string): void {
-    this.messagesComponent?.scrollToMessage(messageId);
+  onOtoChatSelected(chat: OtoChat) {      
+    this.selectedChat = chat.nickName;
+    this.selectedChatImage = chat.image;
+    this.selectedOtoChat = chat;
+    this.editingMessage = undefined;
+    this.replyingToMessage = undefined;
+    
+    this.forceMessageComponentReload = true;
+    setTimeout(() => {
+      this.forceMessageComponentReload = false;
+      this.cdr.detectChanges();
+    }, 0);
+    
+    if (this.messagesComponent) {
+      this.selectedOtoChat = { ...chat };
+      this.cdr.detectChanges();
+
+      setTimeout(() => {
+        if (this.messagesComponent) {
+          this.cdr.detectChanges();
+        }
+      }, 100);
+    }
   }
 
-  private closeChatWithDeletedUser(): void {
-    this.messagesComponent?.clearMessagesForDeletedUser();
+  onFoundedUser(userData: { nick: string, image: string }) {
+    const foundedUserChat: OtoChat = {
+      nickName: userData.nick,
+      image: userData.image,
+    };
+
+    this.onOtoChatSelected(foundedUserChat);
+    this.cdr.detectChanges();
   }
 
-  onChatClosedDueToUserDeletion(): void {
-    this.chatFacade.closeCurrentChat();
+  onUserInfoUpdated(userInfo: { userName: string, image?: string, updatedAt: string, oldNickName: string }): void {
+    
+    if (userInfo.oldNickName === this.currentUserNickName || userInfo.userName === this.currentUserNickName) {
+      this.currentUserNickName = userInfo.userName;
+    }
+  }
+ 
+  get displayChatName(): string {
+    if (this.selectedOtoChat && this.selectedOtoChat.nickName === this.currentUserNickName) {
+      return 'SavedMessage';
+    }
+    return this.selectedOtoChat?.nickName || '';
+  }
+ 
+  get displayChatImage(): string {
+    if (this.selectedOtoChat && this.selectedOtoChat.nickName === this.currentUserNickName) {
+      return 'assets/bookmark.svg';
+    }
+    return this.selectedOtoChat?.image || '';
+  }
+ 
+  onSendMessage(content: string) {
+    if (this.selectedChat) {
+      if (this.replyingToMessage) {
+        this.messageService.replyToMessage(
+          this.replyingToMessage.messageId, 
+          content, 
+          this.selectedChat
+        ).then(() => {
+          this.replyingToMessage = undefined;
+        }).catch(error => {
+          console.error('Error sending reply:', error);
+        });
+      } else {
+        this.messageService.sendMessage(this.selectedChat, content).catch(error => {
+          console.error('Error sending message:', error);
+        });
+      }
+    }
   }
 
-  onChatUserDeletedFromMessages(): void {
-    this.chatFacade.closeCurrentChat();
+  onEditMessage(message: OtoMessage) {
+    this.editingMessage = message;
+    this.replyingToMessage = undefined;
   }
 
-  onSelectedChatUserUpdated(): void {}
+  async onEditComplete(editData: { messageId: string; content: string }) {
+    try {
+      await this.messageService.editMessage(editData.messageId, editData.content);
+      this.editingMessage = undefined;
+    } catch (error) {
+      console.error('Error editing message:', error);
+    }
+  }
 
-  onUserDeleted = (deletedUserInfo: { userName: string }) => {};
-  onUserInfoUpdated = (userInfo: { userName: string, image?: string, updatedAt: string, oldNickName: string }) => {};
+  onEditCancel() {
+    this.editingMessage = undefined;
+  }
 
-  @HostListener('document:keydown.escape')
-  onEscapePressed(): void {
-    this.chatFacade.closeCurrentChat();
+  onDeleteMessage(message: OtoMessage) {
+    this.messageToDelete = message;
+    this.isDeleteModalOpen = true;
+  }
+
+  deleteForBoth: boolean = false;
+
+  async onConfirmDelete() {
+    if (this.messageToDelete && this.selectedChat) {
+      const deleteType = this.deleteForBoth ? 'hard' : 'soft';
+      try {
+        await this.messageService.deleteMessage(this.messageToDelete.messageId, deleteType);
+        this.closeDeleteModal();
+      } catch (error) {
+        console.error('Error deleting message:', error);
+      }
+    }
+  }
+
+  closeDeleteModal() {
+    this.isDeleteModalOpen = false;
+    this.messageToDelete = undefined;
+    this.deleteForBoth = false;
+  }
+
+  onReplyToMessage(message: OtoMessage) {
+    this.replyingToMessage = message;
+    this.editingMessage = undefined; 
+  }
+
+  onCancelReply() {
+    this.replyingToMessage = undefined;
+  }
+
+  onScrollToMessage(messageId: string) {
+    if (this.messagesComponent) {
+      this.messagesComponent.scrollToMessage(messageId);
+    }
+  }
+
+  @HostListener('document:keydown', ['$event'])
+  onDocumentKeyDown(event: KeyboardEvent) {
+    if (event.key === 'Escape') {
+      if (this.isDeleteModalOpen) {
+        this.closeDeleteModal();
+        return;
+      }
+      if (this.editingMessage) {
+        this.onEditCancel();
+        return;
+      }
+      if (this.replyingToMessage) {
+        this.onCancelReply();
+        return;
+      }
+      this.selectedChat = undefined;
+      this.selectedChatImage = undefined;
+      this.selectedOtoChat = undefined;
+      this.cdr.detectChanges();
+    }
   }
 }

@@ -2,14 +2,12 @@ import { Observable } from 'rxjs';
 import { Component,  Input, ViewChild, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
- 
 import { GroupMessagesApiService } from '../../api/group-message/group-messages.api';
 import { GroupChatApiService } from '../../api/group-chat/group-chat-hub.api';
 import { GroupMember } from '../../model/group-info.model';
 import { GroupChat } from '../../model/group.chat';
 import { GroupChatListComponent } from '../group-chat-list/group-chat.list.component';
 import { GroupMessage } from '../../../../entities/group-message';
-import { AuthService } from '../../../../entities/session';
 import { SearchUser } from '../../../../entities/search-user';
 import { GroupInfoModalComponent } from '../group-info-modal/group-info-modal.component';
 import { FindUserStore } from '../../../../features/search-user';
@@ -21,6 +19,7 @@ import { GroupUserStateService } from '../../model/group-user-state.service';
 import { GroupMessageStateService } from '../../model/group-message-state.service';
 import { GroupNavigationService } from '../../model/group-navigation.service';
 import { GroupSearchService } from '../../model/group-search.service';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-group-chat-page',
@@ -53,6 +52,7 @@ export class GroupChatPageComponent extends BaseChatPageComponent {
     public groupMessageState: GroupMessageStateService,
     private groupNavigation: GroupNavigationService,
     private groupSearch: GroupSearchService,
+    private router: Router
   ) {
     super();
     this.apiService = this.groupChatApi;
@@ -141,8 +141,10 @@ export class GroupChatPageComponent extends BaseChatPageComponent {
   }
 
   onOpenChatWithUser(userData: { nickName: string, image: string }) {
-    const url = `/otoChats?openChatUser=${encodeURIComponent(userData.nickName)}&openChatImage=${encodeURIComponent(userData.image || '')}`;
-    window.location.assign(url);
+    this.router.navigate(['/otoChats'], {
+      state: { openChatWithUser: userData },
+      replaceUrl: true,
+    });
   }
 
   sendMessage(message: string) {

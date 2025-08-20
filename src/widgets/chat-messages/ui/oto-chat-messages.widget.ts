@@ -1,20 +1,22 @@
-import { Component, Input, Output, EventEmitter, ViewChild, ElementRef, OnChanges, SimpleChanges, AfterViewInit, OnDestroy, ChangeDetectionStrategy } from '@angular/core';
+import { Component, Input, Output, EventEmitter, ViewChild, ElementRef, OnChanges, SimpleChanges, AfterViewInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Subject } from 'rxjs';
+import { Observable, Subject } from 'rxjs';
 import { takeUntil, filter } from 'rxjs/operators';
 import { OtoMessage } from '../../../entities/oto-message';
-import { isToday, truncateText, computeContextMenuPosition } from '../../../shared/realtime';
+import { isToday, truncateText, computeContextMenuPosition } from '../../../shared/chat';
 
 @Component({
   selector: 'widgets-oto-chat-messages',
   standalone: true,
   imports: [CommonModule],
   templateUrl: './oto-chat-messages.widget.html',
-  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class OtoChatMessagesWidget implements OnChanges, AfterViewInit, OnDestroy {
   @Input() chatNickName!: string;
   @Input() currentUserNickName!: string;
+  @Input() messages$?: Observable<OtoMessage[]>;
+  @Input() userInfoDeleted$?: Observable<{ userName: string }>;
+  @Input() loadHistory?: (nick: string, take: number, skip: number) => Observable<OtoMessage[]>;
 
   @Output() editMessage = new EventEmitter<OtoMessage>();
   @Output() deleteMessage = new EventEmitter<OtoMessage>();
@@ -92,8 +94,13 @@ export class OtoChatMessagesWidget implements OnChanges, AfterViewInit, OnDestro
     return groups;
   }
 
-  trackByGroup = (_: number, group: { date: string; messages: OtoMessage[] }) => group.date;
-  trackByMessageId = (_: number, msg: OtoMessage) => msg.messageId;
+  trackByGroup(index: number, group: { date: string; messages: OtoMessage[] }): string {
+    return group.date;
+  }
+
+  trackByMessageId(index: number, msg: OtoMessage): string {
+    return msg.messageId;
+  }
 
   isToday = isToday;
   truncateText = truncateText;
@@ -177,9 +184,8 @@ export class OtoChatMessagesWidget implements OnChanges, AfterViewInit, OnDestro
     this.shouldScrollToBottom = true;
     this.loadMore();
 
-    const messages$ = (window as any).__otoMessages$ as any;
-    if (!messages$ || typeof messages$.pipe !== 'function') return;
-    messages$.pipe(takeUntil(this.destroy$)).subscribe((newMsgs: OtoMessage[]) => {
+    if (!this.messages$) return;
+    this.messages$.pipe(takeUntil(this.destroy$)).subscribe((newMsgs: OtoMessage[]) => {
       const filtered = newMsgs.filter(msg => !msg.isDeleted || !this.isMyMessage(msg));
       const newMap = new Map(filtered.map(m => [m.messageId, m]));
       const oldMap = new Map(this.messages.map(m => [m.messageId, m]));
@@ -195,8 +201,8 @@ export class OtoChatMessagesWidget implements OnChanges, AfterViewInit, OnDestro
   }
 
   private subscribeToUserDeletion() {
-    const global$ = (window as any).__otoUserInfoDeleted$ as any;
-    if (global$ && typeof global$.pipe === 'function') {
+    const global$ = this.userInfoDeleted$;
+    if (global$) {
       global$
         .pipe(takeUntil(this.destroy$), filter((info: any) => info?.userName === this.chatNickName))
         .subscribe(() => this.handleChatUserDeleted());
@@ -211,7 +217,7 @@ export class OtoChatMessagesWidget implements OnChanges, AfterViewInit, OnDestro
   private loadMore() {
     if (this.loading || this.allLoaded) return;
     this.loading = true;
-    const loadHistory = (window as any).__otoLoadHistory as ((nick: string, take: number, skip: number) => any) | undefined;
+    const loadHistory = this.loadHistory;
     if (!loadHistory) {
       this.loading = false;
       return;
@@ -270,5 +276,3 @@ export class OtoChatMessagesWidget implements OnChanges, AfterViewInit, OnDestro
     this.allLoaded = false;
   }
 }
-
-
