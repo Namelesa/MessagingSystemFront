@@ -386,7 +386,7 @@ describe('GroupMessagesApiService', () => {
   
     connection.trigger('MessageSoftDeleted', { messageId: 'not-existing' });
   
-    expect(service.messages$.value[0]).toEqual(msgs[0]); // unchanged
+    expect(service.messages$.value[0]).toEqual(msgs[0]); 
   });
 
   it('should delete message when deleteInfo is just an id', () => {

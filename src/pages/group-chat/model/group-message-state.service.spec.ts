@@ -152,7 +152,7 @@ describe('GroupMessageStateService', () => {
       const sub = service.state$.subscribe(s => values.push(s.forceMessageComponentReload));
 
       service.forceMessageComponentReload();
-      tick(); // simulate setTimeout(0)
+      tick(); 
 
       expect(values).toContain(true);
       expect(values).toContain(false);

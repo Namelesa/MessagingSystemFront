@@ -24,8 +24,8 @@ import { Router } from '@angular/router';
 @Component({
   selector: 'app-group-chat-page',
   standalone: true,
-  imports: [CommonModule, GroupChatListComponent, 
-    FormsModule, ChatLayoutComponent, GroupInfoModalComponent, 
+  imports: [CommonModule, GroupChatListComponent,
+    FormsModule, ChatLayoutComponent, GroupInfoModalComponent,
     GroupMessagesWidget, SendAreaComponent, FileDropDirective, FileDropOverlayComponent],
   templateUrl: './group-chat-page.html',
 })
@@ -154,21 +154,8 @@ export class GroupChatPageComponent extends BaseChatPageComponent {
 
   onFileUpload(fileUploadEvent: { files: File[]; message?: string }) {
     if (this.selectedGroupId && fileUploadEvent.files.length > 0) {
-      // Здесь должна быть логика загрузки файлов
-      // Пока что просто логируем информацию о файлах
       console.log('Files to upload to group:', fileUploadEvent.files);
       console.log('Optional message:', fileUploadEvent.message);
-      
-      // TODO: Реализовать загрузку файлов через API
-      // Пример:
-      // fileUploadEvent.files.forEach(file => {
-      //   this.groupMessageState.uploadFile(this.selectedGroupId!, file, fileUploadEvent.message).catch(error => {
-      //     console.error('Error uploading file:', error);
-      //   });
-      // });
-      
-      // Показываем уведомление пользователю
-      alert(`Загружено ${fileUploadEvent.files.length} файлов в группу. Функция загрузки файлов находится в разработке.`);
     }
   }
 

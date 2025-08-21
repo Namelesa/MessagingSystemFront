@@ -29,7 +29,7 @@ export class SendAreaComponent implements OnChanges {
   
   @Input() editingMessage?: BaseMessage;
   @Input() replyingToMessage?: BaseMessage;
-  @Input() maxFileSize: number = 10 * 1024 * 1024; // 10MB по умолчанию
+  @Input() maxFileSize: number = 10 * 1024 * 1024; 
   @Input() allowedFileTypes: string[] = ['image/*', 'video/*', 'audio/*', 'application/pdf', 'text/*'];
 
   message = '';
@@ -54,7 +54,6 @@ export class SendAreaComponent implements OnChanges {
     }
   }
 
-  // File handling methods
   private handleFiles(files: File[]) {
     const validFiles = files.filter(file => this.isFileValid(file));
     
@@ -64,19 +63,16 @@ export class SendAreaComponent implements OnChanges {
         message: this.message.trim()
       });
       
-      // Clear message after file upload
       this.message = '';
     }
   }
 
   private isFileValid(file: File): boolean {
-    // Check file size
     if (file.size > this.maxFileSize) {
       console.warn(`File ${file.name} is too large. Max size: ${this.maxFileSize} bytes`);
       return false;
     }
 
-    // Check file type
     const isValidType = this.allowedFileTypes.some(type => {
       if (type.endsWith('/*')) {
         const category = type.replace('/*', '');
@@ -93,12 +89,10 @@ export class SendAreaComponent implements OnChanges {
     return true;
   }
 
-  // File input handler for manual file selection
   onFileInputChange(event: Event) {
     const input = event.target as HTMLInputElement;
     if (input.files && input.files.length > 0) {
       this.handleFiles(Array.from(input.files));
-      // Reset input value to allow selecting the same file again
       input.value = '';
     }
   }

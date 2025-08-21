@@ -3,8 +3,7 @@
   [selectedChatImage]="selectedChatImage"
   [groupId]="selectedGroupId"
   (headerClick)="onHeaderClick()"
-  fileDrop
-  (fileDrop)="onFileUpload($event)"
+  (fileDrop)="onFileUpload({ files: $event })"
   (dragStateChange)="isDragOver = $event"
 >
   <app-group-chat-list
@@ -114,3 +113,9 @@
     </div>
   </div>
 </div>
+
+
+<file-drop-overlay 
+  *ngIf="selectedChat && isDragOver"
+  [isVisible]="isDragOver">
+</file-drop-overlay>

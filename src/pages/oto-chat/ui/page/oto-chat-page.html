@@ -1,8 +1,7 @@
 <app-chat-layout
   [selectedChat]="displayChatName"
   [selectedChatImage]="displayChatImage"
-  fileDrop
-  (fileDrop)="onFileUpload($event)"
+  (fileDrop)="onFileUpload({ files: $event })"
   (dragStateChange)="isDragOver = $event"
 >
   <app-oto-chat-list
@@ -109,4 +108,7 @@
   </div>
 </div>
 
-<file-drop-overlay [isVisible]="isDragOver"></file-drop-overlay>
+<file-drop-overlay 
+  *ngIf="selectedOtoChat && isDragOver"
+  [isVisible]="isDragOver">
+</file-drop-overlay>

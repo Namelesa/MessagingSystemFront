@@ -237,4 +237,68 @@ describe('SendAreaComponent', () => {
     
     expect(host.editedMessage).toEqual({ messageId: 'only-id', content: 'modified text' });
   });
+
+  it('should emit fileUpload with valid file and clear message', () => {
+    const file = new File(['content'], 'test.png', { type: 'image/png' });
+    host.sendArea.message = 'with file';
+    spyOn(host.sendArea.fileUpload, 'emit');
+  
+    const event = { target: { files: [file], value: '' } } as any;
+    host.sendArea.onFileInputChange(event);
+  
+    expect(host.sendArea.fileUpload.emit).toHaveBeenCalledWith({
+      files: [file],
+      message: 'with file'
+    });
+    expect(host.sendArea.message).toBe('');
+  });
+  
+  it('should not emit fileUpload if file is too large', () => {
+    const file = new File(['x'], 'bigfile.dat', { type: 'application/pdf' });
+    Object.defineProperty(file, 'size', { value: host.sendArea.maxFileSize + 1 });
+  
+    spyOn(host.sendArea.fileUpload, 'emit');
+    const event = { target: { files: [file], value: '' } } as any;
+  
+    host.sendArea.onFileInputChange(event);
+  
+    expect(host.sendArea.fileUpload.emit).not.toHaveBeenCalled();
+  });
+  
+  it('should not emit fileUpload if file type is not allowed', () => {
+    const file = new File(['abc'], 'bad.exe', { type: 'application/x-msdownload' });
+  
+    spyOn(host.sendArea.fileUpload, 'emit');
+    const event = { target: { files: [file], value: '' } } as any;
+  
+    host.sendArea.onFileInputChange(event);
+  
+    expect(host.sendArea.fileUpload.emit).not.toHaveBeenCalled();
+  });
+  
+  it('should emit only valid files if some are invalid', () => {
+    const validFile = new File(['abc'], 'ok.txt', { type: 'text/plain' });
+    const invalidFile = new File(['abc'], 'bad.exe', { type: 'application/x-msdownload' });
+  
+    spyOn(host.sendArea.fileUpload, 'emit');
+    host.sendArea.message = 'multi test';
+  
+    const event = { target: { files: [validFile, invalidFile], value: '' } } as any;
+    host.sendArea.onFileInputChange(event);
+  
+    expect(host.sendArea.fileUpload.emit).toHaveBeenCalledWith({
+      files: [validFile],
+      message: 'multi test'
+    });
+  });
+  
+  it('should reset input value after handling files', () => {
+    const file = new File(['abc'], 'file.txt', { type: 'text/plain' });
+    const inputMock = { files: [file], value: 'something' };
+    const event = { target: inputMock } as any;
+  
+    host.sendArea.onFileInputChange(event);
+  
+    expect(inputMock.value).toBe('');
+  });
 });

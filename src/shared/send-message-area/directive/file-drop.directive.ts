@@ -10,60 +10,48 @@ export interface FileDropEvent {
   standalone: true
 })
 export class FileDropDirective {
-  @Output() fileDrop = new EventEmitter<FileDropEvent>();
+  @Output() fileDrop = new EventEmitter<File[]>();
   @Output() dragStateChange = new EventEmitter<boolean>();
-  
+
   private dragCounter = 0;
-  private isDragOver = false;
 
-  constructor(private el: ElementRef) {}
-
-  @HostListener('dragover', ['$event'])
-  onDragOver(event: DragEvent) {
+  @HostListener('dragenter', ['$event'])
+  onDragEnter(event: DragEvent) {
     event.preventDefault();
-    event.stopPropagation();
     this.dragCounter++;
-    
-    if (!this.isDragOver) {
-      this.isDragOver = true;
-      this.dragStateChange.emit(true);
-      this.el.nativeElement.classList.add('drag-over');
-    }
+    this.dragStateChange.emit(true);
   }
 
   @HostListener('dragleave', ['$event'])
   onDragLeave(event: DragEvent) {
     event.preventDefault();
-    event.stopPropagation();
     this.dragCounter--;
-    
     if (this.dragCounter === 0) {
-      this.isDragOver = false;
       this.dragStateChange.emit(false);
-      this.el.nativeElement.classList.remove('drag-over');
     }
+  }
+
+  @HostListener('dragover', ['$event'])
+  onDragOver(event: DragEvent) {
+    event.preventDefault();
   }
 
   @HostListener('drop', ['$event'])
   onDrop(event: DragEvent) {
     event.preventDefault();
-    event.stopPropagation();
-    this.isDragOver = false;
     this.dragCounter = 0;
     this.dragStateChange.emit(false);
-    this.el.nativeElement.classList.remove('drag-over');
 
-    const files = event.dataTransfer?.files;
-    if (files && files.length > 0) {
-      this.fileDrop.emit({
-        files: Array.from(files)
-      });
+    if (event.dataTransfer?.files?.length) {
+      this.fileDrop.emit(Array.from(event.dataTransfer.files));
     }
   }
 
-  @HostListener('dragenter', ['$event'])
-  onDragEnter(event: DragEvent) {
-    event.preventDefault();
-    event.stopPropagation();
+  @HostListener('document:dragleave', ['$event'])
+  onDocumentDragLeave(event: DragEvent) {
+    if (event.clientX === 0 && event.clientY === 0) {
+      this.dragCounter = 0;
+      this.dragStateChange.emit(false);
+    }
   }
 }

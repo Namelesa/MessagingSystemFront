@@ -275,21 +275,9 @@ export class OtoChatPageComponent extends BaseChatPageComponent implements OnIni
 
   onFileUpload(fileUploadEvent: { files: File[]; message?: string }) {
     if (this.selectedChat && fileUploadEvent.files.length > 0) {
-      // Здесь должна быть логика загрузки файлов
-      // Пока что просто логируем информацию о файлах
       console.log('Files to upload:', fileUploadEvent.files);
       console.log('Optional message:', fileUploadEvent.message);
       
-      // TODO: Реализовать загрузку файлов через API
-      // Пример:
-      // fileUploadEvent.files.forEach(file => {
-      //   this.messageService.uploadFile(this.selectedChat!, file, fileUploadEvent.message).catch(error => {
-      //     console.error('Error uploading file:', error);
-      //   });
-      // });
-      
-      // Показываем уведомление пользователю
-      alert(`Загружено ${fileUploadEvent.files.length} файлов. Функция загрузки файлов находится в разработке.`);
     }
   }
 
