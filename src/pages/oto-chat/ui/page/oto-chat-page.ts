@@ -10,6 +10,7 @@ import { SearchUser } from '../../../../entities/search-user';
 import { OtoChatListComponent } from '../list/oto-chat.list.component';
 import { OtoChatApiService } from '../../api/oto-chat/oto-chat-hub.api';
 import { OtoMessagesService} from '../../api/oto-message/oto-messages.api';
+import { FileUploadApiService } from '../../api/oto-message/file-sender.api';
 import { FindUserStore } from '../../../../features/search-user';
 import { OtoChatMessagesWidget } from '../../../../widgets/chat-messages';
 import { ChatLayoutComponent } from '../../../../widgets/chat-layout';
@@ -42,12 +43,27 @@ export class OtoChatPageComponent extends BaseChatPageComponent implements OnIni
   showUserDeletedNotification = false;
   deletedUserName = '';
   isDragOver = false;
+
+  isUploadModalOpen = false;
+  uploadCaption: string = '';
+  uploadItems: Array<{ 
+    file: File; 
+    name: string; 
+    size: number; 
+    progress: number; 
+    url?: string; 
+    error?: string;
+    abort?: () => void;
+    subscription?: any;
+  }> = [];
+  isUploading = false;
   
   @Input() foundedUser?: { nick: string, image: string };
   @Input() edit: string = '';
 
   @ViewChild(OtoChatMessagesWidget) messagesComponent?: OtoChatMessagesWidget;
   @ViewChild(OtoChatListComponent) chatListComponent?: OtoChatListComponent;
+  @ViewChild('modalFileInput') modalFileInput?: any;
   
   private subscriptions: Subscription[] = [];
   user$: Observable<SearchUser | null>;
@@ -56,6 +72,7 @@ export class OtoChatPageComponent extends BaseChatPageComponent implements OnIni
     public otoChatApi: OtoChatApiService, 
     private authService: AuthService, 
     private messageService: OtoMessagesService,
+    private fileUploadApi: FileUploadApiService,
     private router: Router,
     private cdr: ChangeDetectorRef,
     private findUserStore: FindUserStore
@@ -222,6 +239,10 @@ export class OtoChatPageComponent extends BaseChatPageComponent implements OnIni
     }
   }
 
+  isImageFile(file: File): boolean {
+    return file.type.startsWith('image/');
+  }
+
   onFoundedUser(userData: { nick: string, image: string }) {
     const foundedUserChat: OtoChat = {
       nickName: userData.nick,
@@ -274,11 +295,109 @@ export class OtoChatPageComponent extends BaseChatPageComponent implements OnIni
   }
 
   onFileUpload(fileUploadEvent: { files: File[]; message?: string }) {
-    if (this.selectedChat && fileUploadEvent.files.length > 0) {
-      console.log('Files to upload:', fileUploadEvent.files);
-      console.log('Optional message:', fileUploadEvent.message);
-      
+    if (!this.selectedChat || fileUploadEvent.files.length === 0) return;
+    this.uploadItems = fileUploadEvent.files.map(f => ({ file: f, name: f.name, size: f.size, progress: 0 }));
+    this.uploadCaption = fileUploadEvent.message || '';
+    this.isUploadModalOpen = true;
+  }
+
+  onFileDrop(files: File[]) {
+    if (!this.selectedChat || files.length === 0) return;
+    const newItems = files.map(f => ({ file: f, name: f.name, size: f.size, progress: 0 }));
+    this.uploadItems.push(...newItems);
+  }
+
+  onModalFileInputChange(event: Event) {
+    const input = event.target as HTMLInputElement;
+    if (input.files && input.files.length > 0) {
+      const newItems = Array.from(input.files).map(f => ({ file: f, name: f.name, size: f.size, progress: 0 }));
+      this.uploadItems.push(...newItems);
+      input.value = '';
     }
+  }
+
+  async startUploadAndSend() {
+    if (!this.selectedChat || this.uploadItems.length === 0 || this.isUploading) return;
+    this.isUploading = true;
+    try {
+      const files = this.uploadItems.map(i => i.file);
+      const uploadUrls = await this.fileUploadApi.getUploadUrls(files);
+
+      const nameToUrl = new Map(uploadUrls.map(u => [u.fileName, u.url] as const));
+
+      await Promise.all(this.uploadItems.map(item => new Promise<void>((resolve) => {
+        const url = nameToUrl.get(item.name);
+        if (!url) {
+          item.error = 'No URL';
+          resolve();
+          return;
+        }
+        const uploadResult = this.fileUploadApi.uploadFileWithProgress(item.file, url);
+        item.abort = uploadResult.abort;
+        item.subscription = uploadResult.observable.subscribe({
+          next: (p: number) => item.progress = p,
+          error: (err: any) => { 
+            item.error = String(err); 
+            item.progress = 0; 
+            resolve(); 
+            if (item.subscription) item.subscription.unsubscribe(); 
+          },
+          complete: () => { 
+            item.url = url.split('?')[0]; 
+            item.progress = 100; 
+            resolve(); 
+            if (item.subscription) item.subscription.unsubscribe(); 
+          }
+        });
+      })));
+
+      const successful = this.uploadItems.filter(i => i.url).map(i => ({ fileName: i.name, url: i.url! }));
+      if (successful.length) {
+        const content = JSON.stringify({ text: this.uploadCaption || '', files: successful });
+        await this.messageService.sendMessage(this.selectedChat, content);
+      }
+      this.closeUploadModal();
+    } catch (e) {
+      console.error('Upload failed', e);
+      this.isUploading = false;
+    }
+  }
+
+  cancelFileUpload(index: number) {
+    const item = this.uploadItems[index];
+    if (item.abort) {
+      item.abort();
+    }
+    if (item.subscription) {
+      item.subscription.unsubscribe();
+    }
+    this.uploadItems.splice(index, 1);
+    
+    if (this.uploadItems.length === 0) {
+      this.closeUploadModal();
+    }
+  }
+
+  removeFileFromList(index: number) {
+    const item = this.uploadItems[index];
+    if (item.abort) {
+      item.abort();
+    }
+    if (item.subscription) {
+      item.subscription.unsubscribe();
+    }
+    this.uploadItems.splice(index, 1);
+    
+    if (this.uploadItems.length === 0) {
+      this.closeUploadModal();
+    }
+  }
+
+  closeUploadModal() {
+    this.isUploadModalOpen = false;
+    this.isUploading = false;
+    this.uploadItems = [];
+    this.uploadCaption = '';
   }
 
   onEditMessage(message: OtoMessage) {

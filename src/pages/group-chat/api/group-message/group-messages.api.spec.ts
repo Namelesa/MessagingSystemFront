@@ -274,7 +274,7 @@ describe('GroupMessagesApiService', () => {
 
       (service as any).handleUserInfoDeleted('bob');
 
-      expect(service.messages$.value).toEqual(msgs); // unchanged
+      expect(service.messages$.value).toEqual(msgs); 
     });
   });
 

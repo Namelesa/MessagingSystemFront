@@ -112,3 +112,109 @@
   *ngIf="selectedOtoChat && isDragOver"
   [isVisible]="isDragOver">
 </file-drop-overlay>
+
+<div 
+  *ngIf="isUploadModalOpen" 
+  class="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50"
+  (click)="closeUploadModal()"
+  fileDrop
+  (fileDrop)="onFileDrop($event)"
+  (dragStateChange)="isDragOver = $event"
+>
+  <div 
+    class="bg-white dark:bg-gray-800 rounded-2xl p-6 w-full max-w-lg mx-4 shadow-2xl"
+    (click)="$event.stopPropagation()"
+  >
+    <div class="flex items-center justify-between mb-4">
+      <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Send {{uploadItems.length}} Files</h3>
+
+    </div>
+
+    <div class="space-y-3 max-h-64 overflow-auto pr-2">
+      <div *ngFor="let item of uploadItems; let i = index" class="flex items-start gap-3">
+        <div class="w-8 h-8 rounded-full bg-purple-600 flex items-center justify-center text-white">▶</div>
+        <div class="flex-1">
+          <div class="text-sm text-gray-900 dark:text-gray-100 truncate">{{item.name}}</div>
+          <div class="text-xs text-gray-500 dark:text-gray-400">{{ (item.size / (1024*1024) ) | number:'1.0-1'}} MB</div>
+          <div class="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded mt-2 overflow-hidden">
+            <div class="h-2 bg-purple-600 transition-all" [style.width.%]="item.progress"></div>
+          </div>
+          <div *ngIf="item.error" class="text-xs text-red-500 mt-1">{{item.error}}</div>
+        </div>
+        <button 
+          (click)="cancelFileUpload(i)"
+          class="w-6 h-6 text-gray-500 hover:text-red-500 flex items-center justify-center transition-colors"
+          title="Cancel upload"
+        >
+          ✕
+        </button>
+      </div>
+    </div>
+
+    <div class="flex items-center gap-3 w-full mt-4">
+      <div class="flex-1 relative">
+        <input 
+          type="text" 
+          [(ngModel)]="uploadCaption" 
+          placeholder="Send message.." 
+          class="w-full h-12 py-3 px-4 border border-gray-300 rounded-3xl resize-none text-sm outline-none bg-gray-100 focus:border-blue-400 dark:bg-gray-700 dark:border-gray-800 dark:text-gray-200 transition-all duration-200"
+        />
+      </div>
+
+      <input 
+        #modalFileInput
+        type="file" 
+        multiple 
+        [accept]="'image/*, video/*, audio/*, application/pdf, text/*'"
+        (change)="onModalFileInputChange($event)"
+        class="hidden"
+      >
+      
+      <button
+        (click)="modalFileInput.click()"
+        class="flex-shrink-0 w-10 h-10 text-gray-500 hover:bg-gray-100 hover:scale-105 rounded-full flex items-center justify-center transition-all duration-200 dark:text-gray-250 hover:bg-gray-800"
+        type="button"
+        title="Attach files"
+      >
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+          <path
+            d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66L9.64 16.2a2 2 0 0 1-2.83-2.83l8.49-8.49"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </svg>
+      </button>
+
+      <button
+        class="flex-shrink-0 w-10 h-10 bg-blue-500 text-white hover:bg-blue-600 rounded-full flex items-center justify-center transition-colors"
+        type="button"
+        (click)="startUploadAndSend()"
+        [disabled]="isUploading || uploadItems.length === 0"
+        [ngClass]="{ 'opacity-50 cursor-not-allowed': isUploading || uploadItems.length === 0 }"
+      >
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+          <path
+            d="M22 2L11 13"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+          <path
+            d="M22 2L15 22L11 13L2 9L22 2Z"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </svg>
+      </button>
+    </div>
+
+    <div *ngIf="isDragOver" class="absolute inset-0 bg-blue-500 bg-opacity-10 border-2 border-dashed border-blue-500 rounded-2xl flex items-center justify-center">
+      <div class="text-blue-600 dark:text-blue-400 text-lg font-medium">Drop files here</div>
+    </div>
+  </div>
+</div>
