@@ -4,4 +4,5 @@ export const environment = {
     messagingApiUrl: 'https://localhost:7275/api/messaging/',
     otoChatHubUrl: 'https://localhost:7275/otoChatHub',
     groupChatHubUrl: 'https://localhost:7275/groupChatHub',
+    fileloaderUrl: 'https://localhost:7275/api/file-loader/',
   };

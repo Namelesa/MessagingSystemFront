@@ -1,12 +1,8 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, Observer, firstValueFrom } from 'rxjs';
-import { environment } from '../../../../shared/api-urls';
-
-export interface FileUrl {
-  fileName: string;
-  url: string;
-}
+import { FileUrl } from '../model/file-sender.model';
+import { environment } from '../../../shared/api-urls';
 
 @Injectable({ providedIn: 'root' })
 export class FileUploadApiService {
@@ -18,7 +14,7 @@ export class FileUploadApiService {
     files.forEach(file => formData.append('File', file));
     
     return firstValueFrom(
-      this.http.post<FileUrl[]>(`${environment.messagingApiUrl}get-load-file-url`, formData, { withCredentials: true })
+      this.http.post<FileUrl[]>(`${environment.fileloaderUrl}get-load-file-url`, formData, { withCredentials: true })
     );
   }
 
@@ -79,7 +75,7 @@ export class FileUploadApiService {
     fileNames.forEach(f => params = params.append('fileNames', f));
   
     const result = await firstValueFrom(
-      this.http.get<FileUrl[]>(`${environment.messagingApiUrl}get-download-file-url`, {
+      this.http.get<FileUrl[]>(`${environment.fileloaderUrl}get-download-file-url`, {
         params,
         withCredentials: true
       })

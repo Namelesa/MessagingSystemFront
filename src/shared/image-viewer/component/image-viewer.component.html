@@ -1,0 +1,47 @@
+<div *ngIf="isVisible" class="fixed inset-0 z-50 bg-black/95 backdrop-blur-sm flex items-center justify-center animate-fade-in" (click)="close()">
+  
+  <button class="absolute top-6 right-6 z-[60] text-white hover:text-gray-300 transition-all duration-300 hover:scale-110 bg-black/40 rounded-full p-3"
+          (click)="close()">
+    ✕
+  </button>
+
+  <button *ngIf="images.length > 1 && currentIndex > 0" (click)="previousImage()" class="absolute left-6 top-1/2 -translate-y-1/2 z-[60] text-white p-3">←</button>
+  <button *ngIf="images.length > 1 && currentIndex < images.length - 1" (click)="nextImage()" class="absolute right-6 top-1/2 -translate-y-1/2 z-[60] text-white p-3">→</button>
+
+  <div class="relative max-w-full max-h-full flex items-center justify-center p-4" (click)="$event.stopPropagation()">
+    <img *ngIf="currentImage?.url?.startsWith('image/')"
+         [src]="currentImage?.url"
+         [alt]="currentImage?.fileName"
+         class="max-w-full max-h-full object-contain rounded-lg shadow-lg"
+         [class]="getImageCursorClass()"
+         [style.transform]="getImageTransform()"
+         (click)="toggleZoom($event)"
+         (mousedown)="onMouseDown($event)"
+         (mousemove)="onMouseMove($event)"
+         (mouseup)="onMouseUp()"
+         (mouseleave)="onMouseUp()"
+         draggable="false"
+         [@imageTransition]="currentIndex">
+
+    <video *ngIf="currentImage?.url?.startsWith('video/')"
+           [src]="currentImage?.url"
+           controls
+           class="max-w-full max-h-[80vh] rounded-lg shadow-lg"
+           [@imageTransition]="currentIndex">
+      Your browser does not support the video tag.
+    </video>
+
+    <audio *ngIf="currentImage?.url?.startsWith('audio/')"
+           [src]="currentImage?.url"
+           controls
+           class="w-full"
+           [@imageTransition]="currentIndex">
+      Your browser does not support the audio element.
+    </audio>
+  </div>
+
+  <div class="absolute bottom-6 right-6 flex gap-3 z-[60]">
+    <button class="text-white bg-black/50 rounded-full p-3" (click)="downloadCurrent()">⤓</button>
+  </div>
+
+</div>

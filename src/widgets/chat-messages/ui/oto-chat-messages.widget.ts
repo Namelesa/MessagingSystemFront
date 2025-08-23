@@ -4,7 +4,7 @@ import { Observable, Subject } from 'rxjs';
 import { takeUntil, filter } from 'rxjs/operators';
 import { OtoMessage } from '../../../entities/oto-message';
 import { isToday, truncateText, computeContextMenuPosition } from '../../../shared/chat';
-import { FileUploadApiService } from '../../../pages/oto-chat/api/oto-message/file-sender.api';
+import { FileUploadApiService } from '../../../features/file-sender';
 import { ImageViewerComponent, ImageViewerItem } from '../../../shared/image-viewer';
 
 @Component({
@@ -64,22 +64,6 @@ export class OtoChatMessagesWidget implements OnChanges, AfterViewInit, OnDestro
     try {
       const parsed = JSON.parse(msg.content);
       const filesWithType = (parsed.files || []).map((file: any) => {
-        if (!file.type) {
-          const fileName = file.fileName || '';
-          const lowerFileName = fileName.toLowerCase();
-          
-          if (lowerFileName.includes('.png')) {
-            return { ...file, type: 'image/png' };
-          } else if (lowerFileName.includes('.jpg') || lowerFileName.includes('.jpeg')) {
-            return { ...file, type: 'image/jpeg' };
-          } else if (lowerFileName.includes('.gif')) {
-            return { ...file, type: 'image/gif' };
-          } else if (lowerFileName.includes('.webp')) {
-            return { ...file, type: 'image/webp' };
-          } else if (lowerFileName.includes('.bmp')) {
-            return { ...file, type: 'image/bmp' };
-          }
-        }
         return file;
       });
       
@@ -143,12 +127,6 @@ export class OtoChatMessagesWidget implements OnChanges, AfterViewInit, OnDestro
     this.showImageViewer = false;
     this.imageViewerImages = [];
     this.imageViewerInitialIndex = 0;
-  }
-
-  onImageError(event: Event) {
-    console.error('Image failed to load:', event);
-    const img = event.target as HTMLImageElement;
-    img.style.display = 'none';
   }
 
   onScrollToReplyMessage(messageId: string) {
@@ -310,36 +288,34 @@ export class OtoChatMessagesWidget implements OnChanges, AfterViewInit, OnDestro
       const parsed = this.parseContent(msg);
       return parsed.files.map(f => f.fileName);
     });
-    
+  
     if (fileNames.length === 0) return;
   
     try {
       const urls = await this.fileUploadApi.getDownloadUrls(fileNames);
       const urlMap = new Map(urls.map(f => [f.fileName, f.url]));
   
-      this.messages = this.messages.map(msg => {
+      for (const msg of this.messages) {
         const parsed = this.parseContent(msg);
-        if (parsed.files.length > 0) {
-          const updatedFiles = parsed.files.map(f => {
-            const downloadUrl = urlMap.get(f.fileName);
-            if (downloadUrl) {
-              return { ...f, url: downloadUrl };
-            }
-            return f;
-          });
+        let hasChanges = false;
   
-          const newParsedContent = {
+        const updatedFiles = parsed.files.map(f => {
+          const newUrl = urlMap.get(f.fileName);
+          if (newUrl && newUrl !== f.url) {
+            hasChanges = true;
+            f.url = newUrl; 
+          }
+          return f;
+        });
+  
+        if (hasChanges) {
+          parsed.files = updatedFiles;
+          (msg as any).parsedContent = {
             text: parsed.text,
             files: updatedFiles
           };
-  
-          return {
-            ...msg,
-            parsedContent: newParsedContent
-          } as OtoMessage & { parsedContent: { text: string; files: any[] } };
         }
-        return msg;
-      });
+      }
   
     } catch (err) {
       console.error('Failed to fetch download URLs', err);

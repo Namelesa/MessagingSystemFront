@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { Observable, Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import { GroupMessage } from '../../../entities/group-message';
+import { FileUploadApiService } from '../../../features/file-sender';
 import { isToday, truncateText, computeContextMenuPosition } from '../../../shared/realtime';
 
 @Component({

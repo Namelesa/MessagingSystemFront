@@ -10,7 +10,7 @@ import { SearchUser } from '../../../../entities/search-user';
 import { OtoChatListComponent } from '../list/oto-chat.list.component';
 import { OtoChatApiService } from '../../api/oto-chat/oto-chat-hub.api';
 import { OtoMessagesService} from '../../api/oto-message/oto-messages.api';
-import { FileUploadApiService } from '../../api/oto-message/file-sender.api';
+import { FileUploadApiService } from '../../../../features/file-sender';
 import { FindUserStore } from '../../../../features/search-user';
 import { OtoChatMessagesWidget } from '../../../../widgets/chat-messages';
 import { ChatLayoutComponent } from '../../../../widgets/chat-layout';

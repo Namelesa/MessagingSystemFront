@@ -2,24 +2,25 @@ import { Observable } from 'rxjs';
 import { Component,  Input, ViewChild, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
 import { GroupMessagesApiService } from '../../api/group-message/group-messages.api';
 import { GroupChatApiService } from '../../api/group-chat/group-chat-hub.api';
 import { GroupMember } from '../../model/group-info.model';
 import { GroupChat } from '../../model/group.chat';
+import { GroupUserStateService } from '../../model/group-user-state.service';
+import { GroupMessageStateService } from '../../model/group-message-state.service';
+import { GroupSearchService } from '../../model/group-search.service';
+import { GroupNavigationService } from '../../model/group-navigation.service';
 import { GroupChatListComponent } from '../group-chat-list/group-chat.list.component';
+import { GroupInfoModalComponent } from '../group-info-modal/group-info-modal.component';
 import { GroupMessage } from '../../../../entities/group-message';
 import { SearchUser } from '../../../../entities/search-user';
-import { GroupInfoModalComponent } from '../group-info-modal/group-info-modal.component';
 import { FindUserStore } from '../../../../features/search-user';
+import { FileUploadApiService } from '../../../../features/file-sender';
 import { ChatLayoutComponent } from '../../../../widgets/chat-layout';
 import { GroupMessagesWidget } from '../../../../widgets/chat-messages';
 import { BaseChatPageComponent } from '../../../../shared/realtime';
 import { SendAreaComponent, FileDropDirective, FileDropOverlayComponent } from '../../../../shared/send-message-area';
-import { GroupUserStateService } from '../../model/group-user-state.service';
-import { GroupMessageStateService } from '../../model/group-message-state.service';
-import { GroupNavigationService } from '../../model/group-navigation.service';
-import { GroupSearchService } from '../../model/group-search.service';
-import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-group-chat-page',
