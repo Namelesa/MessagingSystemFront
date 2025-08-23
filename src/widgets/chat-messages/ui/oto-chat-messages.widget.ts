@@ -60,13 +60,55 @@ export class OtoChatMessagesWidget implements OnChanges, AfterViewInit, OnDestro
     if ((msg as any).parsedContent) {
       return (msg as any).parsedContent;
     }
+    
     try {
       const parsed = JSON.parse(msg.content);
-      return {
+      const filesWithType = (parsed.files || []).map((file: any) => {
+        if (!file.type) {
+          const fileName = file.fileName || '';
+          const lowerFileName = fileName.toLowerCase();
+          
+          if (lowerFileName.includes('.png')) {
+            return { ...file, type: 'image/png' };
+          } else if (lowerFileName.includes('.jpg') || lowerFileName.includes('.jpeg')) {
+            return { ...file, type: 'image/jpeg' };
+          } else if (lowerFileName.includes('.gif')) {
+            return { ...file, type: 'image/gif' };
+          } else if (lowerFileName.includes('.webp')) {
+            return { ...file, type: 'image/webp' };
+          } else if (lowerFileName.includes('.bmp')) {
+            return { ...file, type: 'image/bmp' };
+          }
+        }
+        return file;
+      });
+      
+      const result = {
         text: parsed.text || '',
-        files: parsed.files || []
+        files: filesWithType
       };
-    } catch {
+      
+      return result;
+    } catch (error) {
+      if (msg.content && typeof msg.content === 'string') {
+        const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp'];
+        const isImageUrl = imageExtensions.some(ext => 
+          msg.content.toLowerCase().includes(ext) || 
+          msg.content.toLowerCase().includes('image/')
+        );
+        
+        if (isImageUrl) {
+          return {
+            text: '',
+            files: [{
+              url: msg.content,
+              fileName: msg.content.split('/').pop() || 'image',
+              type: 'image/jpeg'
+            }]
+          };
+        }
+      }
+      
       return { text: msg.content, files: [] };
     }
   }
@@ -101,6 +143,12 @@ export class OtoChatMessagesWidget implements OnChanges, AfterViewInit, OnDestro
     this.showImageViewer = false;
     this.imageViewerImages = [];
     this.imageViewerInitialIndex = 0;
+  }
+
+  onImageError(event: Event) {
+    console.error('Image failed to load:', event);
+    const img = event.target as HTMLImageElement;
+    img.style.display = 'none';
   }
 
   onScrollToReplyMessage(messageId: string) {

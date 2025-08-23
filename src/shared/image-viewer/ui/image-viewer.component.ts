@@ -1,5 +1,6 @@
 import { Component, Input, Output, EventEmitter, OnInit, OnDestroy, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { trigger, transition, style, animate } from '@angular/animations';
 import { ImageViewerItem } from '../service/image-viewer.model';
 
 @Component({
@@ -7,18 +8,36 @@ import { ImageViewerItem } from '../service/image-viewer.model';
   standalone: true,
   imports: [CommonModule],
   templateUrl: "./image-viewer.component.html",
+  animations: [
+    trigger('imageTransition', [
+      transition('* => *', [
+        style({ opacity: 0, transform: 'scale(0.95)' }),
+        animate('300ms ease-out', style({ opacity: 1, transform: 'scale(1)' }))
+      ])
+    ])
+  ],
   styles: [`
     :host {
       display: contents;
     }
     
     @keyframes fade-in {
-      from { opacity: 0; }
-      to { opacity: 1; }
+      from { 
+        opacity: 0; 
+        transform: scale(0.95);
+      }
+      to { 
+        opacity: 1; 
+        transform: scale(1);
+      }
     }
     
     .animate-fade-in {
-      animation: fade-in 0.2s ease-out;
+      animation: fade-in 0.3s ease-out;
+    }
+
+    .border-3 {
+      border-width: 3px;
     }
   `]
 })
@@ -38,7 +57,13 @@ export class ImageViewerComponent implements OnInit, OnDestroy {
   private lastMouseY = 0;
   private startX = 0;
   private startY = 0;
-Math: any;
+  
+  private initialDistance = 0;
+  private initialScale = 1;
+  private isPinching = false;
+  private lastTouchDistance = 0;
+  
+  Math: any = Math;
 
   get currentImage(): ImageViewerItem | null {
     return this.images[this.currentIndex] || null;
@@ -49,7 +74,7 @@ Math: any;
   }
 
   ngOnDestroy() {
-    // Clean up if needed
+
   }
 
   @HostListener('document:keydown', ['$event'])
@@ -69,6 +94,14 @@ Math: any;
       case ' ':
         event.preventDefault();
         this.toggleZoom(event);
+        break;
+      case 'Home':
+        event.preventDefault();
+        this.goToImage(0);
+        break;
+      case 'End':
+        event.preventDefault();
+        this.goToImage(this.images.length - 1);
         break;
     }
   }
@@ -99,10 +132,16 @@ Math: any;
     }
   }
 
+  goToImage(index: number) {
+    if (index >= 0 && index < this.images.length) {
+      this.currentIndex = index;
+      this.resetZoom();
+    }
+  }
+
   toggleZoom(event: Event) {
     if (this.scale === 1) {
       this.scale = 2;
-      // Center zoom on click position
       const rect = (event.target as HTMLElement).getBoundingClientRect();
       const clickX = (event as MouseEvent).clientX - rect.left - rect.width / 2;
       const clickY = (event as MouseEvent).clientY - rect.top - rect.height / 2;
@@ -146,7 +185,7 @@ Math: any;
   onWheel(event: WheelEvent) {
     event.preventDefault();
     const delta = event.deltaY > 0 ? -0.1 : 0.1;
-    const newScale = Math.max(0.5, Math.min(3, this.scale + delta));
+    const newScale = Math.max(0.5, Math.min(5, this.scale + delta));
     
     if (newScale !== this.scale) {
       this.scale = newScale;
@@ -155,6 +194,60 @@ Math: any;
         this.translateY = 0;
       }
     }
+  }
+
+  onTouchStart(event: TouchEvent) {
+    if (event.touches.length === 1) {
+      if (this.scale > 1) {
+        this.isDragging = true;
+        const touch = event.touches[0];
+        this.lastMouseX = touch.clientX;
+        this.lastMouseY = touch.clientY;
+        this.startX = this.translateX;
+        this.startY = this.translateY;
+      }
+    } else if (event.touches.length === 2) {
+      this.isPinching = true;
+      this.initialDistance = this.getTouchDistance(event.touches);
+      this.initialScale = this.scale;
+      this.lastTouchDistance = this.initialDistance;
+    }
+  }
+
+  onTouchMove(event: TouchEvent) {
+    if (event.touches.length === 1 && this.isDragging && this.scale > 1) {
+      const touch = event.touches[0];
+      const deltaX = touch.clientX - this.lastMouseX;
+      const deltaY = touch.clientY - this.lastMouseY;
+      this.translateX = this.startX + deltaX;
+      this.translateY = this.startY + deltaY;
+    } else if (event.touches.length === 2 && this.isPinching) {
+      const currentDistance = this.getTouchDistance(event.touches);
+      const scaleFactor = currentDistance / this.initialDistance;
+      const newScale = Math.max(0.5, Math.min(5, this.initialScale * scaleFactor));
+      
+      if (newScale !== this.scale) {
+        this.scale = newScale;
+        if (this.scale === 1) {
+          this.translateX = 0;
+          this.translateY = 0;
+        }
+      }
+      
+      this.lastTouchDistance = currentDistance;
+    }
+  }
+
+  onTouchEnd() {
+    this.isDragging = false;
+    this.isPinching = false;
+  }
+
+  private getTouchDistance(touches: TouchList): number {
+    if (touches.length < 2) return 0;
+    const dx = touches[0].clientX - touches[1].clientX;
+    const dy = touches[0].clientY - touches[1].clientY;
+    return Math.sqrt(dx * dx + dy * dy);
   }
 
   getImageCursorClass(): string {

@@ -51,11 +51,18 @@
               <div *ngIf="content.files?.length" class="mt-2 flex flex-col gap-2">
                 <ng-container *ngFor="let file of content.files">
                   
-                  <img *ngIf="file.type?.startsWith('image/')"
-                       [src]="file.url"
-                       [alt]="file.fileName"
-                       class="max-w-[200px] rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
-                       (click)="openImageViewer(file.url, msg.messageId)" />
+                  <div *ngIf="file.type?.startsWith('image/')" class="relative group">
+                    <img [src]="file.url"
+                         [alt]="file.fileName"
+                         class="max-w-[200px] max-h-[200px] rounded-lg cursor-pointer transition-all duration-300 hover:scale-105 shadow-lg object-cover"
+                         (click)="openImageViewer(file.url, msg.messageId)"
+                         (error)="onImageError($event)" />
+                    <div class="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all duration-300 rounded-lg flex items-center justify-center">
+                      <svg class="w-8 h-8 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7"></path>
+                      </svg>
+                    </div>
+                  </div>
 
                   <video *ngIf="file.type?.startsWith('video/')"
                          controls
@@ -76,7 +83,7 @@
                      [attr.download]="file.fileName"
                      target="_blank"
                      class="flex items-center text-blue-500 underline hover:text-blue-600 transition-colors">
-                    📎 {{ file.fileName }}
+                    {{ file.fileName }}
                   </a>
                 </ng-container>
               </div>
