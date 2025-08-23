@@ -4,11 +4,13 @@ import { Observable, Subject } from 'rxjs';
 import { takeUntil, filter } from 'rxjs/operators';
 import { OtoMessage } from '../../../entities/oto-message';
 import { isToday, truncateText, computeContextMenuPosition } from '../../../shared/chat';
+import { FileUploadApiService } from '../../../pages/oto-chat/api/oto-message/file-sender.api';
+import { ImageViewerComponent, ImageViewerItem } from '../../../shared/image-viewer';
 
 @Component({
   selector: 'widgets-oto-chat-messages',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, ImageViewerComponent],
   templateUrl: './oto-chat-messages.widget.html',
 })
 export class OtoChatMessagesWidget implements OnChanges, AfterViewInit, OnDestroy {
@@ -25,6 +27,12 @@ export class OtoChatMessagesWidget implements OnChanges, AfterViewInit, OnDestro
 
   @ViewChild('scrollContainer') scrollContainer!: ElementRef<HTMLDivElement>;
 
+  showImageViewer = false;
+  imageViewerImages: ImageViewerItem[] = [];
+  imageViewerInitialIndex = 0;
+
+  constructor(private fileUploadApi: FileUploadApiService) {}
+
   messages: OtoMessage[] = [];
   take = 20;
   skip = 0;
@@ -35,6 +43,7 @@ export class OtoChatMessagesWidget implements OnChanges, AfterViewInit, OnDestro
   contextMenuPosition = { x: 0, y: 0 };
   showContextMenu = false;
   highlightedMessageId: string | null = null;
+
   isMessageHighlighted(id: string): boolean {
     return this.highlightedMessageId === id;
   }
@@ -45,6 +54,53 @@ export class OtoChatMessagesWidget implements OnChanges, AfterViewInit, OnDestro
     setTimeout(() => {
       if (this.highlightedMessageId === messageId) this.highlightedMessageId = null;
     }, 1500);
+  }
+
+  parseContent(msg: OtoMessage): { text: string; files: any[] } {
+    if ((msg as any).parsedContent) {
+      return (msg as any).parsedContent;
+    }
+    try {
+      const parsed = JSON.parse(msg.content);
+      return {
+        text: parsed.text || '',
+        files: parsed.files || []
+      };
+    } catch {
+      return { text: msg.content, files: [] };
+    }
+  }
+
+  openImageViewer(clickedImageUrl: string, messageId: string) {
+    const allImages: ImageViewerItem[] = [];
+    
+    for (const msg of this.messages) {
+      const content = this.parseContent(msg);
+      const images = content.files.filter(file => file.type?.startsWith('image/'));
+      
+      for (const image of images) {
+        allImages.push({
+          url: image.url,
+          fileName: image.fileName,
+          messageId: msg.messageId,
+          sender: msg.sender
+        });
+      }
+    }
+
+    const clickedIndex = allImages.findIndex(img => img.url === clickedImageUrl);
+    
+    if (clickedIndex !== -1) {
+      this.imageViewerImages = allImages;
+      this.imageViewerInitialIndex = clickedIndex;
+      this.showImageViewer = true;
+    }
+  }
+
+  onImageViewerClosed() {
+    this.showImageViewer = false;
+    this.imageViewerImages = [];
+    this.imageViewerInitialIndex = 0;
   }
 
   onScrollToReplyMessage(messageId: string) {
@@ -192,12 +248,54 @@ export class OtoChatMessagesWidget implements OnChanges, AfterViewInit, OnDestro
       for (const m of filtered) oldMap.set(m.messageId, m);
       for (const id of Array.from(oldMap.keys())) if (!newMap.has(id)) oldMap.delete(id);
       this.messages = Array.from(oldMap.values()).sort((a, b) => new Date(a.sentAt).getTime() - new Date(b.sentAt).getTime());
+      this.loadAllFileDownloadUrls(this.messages);
       this.skip = this.messages.length;
       if (this.isScrolledToBottom() || this.shouldScrollToBottom) {
         setTimeout(() => this.scrollToBottom(), 0);
         this.shouldScrollToBottom = false;
       }
     });
+  }
+
+  private async loadAllFileDownloadUrls(messages: OtoMessage[]) {
+    const fileNames = messages.flatMap(msg => {
+      const parsed = this.parseContent(msg);
+      return parsed.files.map(f => f.fileName);
+    });
+    
+    if (fileNames.length === 0) return;
+  
+    try {
+      const urls = await this.fileUploadApi.getDownloadUrls(fileNames);
+      const urlMap = new Map(urls.map(f => [f.fileName, f.url]));
+  
+      this.messages = this.messages.map(msg => {
+        const parsed = this.parseContent(msg);
+        if (parsed.files.length > 0) {
+          const updatedFiles = parsed.files.map(f => {
+            const downloadUrl = urlMap.get(f.fileName);
+            if (downloadUrl) {
+              return { ...f, url: downloadUrl };
+            }
+            return f;
+          });
+  
+          const newParsedContent = {
+            text: parsed.text,
+            files: updatedFiles
+          };
+  
+          return {
+            ...msg,
+            parsedContent: newParsedContent
+          } as OtoMessage & { parsedContent: { text: string; files: any[] } };
+        }
+        return msg;
+      });
+  
+    } catch (err) {
+      console.error('Failed to fetch download URLs', err);
+    }
   }
 
   private subscribeToUserDeletion() {
@@ -233,6 +331,7 @@ export class OtoChatMessagesWidget implements OnChanges, AfterViewInit, OnDestro
         } else {
           this.messages = [...unique, ...this.messages];
           this.skip = this.messages.length;
+          this.loadAllFileDownloadUrls(this.messages);
           setTimeout(() => {
             if (this.scrollContainer) {
               const el = this.scrollContainer.nativeElement;

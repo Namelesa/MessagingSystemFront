@@ -343,7 +343,7 @@ export class OtoChatPageComponent extends BaseChatPageComponent implements OnIni
             if (item.subscription) item.subscription.unsubscribe(); 
           },
           complete: () => { 
-            item.url = url.split('?')[0]; 
+            item.url = url;
             item.progress = 100; 
             resolve(); 
             if (item.subscription) item.subscription.unsubscribe(); 
@@ -477,6 +477,7 @@ export class OtoChatPageComponent extends BaseChatPageComponent implements OnIni
       this.selectedChatImage = undefined;
       this.selectedOtoChat = undefined;
       this.cdr.detectChanges();
+      this.closeUploadModal();
     }
   }
 }
