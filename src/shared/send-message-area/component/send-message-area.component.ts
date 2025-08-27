@@ -14,6 +14,13 @@ interface FileUploadEvent {
   message?: string;
 }
 
+interface FileValidationError {
+  fileName: string;
+  error: 'size' | 'type';
+  actualSize?: number;
+  actualType?: string;
+}
+
 @Component({
   selector: 'shared-send-message-area',
   standalone: true,
@@ -26,17 +33,24 @@ export class SendAreaComponent implements OnChanges {
   @Output() editCancel = new EventEmitter<void>();
   @Output() replyCancel = new EventEmitter<void>();
   @Output() fileUpload = new EventEmitter<FileUploadEvent>();
+  @Output() fileValidationError = new EventEmitter<FileValidationError[]>();
   
   @Input() editingMessage?: BaseMessage;
   @Input() replyingToMessage?: BaseMessage;
-  @Input() maxFileSize: number = 10 * 1024 * 1024; 
-  @Input() allowedFileTypes: string[] = ['image/*', 'video/*', 'audio/*', 'application/pdf', 'text/*'];
+  @Input() maxFileSize: number = 1024 * 1024 * 1024; 
 
   message = '';
   readonly maxLength = 2000;
   readonly maxBytes = 8000;
   private lastSentAt = 0;
   private minIntervalMs = 400;
+
+  readonly FILE_SIZE_LIMITS = {
+    BYTE: 1,
+    KB: 1024,
+    MB: 1024 * 1024,
+    GB: 1024 * 1024 * 1024
+  };
   
   ngOnChanges(changes: SimpleChanges) {
     if (changes['editingMessage']) {
@@ -55,7 +69,23 @@ export class SendAreaComponent implements OnChanges {
   }
 
   private handleFiles(files: File[]) {
-    const validFiles = files.filter(file => this.isFileValid(file));
+    const validationResults = files.map(file => ({
+      file,
+      isValid: this.isFileValid(file),
+      error: this.getFileValidationError(file)
+    }));
+
+    const validFiles = validationResults
+      .filter(result => result.isValid)
+      .map(result => result.file);
+
+    const errors = validationResults
+      .filter(result => !result.isValid && result.error)
+      .map(result => result.error!);
+
+    if (errors.length > 0) {
+      this.fileValidationError.emit(errors);
+    }
     
     if (validFiles.length > 0) {
       this.fileUpload.emit({
@@ -69,32 +99,54 @@ export class SendAreaComponent implements OnChanges {
 
   private isFileValid(file: File): boolean {
     if (file.size > this.maxFileSize) {
-      console.warn(`File ${file.name} is too large. Max size: ${this.maxFileSize} bytes`);
       return false;
     }
-
-    const isValidType = this.allowedFileTypes.some(type => {
-      if (type.endsWith('/*')) {
-        const category = type.replace('/*', '');
-        return file.type.startsWith(category);
-      }
-      return file.type === type;
-    });
-
-    if (!isValidType) {
-      console.warn(`File type ${file.type} is not allowed`);
-      return false;
-    }
-
     return true;
+  }
+
+  private getFileValidationError(file: File): FileValidationError | null {
+    if (file.size > this.maxFileSize) {
+      return {
+        fileName: file.name,
+        error: 'size',
+        actualSize: file.size
+      };
+    }
+
+    return null;
   }
 
   onFileInputChange(event: Event) {
     const input = event.target as HTMLInputElement;
     if (input.files && input.files.length > 0) {
-      this.handleFiles(Array.from(input.files));
+      const files = Array.from(input.files);
+    
+      this.handleFiles(files);
       input.value = '';
     }
+  }
+
+  formatFileSize(bytes: number): string {
+    if (bytes === 0) return '0 Bytes';
+
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  }
+
+  get maxFileSizeFormatted(): string {
+    return this.formatFileSize(this.maxFileSize);
+  }
+
+  checkTotalFileSize(files: File[]): boolean {
+    const totalSize = files.reduce((sum, file) => sum + file.size, 0);
+    return totalSize <= this.maxFileSize;
+  }
+
+  get fileSizeInfo(): string {
+    return `Max file size: ${this.maxFileSizeFormatted}`;
   }
   
   get warningThreshold(): number {

@@ -76,8 +76,7 @@
       <input 
         #fileInput
         type="file" 
-        multiple 
-        [accept]="allowedFileTypes.join(',')"
+        multiple
         (change)="onFileInputChange($event)"
         class="hidden"
       >

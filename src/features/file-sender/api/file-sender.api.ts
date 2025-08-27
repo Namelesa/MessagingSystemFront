@@ -13,9 +13,12 @@ export class FileUploadApiService {
     const formData = new FormData();
     files.forEach(file => formData.append('File', file));
     
+    console.log('Requesting upload URLs for files:', files.map(f => f.name));
+    
     return firstValueFrom(
       this.http.post<FileUrl[]>(`${environment.fileloaderUrl}get-load-file-url`, formData, { withCredentials: true })
     );
+
   }
 
   async uploadFileToS3(file: File, url: string): Promise<void> {
@@ -71,6 +74,7 @@ export class FileUploadApiService {
   }
 
   async getDownloadUrls(fileNames: string[]): Promise<FileUrl[]> {
+    console.log('Requesting download URLs for files:', fileNames);
     let params = new HttpParams();
     fileNames.forEach(f => params = params.append('fileNames', f));
   
@@ -82,5 +86,17 @@ export class FileUploadApiService {
     );
     
     return result;
+  }
+  
+  async deleteFiles(fileNames: string[]): Promise<void> {
+    let params = new HttpParams();
+    fileNames.forEach(f => params = params.append('fileNames', f));
+
+    await firstValueFrom(
+      this.http.delete<void>(`${environment.fileloaderUrl}delete-file`, {
+        params,
+        withCredentials: true
+      })
+    );
   }
 }

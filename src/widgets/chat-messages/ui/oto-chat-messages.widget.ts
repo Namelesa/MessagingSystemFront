@@ -6,11 +6,12 @@ import { OtoMessage } from '../../../entities/oto-message';
 import { isToday, truncateText, computeContextMenuPosition } from '../../../shared/chat';
 import { FileUploadApiService } from '../../../features/file-sender';
 import { ImageViewerComponent, ImageViewerItem } from '../../../shared/image-viewer';
+import { CustomAudioPlayerComponent } from '../../../shared/custom-player';
 
 @Component({
   selector: 'widgets-oto-chat-messages',
   standalone: true,
-  imports: [CommonModule, ImageViewerComponent],
+  imports: [CommonModule, ImageViewerComponent, CustomAudioPlayerComponent],
   templateUrl: './oto-chat-messages.widget.html',
 })
 export class OtoChatMessagesWidget implements OnChanges, AfterViewInit, OnDestroy {
@@ -30,6 +31,7 @@ export class OtoChatMessagesWidget implements OnChanges, AfterViewInit, OnDestro
   showImageViewer = false;
   imageViewerImages: ImageViewerItem[] = [];
   imageViewerInitialIndex = 0;
+  imageViewerKey = 0;
 
   constructor(private fileUploadApi: FileUploadApiService) {}
 
@@ -64,6 +66,9 @@ export class OtoChatMessagesWidget implements OnChanges, AfterViewInit, OnDestro
     try {
       const parsed = JSON.parse(msg.content);
       const filesWithType = (parsed.files || []).map((file: any) => {
+        if (!file.type && file.fileName) {
+          file.type = this.detectFileType(file.fileName);
+        }
         return file;
       });
       
@@ -72,22 +77,19 @@ export class OtoChatMessagesWidget implements OnChanges, AfterViewInit, OnDestro
         files: filesWithType
       };
       
+      (msg as any).parsedContent = result;
       return result;
     } catch (error) {
       if (msg.content && typeof msg.content === 'string') {
-        const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp'];
-        const isImageUrl = imageExtensions.some(ext => 
-          msg.content.toLowerCase().includes(ext) || 
-          msg.content.toLowerCase().includes('image/')
-        );
+        const detectedType = this.detectFileType(msg.content);
         
-        if (isImageUrl) {
+        if (detectedType) {
           return {
             text: '',
             files: [{
               url: msg.content,
-              fileName: msg.content.split('/').pop() || 'image',
-              type: 'image/jpeg'
+              fileName: msg.content.split('/').pop() || 'file',
+              type: detectedType
             }]
           };
         }
@@ -97,29 +99,120 @@ export class OtoChatMessagesWidget implements OnChanges, AfterViewInit, OnDestro
     }
   }
 
-  openImageViewer(clickedImageUrl: string, messageId: string) {
-    const allImages: ImageViewerItem[] = [];
-    
-    for (const msg of this.messages) {
-      const content = this.parseContent(msg);
-      const images = content.files.filter(file => file.type?.startsWith('image/'));
-      
-      for (const image of images) {
-        allImages.push({
-          url: image.url,
-          fileName: image.fileName,
-          messageId: msg.messageId,
-          sender: msg.sender
-        });
-      }
-    }
+  getFileSize(file: any): string {
+    return file.size ? this.formatFileSize(file.size) : 'Unknown size';
+  }
+  
+  getFileExtension(fileName: string): string {
+    if (!fileName) return 'File';
+    const extension = fileName.split('.').pop()?.toUpperCase();
+    return extension || 'File';
+  }
+  
+  formatFileSize(bytes: number): string {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+  }
 
-    const clickedIndex = allImages.findIndex(img => img.url === clickedImageUrl);
+  private detectFileType(fileNameOrUrl: string): string | null {
+    const lower = fileNameOrUrl.toLowerCase();
     
-    if (clickedIndex !== -1) {
-      this.imageViewerImages = allImages;
-      this.imageViewerInitialIndex = clickedIndex;
-      this.showImageViewer = true;
+    if (lower.match(/\.(jpg|jpeg|png|gif|webp|bmp|svg|ico)$/)) {
+      return 'image/' + lower.split('.').pop();
+    }
+    
+    if (lower.match(/\.(mp4|avi|mov|wmv|flv|webm|mkv|m4v|3gp)$/)) {
+      return 'video/' + lower.split('.').pop();
+    }
+    
+    if (lower.match(/\.(mp3|wav|ogg|aac|flac|wma|m4a)$/)) {
+      return 'audio/' + lower.split('.').pop();
+    }
+    
+    if (lower.match(/\.(pdf|doc|docx|xls|xlsx|ppt|pptx|txt|rtf)$/)) {
+      return 'application/' + lower.split('.').pop();
+    }
+    
+    if (lower.match(/\.(zip|rar|7z|tar|gz|bz2)$/)) {
+      return 'application/' + lower.split('.').pop();
+    }
+    
+    return null;
+  }
+
+  openFileViewer(fileIndex: number, messageId: string) {
+    const sourceMessage = this.messages.find(msg => msg.messageId === messageId);
+    if (!sourceMessage) return;
+    
+    const sourceContent = this.parseContent(sourceMessage);
+    
+    const allFiles = sourceContent.files;
+    
+    if (fileIndex < 0 || fileIndex >= allFiles.length) return;
+    
+    const clickedFile = allFiles[fileIndex];
+    
+    if (!clickedFile.type?.startsWith('image/') && 
+        !clickedFile.type?.startsWith('video/') && 
+        !clickedFile.type?.startsWith('audio/')) {
+      return;
+    }
+    
+    const mediaFiles = allFiles.filter(file => 
+      file.type?.startsWith('image/') || 
+      file.type?.startsWith('video/') || 
+      file.type?.startsWith('audio/')
+    );
+    
+    const mediaIndex = mediaFiles.findIndex(file => 
+      file.url === clickedFile.url && 
+      file.fileName === clickedFile.fileName && 
+      file.type === clickedFile.type
+    );
+    
+    if (mediaIndex === -1) return;
+    
+    const viewerFiles: ImageViewerItem[] = mediaFiles.map(file => ({
+      url: file.url,
+      fileName: file.fileName,
+      type: file.type,
+      messageId: sourceMessage.messageId,
+      sender: sourceMessage.sender
+    }));
+    
+    this.imageViewerImages = viewerFiles;
+    this.imageViewerInitialIndex = mediaIndex;
+    this.imageViewerKey++; 
+    this.showImageViewer = true;
+    
+    if (clickedFile.type?.startsWith('video/')) {
+      setTimeout(() => {
+        const videoElement = document.querySelector('video') as HTMLVideoElement;
+        if (videoElement) {
+          videoElement.play().catch(() => {
+          });
+        }
+      }, 100);
+    }
+  }
+
+  openImageViewer(clickedImageUrl: string, messageId: string) {
+    const sourceMessage = this.messages.find(msg => msg.messageId === messageId);
+    if (!sourceMessage) return;
+    
+    const sourceContent = this.parseContent(sourceMessage);
+    const sourceFiles = sourceContent.files.filter(file => 
+      file.type?.startsWith('image/') || 
+      file.type?.startsWith('video/') || 
+      file.type?.startsWith('audio/')
+    );
+    
+    const imageIndex = sourceFiles.findIndex(file => file.url === clickedImageUrl);
+    if (imageIndex !== -1) {
+      this.openFileViewer(imageIndex, messageId);
     }
   }
 
@@ -127,6 +220,7 @@ export class OtoChatMessagesWidget implements OnChanges, AfterViewInit, OnDestro
     this.showImageViewer = false;
     this.imageViewerImages = [];
     this.imageViewerInitialIndex = 0;
+    this.imageViewerKey = 0; 
   }
 
   onScrollToReplyMessage(messageId: string) {
@@ -274,7 +368,9 @@ export class OtoChatMessagesWidget implements OnChanges, AfterViewInit, OnDestro
       for (const m of filtered) oldMap.set(m.messageId, m);
       for (const id of Array.from(oldMap.keys())) if (!newMap.has(id)) oldMap.delete(id);
       this.messages = Array.from(oldMap.values()).sort((a, b) => new Date(a.sentAt).getTime() - new Date(b.sentAt).getTime());
-      this.loadAllFileDownloadUrls(this.messages);
+      
+      this.loadFilesForMessages(this.messages);
+      
       this.skip = this.messages.length;
       if (this.isScrolledToBottom() || this.shouldScrollToBottom) {
         setTimeout(() => this.scrollToBottom(), 0);
@@ -283,42 +379,63 @@ export class OtoChatMessagesWidget implements OnChanges, AfterViewInit, OnDestro
     });
   }
 
-  private async loadAllFileDownloadUrls(messages: OtoMessage[]) {
-    const fileNames = messages.flatMap(msg => {
-      const parsed = this.parseContent(msg);
-      return parsed.files.map(f => f.fileName);
-    });
-  
-    if (fileNames.length === 0) return;
-  
+  private async loadFilesForMessages(messages: OtoMessage[]) {    
     try {
-      const urls = await this.fileUploadApi.getDownloadUrls(fileNames);
-      const urlMap = new Map(urls.map(f => [f.fileName, f.url]));
-  
-      for (const msg of this.messages) {
-        const parsed = this.parseContent(msg);
-        let hasChanges = false;
-  
-        const updatedFiles = parsed.files.map(f => {
-          const newUrl = urlMap.get(f.fileName);
-          if (newUrl && newUrl !== f.url) {
-            hasChanges = true;
-            f.url = newUrl; 
+      const fileNames: string[] = [];
+      const messageFileMap = new Map<string, { messageIndex: number, fileIndex: number }>();
+      
+      messages.forEach((msg, messageIndex) => {
+        try {
+          const parsed = JSON.parse(msg.content);
+          if (parsed.files && Array.isArray(parsed.files)) {
+            parsed.files.forEach((file: any, fileIndex: number) => {
+              if (file.fileName) {
+                fileNames.push(file.fileName);
+                messageFileMap.set(file.fileName, { messageIndex, fileIndex });
+              }
+            });
           }
-          return f;
-        });
-  
-        if (hasChanges) {
-          parsed.files = updatedFiles;
-          (msg as any).parsedContent = {
-            text: parsed.text,
-            files: updatedFiles
-          };
+        } catch {
+          if (msg.content && typeof msg.content === 'string') {
+            const detectedType = this.detectFileType(msg.content);
+            if (detectedType) {
+              const fileName = msg.content.split('/').pop() || msg.content.split('\\').pop();
+              if (fileName && fileName !== msg.content) {
+                fileNames.push(fileName);
+                messageFileMap.set(fileName, { messageIndex, fileIndex: 0 });
+              }
+            }
+          }
         }
-      }
+      });
   
-    } catch (err) {
-      console.error('Failed to fetch download URLs', err);
+      const fileUrls = await this.fileUploadApi.getDownloadUrls(fileNames);
+        
+      fileUrls.forEach(fileUrl => {
+        const mapping = messageFileMap.get(fileUrl.originalName);
+        if (mapping) {
+          const message = messages[mapping.messageIndex];
+          
+          try {
+            const parsed = JSON.parse(message.content);
+            if (parsed.files && parsed.files[mapping.fileIndex]) {
+              parsed.files[mapping.fileIndex].url = fileUrl.url;
+              message.content = JSON.stringify(parsed);
+            }
+          } catch {
+            if (message.content.includes(fileUrl.originalName)) {
+              message.content = fileUrl.url;
+            }
+          }
+        }
+      });
+      
+      messages.forEach(msg => {
+        delete (msg as any).parsedContent;
+      });
+      
+    } catch (error) {
+      console.error('❌ Failed to load files for messages:', error);
     }
   }
 
@@ -355,7 +472,9 @@ export class OtoChatMessagesWidget implements OnChanges, AfterViewInit, OnDestro
         } else {
           this.messages = [...unique, ...this.messages];
           this.skip = this.messages.length;
-          this.loadAllFileDownloadUrls(this.messages);
+          
+          this.loadFilesForMessages(unique);
+          
           setTimeout(() => {
             if (this.scrollContainer) {
               const el = this.scrollContainer.nativeElement;

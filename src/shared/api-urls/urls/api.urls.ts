@@ -5,4 +5,5 @@ export const environment = {
     otoChatHubUrl: 'https://localhost:7275/otoChatHub',
     groupChatHubUrl: 'https://localhost:7275/groupChatHub',
     fileloaderUrl: 'https://localhost:7275/api/file-loader/',
+    localDbUrl: 'http://localhost:4000',
   };

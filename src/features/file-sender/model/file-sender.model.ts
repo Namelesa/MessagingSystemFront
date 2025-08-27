@@ -1,4 +1,5 @@
 export interface FileUrl {
-    fileName: string;
+    originalName: string;
+    uniqueFileName: string; 
     url: string;
   }

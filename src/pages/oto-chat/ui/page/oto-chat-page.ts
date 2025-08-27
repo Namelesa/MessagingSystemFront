@@ -15,12 +15,13 @@ import { FindUserStore } from '../../../../features/search-user';
 import { OtoChatMessagesWidget } from '../../../../widgets/chat-messages';
 import { ChatLayoutComponent } from '../../../../widgets/chat-layout';
 import { BaseChatPageComponent} from '../../../../shared/chat';
+import { ToastService } from '../../../../shared/ui-elements';
 import { SendAreaComponent, FileDropDirective, FileDropOverlayComponent } from '../../../../shared/send-message-area';
 
 @Component({
   selector: 'app-oto-chat-page',
   standalone: true,
-     imports: [CommonModule, OtoChatListComponent, FormsModule, 
+     imports: [CommonModule, OtoChatListComponent, FormsModule,
     ChatLayoutComponent, OtoChatMessagesWidget, SendAreaComponent, FileDropDirective, FileDropOverlayComponent],
   templateUrl: './oto-chat-page.html',
 })
@@ -67,6 +68,17 @@ export class OtoChatPageComponent extends BaseChatPageComponent implements OnIni
   
   private subscriptions: Subscription[] = [];
   user$: Observable<SearchUser | null>;
+
+  maxFileSize: number = 1024 * 1024 * 1024;
+
+  fileValidationErrors: Array<{
+    fileName: string;
+    error: 'size' | 'type';
+    actualSize?: number;
+    actualType?: string;
+    message: string;
+  }> = [];
+  showErrorNotification = false;
  
   constructor(
     public otoChatApi: OtoChatApiService, 
@@ -75,7 +87,8 @@ export class OtoChatPageComponent extends BaseChatPageComponent implements OnIni
     private fileUploadApi: FileUploadApiService,
     private router: Router,
     private cdr: ChangeDetectorRef,
-    private findUserStore: FindUserStore
+    private findUserStore: FindUserStore,
+    private toastService: ToastService
   ) {
     super();
     this.apiService = this.otoChatApi;
@@ -188,6 +201,10 @@ export class OtoChatPageComponent extends BaseChatPageComponent implements OnIni
     }
   }
 
+  hideErrorNotification(): void {
+    this.showErrorNotification = false;
+  }
+
   private checkForOpenChatUser(): void {
     const nav = this.router.getCurrentNavigation();
     const stateFromNav = nav?.extras?.state as { openChatWithUser?: { nickName: string; image: string } } | undefined;
@@ -294,24 +311,172 @@ export class OtoChatPageComponent extends BaseChatPageComponent implements OnIni
     }
   }
 
+  public formatFileSize(size: number): string {
+    const units = ['B', 'KB', 'MB', 'GB', 'TB'];
+    let index = 0;
+    let formattedSize = size;
+
+    while (formattedSize >= 1024 && index < units.length - 1) {
+      formattedSize /= 1024;
+      index++;
+    }
+
+    return `${formattedSize.toFixed(2)} ${units[index]}`;
+  }
+
   onFileUpload(fileUploadEvent: { files: File[]; message?: string }) {
     if (!this.selectedChat || fileUploadEvent.files.length === 0) return;
-    this.uploadItems = fileUploadEvent.files.map(f => ({ file: f, name: f.name, size: f.size, progress: 0 }));
-    this.uploadCaption = fileUploadEvent.message || '';
-    this.isUploadModalOpen = true;
+    
+    const { validFiles, errors } = this.validateFiles(fileUploadEvent.files);
+  
+    if (errors.length > 0) {
+      this.onFileValidationError(errors);
+    }
+  
+    if (validFiles.length > 0) {
+      this.uploadItems = validFiles.map(f => ({ 
+        file: f, 
+        name: f.name, 
+        size: f.size, 
+        progress: 0 
+      }));
+      this.uploadCaption = fileUploadEvent.message || '';
+      this.isUploadModalOpen = true;
+  
+      this.checkUploadSizeLimit();
+    }
+  }  
+
+  private validateFiles(files: File[]): { validFiles: File[], errors: Array<{
+    fileName: string;
+    error: 'size' | 'type';
+    actualSize?: number;
+    actualType?: string;
+  }> } {
+    const validFiles: File[] = [];
+    const errors: Array<{
+      fileName: string;
+      error: 'size' | 'type';
+      actualSize?: number;
+      actualType?: string;
+    }> = [];
+  
+    files.forEach(file => {
+      if (file.size > this.maxFileSize) {
+        errors.push({
+          fileName: file.name,
+          error: 'size',
+          actualSize: file.size,
+          actualType: file.type
+        });
+        return;
+      }
+
+      validFiles.push(file);
+    });
+  
+    return { validFiles, errors };
+  }
+
+  private getTotalUploadSize(): number {
+    return this.uploadItems.reduce((sum, item) => sum + item.size, 0);
+  }
+
+  private checkUploadSizeLimit(): void {
+    const totalSize = this.getTotalUploadSize();
+    const maxSize = this.maxFileSize;
+    const warningThreshold = maxSize * 0.9; 
+  
+    if (totalSize > maxSize) {
+      this.toastService.show(
+        `Total file size ${this.formatFileSize(totalSize)} exceeds max limit of ${this.formatFileSize(maxSize)}.`,
+        "error"
+      );
+    } else if (totalSize > warningThreshold) {
+      this.toastService.show(
+        `Warning: total file size ${this.formatFileSize(totalSize)} is close to the limit (${this.formatFileSize(maxSize)}).`,
+        "error"
+      );
+    }
+  }  
+
+  onFileValidationError(errors: Array<{
+    fileName: string;
+    error: 'size' | 'type';
+    actualSize?: number;
+    actualType?: string;
+  }>) {
+
+    this.fileValidationErrors = errors.map(error => {
+      let message = '';
+      
+      if (error.error === 'size') {
+        const actualSize = this.formatFileSize(error.actualSize!);
+        const maxSize = this.formatFileSize(this.maxFileSize);
+        this.toastService.show(`File "${error.fileName}" to big (${actualSize}). Max size: ${maxSize}`, "error");
+      } else if (error.error === 'type') {
+        const fileType = error.actualType || 'unknown';
+        this.toastService.show(`File type "${error.fileName}" is not supported (${fileType})`, "error");
+      }
+      
+      return {
+        ...error,
+        message
+      };
+    });
+    
+    this.showErrorNotification = true;
+    
+    setTimeout(() => {
+      this.hideErrorNotification();
+    }, 500);
   }
 
   onFileDrop(files: File[]) {
     if (!this.selectedChat || files.length === 0) return;
-    const newItems = files.map(f => ({ file: f, name: f.name, size: f.size, progress: 0 }));
-    this.uploadItems.push(...newItems);
+
+    const { validFiles, errors } = this.validateFiles(files);
+  
+    if (errors.length > 0) {
+      this.onFileValidationError(errors);
+    }
+  
+    if (validFiles.length > 0) {
+      const newItems = validFiles.map(f => ({ 
+        file: f, 
+        name: f.name, 
+        size: f.size, 
+        progress: 0 
+      }));
+      this.uploadItems.push(...newItems);
+  
+      if (!this.isUploadModalOpen) {
+        this.isUploadModalOpen = true;
+      }
+    }
   }
 
   onModalFileInputChange(event: Event) {
     const input = event.target as HTMLInputElement;
     if (input.files && input.files.length > 0) {
-      const newItems = Array.from(input.files).map(f => ({ file: f, name: f.name, size: f.size, progress: 0 }));
-      this.uploadItems.push(...newItems);
+      const files = Array.from(input.files);
+    
+      const { validFiles, errors } = this.validateFiles(files);
+  
+      if (errors.length > 0) {
+        this.onFileValidationError(errors);
+      }
+  
+      if (validFiles.length > 0) {
+        const newItems = validFiles.map(f => ({ 
+          file: f, 
+          name: f.name, 
+          size: f.size, 
+          progress: 0 
+        }));
+        this.uploadItems.push(...newItems);
+      }
+  
       input.value = '';
     }
   }
@@ -323,7 +488,7 @@ export class OtoChatPageComponent extends BaseChatPageComponent implements OnIni
       const files = this.uploadItems.map(i => i.file);
       const uploadUrls = await this.fileUploadApi.getUploadUrls(files);
 
-      const nameToUrl = new Map(uploadUrls.map(u => [u.fileName, u.url] as const));
+      const nameToUrl = new Map(uploadUrls.map(u => [u.originalName, u.url] as const));
 
       await Promise.all(this.uploadItems.map(item => new Promise<void>((resolve) => {
         const url = nameToUrl.get(item.name);

@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { LucideAngularModule, Eye, EyeOff } from 'lucide-angular';
 import { AuthPageLayoutComponent } from '../../../widgets/auth-layout';
-import { ButtonComponent, InputComponent, ToastComponent } from '../../../shared/ui-elements';
+import { ButtonComponent, InputComponent } from '../../../shared/ui-elements';
 import { LoginPageStore } from '../model/login.store';
 
 @Component({
@@ -13,7 +13,6 @@ import { LoginPageStore } from '../model/login.store';
     AuthPageLayoutComponent,
     ButtonComponent,
     InputComponent,
-    ToastComponent,
     CommonModule,
     FormsModule,
     LucideAngularModule

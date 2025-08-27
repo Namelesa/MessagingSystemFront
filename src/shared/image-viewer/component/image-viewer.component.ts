@@ -1,6 +1,5 @@
 import { Component, Input, Output, EventEmitter, OnInit, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { trigger, transition, style, animate } from '@angular/animations';
 import { ImageViewerItem } from '../service/image-viewer.model';
 
 @Component({
@@ -8,14 +7,6 @@ import { ImageViewerItem } from '../service/image-viewer.model';
   standalone: true,
   imports: [CommonModule],
   templateUrl: './image-viewer.component.html',
-  animations: [
-    trigger('imageTransition', [
-      transition('* => *', [
-        style({ opacity: 0, transform: 'scale(0.95)' }),
-        animate('300ms ease-out', style({ opacity: 1, transform: 'scale(1)' }))
-      ])
-    ])
-  ],
   styles: [`
     :host { display: contents; }
     @keyframes fade-in {
@@ -54,6 +45,14 @@ export class ImageViewerComponent implements OnInit {
   }
 
   close() {
+    if (this.isVideoFile()) {
+      const videoElement = document.querySelector('video') as HTMLVideoElement;
+      if (videoElement) {
+        videoElement.pause();
+        videoElement.currentTime = 0;
+      }
+    }
+    
     this.isVisible = false;
     this.resetZoom();
     this.closed.emit();
@@ -77,7 +76,7 @@ export class ImageViewerComponent implements OnInit {
   }
 
   toggleZoom(event: Event) {
-    if (!this.currentImage?.url.startsWith('image/')) return;
+    if (!this.isImageFile()) return;
     if (this.scale === 1) {
       this.scale = 2;
       const rect = (event.target as HTMLElement).getBoundingClientRect();
@@ -97,7 +96,7 @@ export class ImageViewerComponent implements OnInit {
   }
 
   onMouseDown(event: MouseEvent) {
-    if (this.scale > 1 && this.currentImage?.url.startsWith('image/')) {
+    if (this.scale > 1 && this.isImageFile()) {
       this.isDragging = true;
       this.lastMouseX = event.clientX;
       this.lastMouseY = event.clientY;
@@ -119,14 +118,26 @@ export class ImageViewerComponent implements OnInit {
   onMouseUp() { this.isDragging = false; }
 
   getImageCursorClass(): string {
-    if (!this.currentImage?.url.startsWith('image/')) return 'cursor-auto';
+    if (!this.isImageFile()) return 'cursor-auto';
     if (this.scale === 1) return 'cursor-zoom-in';
     return this.isDragging ? 'cursor-grabbing' : 'cursor-grab';
   }
 
   getImageTransform(): string {
-    if (!this.currentImage?.url.startsWith('image/')) return 'none';
+    if (!this.isImageFile()) return 'none';
     return `scale(${this.scale}) translate(${this.translateX}px, ${this.translateY}px)`;
+  }
+
+  isImageFile(): boolean {
+    return this.currentImage?.type?.startsWith('image/') || false;
+  }
+
+  isVideoFile(): boolean {
+    return this.currentImage?.type?.startsWith('video/') || false;
+  }
+
+  isAudioFile(): boolean {
+    return this.currentImage?.type?.startsWith('audio/') || false;
   }
 
   downloadCurrent() {
@@ -138,5 +149,16 @@ export class ImageViewerComponent implements OnInit {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+  }
+
+  @HostListener('document:keydown', ['$event'])
+  onKeyDown(event: KeyboardEvent) {
+    if (event.key === 'Escape') {
+      this.close();
+    } else if (event.key === 'ArrowLeft' && this.currentIndex > 0) {
+      this.previousImage();
+    } else if (event.key === 'ArrowRight' && this.currentIndex < this.images.length - 1) {
+      this.nextImage();
+    }
   }
 }

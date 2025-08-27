@@ -15,7 +15,7 @@ import { GroupInfoData } from '../../model/group-info.model';
 import { validateEditGroupForm, validateImageFile, validateMembersCount } from '../../model/validate-group';
 import { SearchUser } from '../../../../entities/search-user';
 import { AuthService } from '../../../../entities/session';
-import { InputComponent, ToastComponent, ToastService } from '../../../../shared/ui-elements';
+import { InputComponent, ToastService } from '../../../../shared/ui-elements';
 import { ModalHeaderComponent } from '../group-chat-page/group-chat-ui-elements/modal-header/modal.header';
 import { AvatarComponent } from '../group-chat-page/group-chat-ui-elements/avatar/avatar';
 import { UserListComponent } from '../group-chat-page/group-chat-ui-elements/user-list/user.list';
@@ -24,7 +24,7 @@ import { SelectedUsersComponent } from '../group-chat-page/group-chat-ui-element
 @Component({
   selector: 'app-group-info-modal',
   standalone: true,
-  imports: [CommonModule, FormsModule, InputComponent, ToastComponent, ModalHeaderComponent, AvatarComponent, UserListComponent, SelectedUsersComponent],
+  imports: [CommonModule, FormsModule, InputComponent, ModalHeaderComponent, AvatarComponent, UserListComponent, SelectedUsersComponent],
   templateUrl: './group-info-modal.component.html',
 })
 export class GroupInfoModalComponent implements OnChanges, OnInit {

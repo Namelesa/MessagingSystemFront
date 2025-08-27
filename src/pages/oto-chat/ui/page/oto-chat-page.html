@@ -1,7 +1,7 @@
 <app-chat-layout
   [selectedChat]="displayChatName"
   [selectedChatImage]="displayChatImage"
-  (fileDrop)="onFileUpload({ files: $event })"
+  (fileDrop)="onFileDrop($event)"
   (dragStateChange)="isDragOver = $event"
 >
   <app-oto-chat-list
@@ -42,11 +42,13 @@
         <shared-send-message-area
           [editingMessage]="editingMessage"
           [replyingToMessage]="replyingToMessage"
+          [maxFileSize]="maxFileSize"
           (send)="onSendMessage($event)"
           (editComplete)="onEditComplete($event)"
           (editCancel)="onEditCancel()"
           (replyCancel)="onCancelReply()"
           (fileUpload)="onFileUpload($event)"
+          (fileValidationError)="onFileValidationError($event)"
         ></shared-send-message-area>
       </div>
     </ng-container>
@@ -55,6 +57,43 @@
     </ng-template>
   </ng-container>
 </app-chat-layout>
+
+<div 
+  *ngIf="showErrorNotification && fileValidationErrors.length > 0"
+  class="fixed top-4 right-4 z-50 max-w-md"
+>
+</div>
+
+<div 
+  *ngIf="showUserDeletedNotification"
+  class="fixed top-4 right-4 z-50 max-w-md"
+>
+  <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 shadow-lg dark:bg-yellow-900 dark:border-yellow-700">
+    <div class="flex items-start">
+      <div class="flex-shrink-0">
+        <svg class="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+          <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+        </svg>
+      </div>
+      <div class="ml-3 flex-1">
+        <h3 class="text-sm font-medium text-yellow-800 dark:text-yellow-200">
+          User Deleted
+        </h3>
+        <p class="mt-1 text-sm text-yellow-700 dark:text-yellow-300">
+          User "{{ deletedUserName }}" has been deleted. The chat has been closed.
+        </p>
+        <div class="mt-3">
+          <button
+            (click)="showUserDeletedNotification = false"
+            class="text-sm bg-yellow-100 text-yellow-800 hover:bg-yellow-200 px-3 py-1 rounded-md transition-colors dark:bg-yellow-800 dark:text-yellow-200 dark:hover:bg-yellow-700"
+          >
+            Dismiss
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 
 <div 
   *ngIf="isDeleteModalOpen" 
@@ -117,58 +156,85 @@
   *ngIf="isUploadModalOpen" 
   class="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50"
   (click)="closeUploadModal()"
-  fileDrop
-  (fileDrop)="onFileDrop($event)"
-  (dragStateChange)="isDragOver = $event"
 >
   <div 
-    class="bg-white dark:bg-gray-800 rounded-2xl p-6 w-full max-w-lg mx-4 shadow-2xl"
+    class="bg-white dark:bg-gray-800 rounded-2xl p-6 w-full max-w-lg mx-4 shadow-2xl relative"
     (click)="$event.stopPropagation()"
+    fileDrop
+    (fileDrop)="onFileDrop($event)"
+    (dragStateChange)="isDragOver = $event"
   >
-    <div class="flex items-center justify-between mb-4">
-      <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Send {{uploadItems.length}} Files</h3>
 
+    <div class="flex items-center justify-between mb-4">
+      <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+        Send {{uploadItems.length}} File{{uploadItems.length > 1 ? 's' : ''}}
+      </h3>
     </div>
 
-    <div class="space-y-3 max-h-64 overflow-auto pr-2">
-      <div *ngFor="let item of uploadItems; let i = index" class="flex items-start gap-3">
-        <div class="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white">
-        <ng-container *ngIf="isImageFile(item.file); else fileIcon">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/>
-          </svg>
-        </ng-container>
-        <ng-template #fileIcon>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/>
-          </svg>
-        </ng-template>
+    <div class="space-y-0.5 max-h-64 overflow-auto pr-2 mb-4">
+      <div *ngFor="let item of uploadItems; let i = index" class="flex items-start gap-3 p-3 rounded-lg">
+        <div class="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white flex-shrink-0">
+          <ng-container *ngIf="isImageFile(item.file); else fileIcon">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/>
+            </svg>
+          </ng-container>
+          <ng-template #fileIcon>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/>
+            </svg>
+          </ng-template>
         </div>
-        <div class="flex-1">
-          <div class="text-sm text-gray-900 dark:text-gray-100 truncate">{{item.name}}</div>
-          <div class="text-xs text-gray-500 dark:text-gray-400">{{ (item.size / (1024*1024) ) | number:'1.0-1'}} MB</div>
-          <div class="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded mt-2 overflow-hidden">
-            <div class="h-2 bg-purple-600 transition-all" [style.width.%]="item.progress"></div>
+        
+        <div class="flex-1 min-w-0">
+          <div class="text-sm font-medium text-gray-900 dark:text-gray-100 truncate" [title]="item.name">
+            {{ item.name }}
           </div>
-          <div *ngIf="item.error" class="text-xs text-red-500 mt-1">{{item.error}}</div>
+          <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+            {{ formatFileSize(item.size) }}
+          </div>
+          
+          <div class="w-full h-2 bg-gray-200 dark:bg-gray-600 rounded-full mt-2 overflow-hidden">
+            <div 
+              class="h-2 bg-blue-500 transition-all duration-300 ease-out" 
+              [style.width.%]="item.progress"
+            ></div>
+          </div>
+          
+          <div class="mt-1 text-xs">
+            <span *ngIf="item.progress === 100 && !item.error" class="text-green-600 dark:text-green-400">
+              ✓ Uploaded
+            </span>
+            <span *ngIf="item.progress > 0 && item.progress < 100 && !item.error" class="text-blue-600 dark:text-blue-400">
+              Uploading... {{ item.progress }}%
+            </span>
+            <span *ngIf="item.error" class="text-red-500" [title]="item.error">
+              ✗ Error: {{ item.error }}
+            </span>
+          </div>
         </div>
+        
         <button 
-          (click)="cancelFileUpload(i)"
-          class="w-6 h-6 text-gray-500 hover:text-red-500 flex items-center justify-center transition-colors"
-          title="Cancel upload"
+          (click)="removeFileFromList(i)"
+          class="w-6 h-6 text-gray-400 hover:text-red-500 flex items-center justify-center transition-colors flex-shrink-0"
+          title="Remove file"
+          [disabled]="isUploading"
         >
-          ✕
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M18 6L6 18M6 6l12 12"/>
+          </svg>
         </button>
       </div>
     </div>
 
-    <div class="flex items-center gap-3 w-full mt-4">
+    <div class="flex items-center gap-3 w-full">
       <div class="flex-1 relative">
         <input 
           type="text" 
           [(ngModel)]="uploadCaption" 
-          placeholder="Send message.." 
-          class="w-full h-12 py-3 px-4 border border-gray-300 rounded-3xl resize-none text-sm outline-none bg-gray-100 focus:border-blue-400 dark:bg-gray-700 dark:border-gray-800 dark:text-gray-200 transition-all duration-200"
+          placeholder="Add a caption..."
+          [disabled]="isUploading"
+          class="w-full h-12 py-3 px-4 border border-gray-300 rounded-3xl resize-none text-sm outline-none bg-gray-100 focus:border-blue-400 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 disabled:opacity-50 transition-all duration-200"
         />
       </div>
 
@@ -176,56 +242,56 @@
         #modalFileInput
         type="file" 
         multiple 
-        [accept]="'image/*, video/*, audio/*, application/pdf, text/*'"
         (change)="onModalFileInputChange($event)"
+        [disabled]="isUploading"
         class="hidden"
       >
       
       <button
         (click)="modalFileInput.click()"
-        class="flex-shrink-0 w-10 h-10 text-gray-500 hover:bg-gray-100 hover:scale-105 rounded-full flex items-center justify-center transition-all duration-200 dark:text-gray-250 dark:hover:bg-gray-800"
+        [disabled]="isUploading"
+        class="flex-shrink-0 w-10 h-10 text-gray-500 hover:bg-gray-100 hover:scale-105 rounded-full flex items-center justify-center transition-all duration-200 dark:text-gray-250 dark:hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed"
         type="button"
-        title="Attach files"
+        title="Add more files"
       >
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-          <path
-            d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66L9.64 16.2a2 2 0 0 1-2.83-2.83l8.49-8.49"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          />
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66L9.64 16.2a2 2 0 0 1-2.83-2.83l8.49-8.49"/>
         </svg>
       </button>
 
       <button
-        class="flex-shrink-0 w-10 h-10 bg-blue-500 text-white hover:bg-blue-600 rounded-full flex items-center justify-center transition-colors"
+        class="flex-shrink-0 w-10 h-10 bg-blue-500 text-white hover:bg-blue-600 disabled:bg-gray-400 rounded-full flex items-center justify-center transition-colors"
         type="button"
         (click)="startUploadAndSend()"
         [disabled]="isUploading || uploadItems.length === 0"
-        [ngClass]="{ 'opacity-50 cursor-not-allowed': isUploading || uploadItems.length === 0 }"
+        [title]="isUploading ? 'Uploading...' : 'Send files'"
       >
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-          <path
-            d="M22 2L11 13"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          />
-          <path
-            d="M22 2L15 22L11 13L2 9L22 2Z"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          />
+        <svg *ngIf="!isUploading" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M22 2L11 13"/>
+          <path d="M22 2L15 22L11 13L2 9L22 2Z"/>
+        </svg>
+        
+        <svg *ngIf="isUploading" width="20" height="20" viewBox="0 0 24 24" fill="none" class="animate-spin">
+          <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" class="opacity-25"/>
+          <path fill="currentColor" class="opacity-75" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"/>
         </svg>
       </button>
     </div>
 
-    <div *ngIf="isDragOver" class="absolute inset-0 bg-blue-500 bg-opacity-10 border-2 border-dashed border-blue-500 rounded-2xl flex items-center justify-center">
-      <div class="text-blue-600 dark:text-blue-400 text-lg font-medium">Drop files here</div>
+    <div 
+      *ngIf="isDragOver" 
+      class="absolute inset-0 bg-blue-500 bg-opacity-10 border-2 border-dashed border-blue-500 rounded-2xl flex items-center justify-center pointer-events-none"
+    >
+      <div class="bg-white dark:bg-gray-800 px-4 py-2 rounded-lg shadow-lg">
+        <div class="text-blue-600 dark:text-blue-400 text-lg font-medium flex items-center gap-2">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="7,10 12,15 17,10"/>
+            <line x1="12" y1="15" x2="12" y2="3"/>
+          </svg>
+          Drop files here to add them
+        </div>
+      </div>
     </div>
   </div>
 </div>

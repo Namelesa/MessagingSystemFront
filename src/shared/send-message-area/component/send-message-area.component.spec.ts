@@ -264,34 +264,7 @@ describe('SendAreaComponent', () => {
   
     expect(host.sendArea.fileUpload.emit).not.toHaveBeenCalled();
   });
-  
-  it('should not emit fileUpload if file type is not allowed', () => {
-    const file = new File(['abc'], 'bad.exe', { type: 'application/x-msdownload' });
-  
-    spyOn(host.sendArea.fileUpload, 'emit');
-    const event = { target: { files: [file], value: '' } } as any;
-  
-    host.sendArea.onFileInputChange(event);
-  
-    expect(host.sendArea.fileUpload.emit).not.toHaveBeenCalled();
-  });
-  
-  it('should emit only valid files if some are invalid', () => {
-    const validFile = new File(['abc'], 'ok.txt', { type: 'text/plain' });
-    const invalidFile = new File(['abc'], 'bad.exe', { type: 'application/x-msdownload' });
-  
-    spyOn(host.sendArea.fileUpload, 'emit');
-    host.sendArea.message = 'multi test';
-  
-    const event = { target: { files: [validFile, invalidFile], value: '' } } as any;
-    host.sendArea.onFileInputChange(event);
-  
-    expect(host.sendArea.fileUpload.emit).toHaveBeenCalledWith({
-      files: [validFile],
-      message: 'multi test'
-    });
-  });
-  
+
   it('should reset input value after handling files', () => {
     const file = new File(['abc'], 'file.txt', { type: 'text/plain' });
     const inputMock = { files: [file], value: 'something' };
