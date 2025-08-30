@@ -497,7 +497,7 @@ export class OtoChatPageComponent extends BaseChatPageComponent implements OnIni
           resolve();
           return;
         }
-        const uploadResult = this.fileUploadApi.uploadFileWithProgress(item.file, url);
+        const uploadResult = this.fileUploadApi.uploadFileWithProgress(item.file, url, this.currentUserNickName);
         item.abort = uploadResult.abort;
         item.subscription = uploadResult.observable.subscribe({
           next: (p: number) => item.progress = p,
@@ -593,12 +593,63 @@ export class OtoChatPageComponent extends BaseChatPageComponent implements OnIni
   async onConfirmDelete() {
     if (this.messageToDelete && this.selectedChat) {
       const deleteType = this.deleteForBoth ? 'hard' : 'soft';
+      
       try {
+        if (deleteType === 'hard') {
+          await this.deleteFilesFromMessage(this.messageToDelete);
+        }
+        
         await this.messageService.deleteMessage(this.messageToDelete.messageId, deleteType);
         this.closeDeleteModal();
       } catch (error) {
         console.error('Error deleting message:', error);
       }
+    }
+  }
+
+  private async deleteFilesFromMessage(message: OtoMessage) {
+    try {
+      const parsed = JSON.parse(message.content);
+      
+      if (parsed.files && Array.isArray(parsed.files)) {
+        const filesToDelete = parsed.files
+          .filter((file: any) => file.fileName && file.uniqueFileName)
+          .map((file: any) => ({
+            fileName: file.fileName,
+            uniqueFileName: file.uniqueFileName
+          }));
+        
+        if (filesToDelete.length > 0) {
+          console.log('🗑️ Deleting specific file versions from message:', filesToDelete);
+          
+          const deletionPromises = filesToDelete.map(async (file: { fileName: string; uniqueFileName: string }) => {
+            try {
+              const success = await this.fileUploadApi.deleteSpecificFileVersion(
+                file.uniqueFileName, 
+                this.currentUserNickName
+              );
+              return { fileName: file.fileName, uniqueFileName: file.uniqueFileName, success };
+            } catch (error) {
+              console.error(`❌ Failed to delete file ${file.uniqueFileName}:`, error);
+              return { fileName: file.fileName, uniqueFileName: file.uniqueFileName, success: false, error };
+            }
+          });
+          
+          const results = await Promise.all(deletionPromises);
+          const successful = results.filter(r => r.success).map(r => r.fileName);
+          const failed = results.filter(r => !r.success).map(r => r.fileName);
+          
+          if (successful.length > 0) {
+            console.log('✅ Successfully deleted file versions:', successful);
+          }
+          
+          if (failed.length > 0) {
+            console.warn('⚠️ Failed to delete file versions:', failed);
+          }
+        }
+      }
+    } catch (error) {
+      console.error('❌ Error deleting files from message:', error);
     }
   }
 
