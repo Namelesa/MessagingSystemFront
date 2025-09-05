@@ -15,14 +15,14 @@ import { FindUserStore } from '../../../../features/search-user';
 import { OtoChatMessagesWidget } from '../../../../widgets/chat-messages';
 import { ChatLayoutComponent } from '../../../../widgets/chat-layout';
 import { BaseChatPageComponent} from '../../../../shared/chat';
-import { ToastService } from '../../../../shared/ui-elements';
+import { ToastService, ToastComponent } from '../../../../shared/ui-elements';
 import { SendAreaComponent, FileDropDirective, FileDropOverlayComponent } from '../../../../shared/send-message-area';
 
 @Component({
   selector: 'app-oto-chat-page',
   standalone: true,
      imports: [CommonModule, OtoChatListComponent, FormsModule,
-    ChatLayoutComponent, OtoChatMessagesWidget, SendAreaComponent, FileDropDirective, FileDropOverlayComponent],
+    ChatLayoutComponent, OtoChatMessagesWidget, SendAreaComponent, FileDropDirective, FileDropOverlayComponent, ToastComponent],
   templateUrl: './oto-chat-page.html',
 })
 export class OtoChatPageComponent extends BaseChatPageComponent implements OnInit, OnDestroy {
@@ -484,12 +484,19 @@ export class OtoChatPageComponent extends BaseChatPageComponent implements OnIni
   async startUploadAndSend() {
     if (!this.selectedChat || this.uploadItems.length === 0 || this.isUploading) return;
     this.isUploading = true;
+
+    if(this.uploadItems.length >= 40){
+      this.toastService.show("You can upload max 40 files at once", "error");
+    }
+
     try {
       const files = this.uploadItems.map(i => i.file);
       const uploadUrls = await this.fileUploadApi.getUploadUrls(files);
 
       const nameToUrl = new Map(uploadUrls.map(u => [u.originalName, u.url] as const));
 
+      const uploadedFiles: Array<{ fileName: string; uniqueFileName: string; url: string }> = [];
+      
       await Promise.all(this.uploadItems.map(item => new Promise<void>((resolve) => {
         const url = nameToUrl.get(item.name);
         if (!url) {
@@ -500,7 +507,12 @@ export class OtoChatPageComponent extends BaseChatPageComponent implements OnIni
         const uploadResult = this.fileUploadApi.uploadFileWithProgress(item.file, url, this.currentUserNickName);
         item.abort = uploadResult.abort;
         item.subscription = uploadResult.observable.subscribe({
-          next: (p: number) => item.progress = p,
+          next: (result: { progress: number; fileData?: { fileName: string; uniqueFileName: string; url: string } }) => {
+            item.progress = result.progress;
+            if (result.fileData) {
+              uploadedFiles.push(result.fileData);
+            }
+          },
           error: (err: any) => { 
             item.error = String(err); 
             item.progress = 0; 
@@ -516,14 +528,29 @@ export class OtoChatPageComponent extends BaseChatPageComponent implements OnIni
         });
       })));
 
-      const successful = this.uploadItems.filter(i => i.url).map(i => ({ fileName: i.name, url: i.url! }));
-      if (successful.length) {
-        const content = JSON.stringify({ text: this.uploadCaption || '', files: successful });
-        await this.messageService.sendMessage(this.selectedChat, content);
+      if (uploadedFiles.length) {
+        const fileNames = uploadedFiles.map(f => f.fileName);
+        try {
+          const downloadUrls = await this.fileUploadApi.getDownloadUrls(fileNames);
+          
+          const updatedFiles = uploadedFiles.map(file => {
+            const downloadUrl = downloadUrls.find(d => d.originalName === file.fileName);
+            return {
+              ...file,
+              url: downloadUrl?.url || file.url 
+            };
+          });
+          
+          const content = JSON.stringify({ text: this.uploadCaption || '', files: updatedFiles });
+          await this.messageService.sendMessage(this.selectedChat, content);
+        } catch (error) {
+          console.error('Failed to get download URLs, using upload URLs:', error);
+          const content = JSON.stringify({ text: this.uploadCaption || '', files: uploadedFiles });
+          await this.messageService.sendMessage(this.selectedChat, content);
+        }
       }
       this.closeUploadModal();
     } catch (e) {
-      console.error('Upload failed', e);
       this.isUploading = false;
     }
   }
@@ -566,22 +593,104 @@ export class OtoChatPageComponent extends BaseChatPageComponent implements OnIni
   }
 
   onEditMessage(message: OtoMessage) {
-    this.editingMessage = message;
+    if (this.messagesComponent) {
+      const parsedContent = this.messagesComponent.parseContent(message);
+      
+      const editableMessage: OtoMessage = {
+        ...message,
+        content: parsedContent.text || ''
+      };
+  
+      this.editingMessage = {
+        ...editableMessage,
+        parsedFiles: parsedContent.files || []
+      } as OtoMessage & { parsedFiles?: any[] };
+    } else {
+      this.editingMessage = message;
+    }
+  
     this.replyingToMessage = undefined;
-  }
+  }  
 
   async onEditComplete(editData: { messageId: string; content: string }) {
     try {
       await this.messageService.editMessage(editData.messageId, editData.content);
       this.editingMessage = undefined;
     } catch (error) {
-      console.error('Error editing message:', error);
     }
   }
 
   onEditCancel() {
     this.editingMessage = undefined;
   }
+
+async onEditFile(editData: { messageId: string; file: any }) {
+  const newFile: File = editData.file?.file;
+  if (!newFile) return;
+
+  try {
+    // 1. Получаем URL для загрузки
+    const [fileUrl] = await this.fileUploadApi.getUploadUrls([newFile]);
+
+    // 2. Загружаем файл с прогрессом
+    const { observable } = this.fileUploadApi.uploadFileWithProgress(newFile, fileUrl.url, this.currentUserNickName);
+
+    const uploaded = await new Promise<{ fileName: string; uniqueFileName: string; url: string }>((resolve, reject) => {
+      const sub = observable.subscribe({
+        next: ev => {
+          if (ev.fileData) {
+            sub.unsubscribe();
+            resolve(ev.fileData);
+          }
+        },
+        error: err => {
+          sub.unsubscribe();
+          reject(err);
+        }
+      });
+    });
+
+    // 3. Парсим текущее содержимое сообщения
+    let parsed: any;
+    try {
+      parsed = JSON.parse(this.editingMessage?.content || '{}');
+    } catch {
+      parsed = { text: this.editingMessage?.content || '', files: [] };
+    }
+
+    // 4. Заменяем старый файл
+    parsed.files = parsed.files || [];
+    const idx = parsed.files.findIndex((f: any) =>
+      f.uniqueFileName === editData.file.uniqueFileName || f.fileName === editData.file.fileName
+    );
+
+    const newMeta = {
+      fileName: uploaded.fileName,
+      uniqueFileName: uploaded.uniqueFileName,
+      url: uploaded.url,
+      type: newFile.type,
+      size: newFile.size
+    };
+
+    if (idx >= 0) {
+      parsed.files[idx] = newMeta;
+    } else {
+      parsed.files.push(newMeta);
+    }
+
+    // 5. Обновляем сообщение
+    this.editingMessage = {
+      ...this.editingMessage!,
+      content: JSON.stringify(parsed)
+    };
+
+    console.log('✅ editingMessage после редактирования файла:', this.editingMessage);
+
+  } catch (err) {
+    console.error('❌ Ошибка при замене файла:', err);
+    this.toastService.show('Не удалось загрузить новый файл', 'error');
+  }
+}
 
   onDeleteMessage(message: OtoMessage) {
     this.messageToDelete = message;
@@ -607,6 +716,10 @@ export class OtoChatPageComponent extends BaseChatPageComponent implements OnIni
     }
   }
 
+  isMyMessage(msg: OtoMessage): boolean {
+    return msg.sender?.trim().toLowerCase() === this.currentUserNickName.trim().toLowerCase();
+  }
+
   private async deleteFilesFromMessage(message: OtoMessage) {
     try {
       const parsed = JSON.parse(message.content);
@@ -619,15 +732,18 @@ export class OtoChatPageComponent extends BaseChatPageComponent implements OnIni
             uniqueFileName: file.uniqueFileName
           }));
         
-        if (filesToDelete.length > 0) {
-          console.log('🗑️ Deleting specific file versions from message:', filesToDelete);
-          
+        if (filesToDelete.length > 0) {          
           const deletionPromises = filesToDelete.map(async (file: { fileName: string; uniqueFileName: string }) => {
             try {
               const success = await this.fileUploadApi.deleteSpecificFileVersion(
                 file.uniqueFileName, 
                 this.currentUserNickName
               );
+              
+              if (success && this.messagesComponent) {
+                await this.messagesComponent.removeFileFromMessage(message.messageId, file.uniqueFileName);
+              }
+              
               return { fileName: file.fileName, uniqueFileName: file.uniqueFileName, success };
             } catch (error) {
               console.error(`❌ Failed to delete file ${file.uniqueFileName}:`, error);
@@ -636,13 +752,8 @@ export class OtoChatPageComponent extends BaseChatPageComponent implements OnIni
           });
           
           const results = await Promise.all(deletionPromises);
-          const successful = results.filter(r => r.success).map(r => r.fileName);
           const failed = results.filter(r => !r.success).map(r => r.fileName);
-          
-          if (successful.length > 0) {
-            console.log('✅ Successfully deleted file versions:', successful);
-          }
-          
+                    
           if (failed.length > 0) {
             console.warn('⚠️ Failed to delete file versions:', failed);
           }

@@ -4,7 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { LucideAngularModule, Eye, EyeOff } from 'lucide-angular';
 import { RegisterPageStore } from '../model/register.store';
 import { AuthPageLayoutComponent } from '../../../widgets/auth-layout';
-import { ButtonComponent, InputComponent } from '../../../shared/ui-elements';
+import { ButtonComponent, InputComponent, ToastComponent } from '../../../shared/ui-elements';
 
 @Component({
   selector: 'app-register-page',
@@ -15,8 +15,9 @@ import { ButtonComponent, InputComponent } from '../../../shared/ui-elements';
     InputComponent,
     CommonModule,
     FormsModule,
-    LucideAngularModule
-  ],
+    LucideAngularModule,
+    ToastComponent
+],
   providers: [RegisterPageStore],
   templateUrl: './register-page.component.html',
 })

@@ -1,7 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const Redis = require('ioredis');
-const { v4: uuidv4 } = require('uuid');
+require('uuid');
 
 const app = express();
 app.use(cors());
@@ -19,8 +19,6 @@ function decodeUrlParam(param) {
 
 app.post('/api/mapping', async (req, res) => {
   const { originalName, uniqueFileName, uploadedAt, userId } = req.body;
-  console.log('\n--- POST /api/mapping ---');
-  console.log('Body:', req.body);
 
   if (!originalName || !uniqueFileName || !uploadedAt || !userId) {
     console.error('❌ Missing fields');
@@ -29,8 +27,6 @@ app.post('/api/mapping', async (req, res) => {
 
   const key = `file:${uniqueFileName}`;
   
-  console.log('Redis key:', key);
-
   const existingKeys = await redis.keys('file:*');
   let maxVersion = 0;
   
@@ -59,15 +55,11 @@ app.post('/api/mapping', async (req, res) => {
 
   await redis.set(key, JSON.stringify(versionData));
 
-  console.log('✅ Saved version to Redis:', versionData);
   res.json(versionData);
 });
 
 app.get('/api/mapping/:originalName', async (req, res) => {
   const { originalName } = req.params;
-  
-  console.log('\n--- GET /api/mapping/:originalName ---');
-  console.log('OriginalName:', originalName);
 
   if (!originalName) {
     return res.status(400).json({ error: 'originalName is required' });
@@ -77,8 +69,6 @@ app.get('/api/mapping/:originalName', async (req, res) => {
     const pattern = 'file:*';
     const keys = await redis.keys(pattern);
     
-    console.log('Found keys:', keys);
-
     const allVersions = [];
 
     for (const key of keys) {
@@ -104,7 +94,6 @@ app.get('/api/mapping/:originalName', async (req, res) => {
 
     allVersions.sort((a, b) => new Date(a.uploadedAt).getTime() - new Date(b.uploadedAt).getTime());
 
-    console.log('✅ Found versions:', allVersions);
     res.json(allVersions);
   } catch (error) {
     console.error('❌ Error getting file versions:', error);
@@ -115,30 +104,16 @@ app.get('/api/mapping/:originalName', async (req, res) => {
 app.get('/api/mapping/:originalName/:userId', async (req, res) => {
   const { originalName, userId } = req.params;
   
-  console.log('\n--- GET /api/mapping/:originalName/:userId ---');
-  console.log('Params:', req.params);
-
   if (!originalName || !userId) {
     return res.status(400).json({ error: 'originalName and userId are required' });
   }
 
   const key = `${originalName}:${userId}`;
-  console.log('Looking for key:', key);
   
   const data = await redis.get(key);
   
-  if (!data) {
-    console.log('❌ No data found for key:', key);
-    return res.status(404).json({ 
-      error: 'File mapping not found',
-      originalName,
-      userId 
-    });
-  }
-
   try {
     const versions = JSON.parse(data);
-    console.log('✅ Found versions:', versions);
     res.json(versions);
   } catch (parseError) {
     console.error('❌ Error parsing data:', parseError);
@@ -149,13 +124,6 @@ app.get('/api/mapping/:originalName/:userId', async (req, res) => {
 app.delete('/api/mapping/:originalName/:userId/:uniqueFileName', async (req, res) => {
   const { originalName, userId, uniqueFileName } = req.params;
   const key = `file:${uniqueFileName}`;
-
-  console.log('\n--- DELETE /api/mapping/:originalName/:userId/:uniqueFileName ---');
-  console.log('Params:', req.params);
-  console.log('OriginalName:', originalName);
-  console.log('UserId:', userId);
-  console.log('UniqueFileName:', uniqueFileName);
-  console.log('Redis key:', key);
 
   try {
     const data = await redis.get(key);
@@ -170,7 +138,6 @@ app.delete('/api/mapping/:originalName/:userId/:uniqueFileName', async (req, res
     }
 
     await redis.del(key);
-    console.log('✅ Deleted file mapping:', key);
 
     res.json({ 
       success: true, 
@@ -185,16 +152,11 @@ app.delete('/api/mapping/:originalName/:userId/:uniqueFileName', async (req, res
 
 app.post('/api/mapping/batch', async (req, res) => {
   const { fileNames, userId } = req.body;
-  
-  console.log('\n--- POST /api/mapping/batch ---');
-  console.log('Body:', req.body);
 
   if (!fileNames || !Array.isArray(fileNames)) {
     console.error('❌ Missing or invalid fileNames');
     return res.status(400).json({ error: 'fileNames[] is required and must be an array' });
   }
-
-  console.log('🔍 Searching for files:', fileNames);
 
   const mappings = [];
 
@@ -202,15 +164,12 @@ app.post('/api/mapping/batch', async (req, res) => {
     const pattern = 'file:*';
     const keys = await redis.keys(pattern);
     
-    console.log('Found keys:', keys);
-
     for (const key of keys) {
       const data = await redis.get(key);
       if (data) {
         try {
           const version = JSON.parse(data);
           if (fileNames.includes(version.originalName)) {
-            console.log(`📄 Found file "${version.originalName}":`, version);
             mappings.push(version);
           }
         } catch (parseError) {
@@ -220,8 +179,6 @@ app.post('/api/mapping/batch', async (req, res) => {
     }
 
     mappings.sort((a, b) => new Date(a.uploadedAt).getTime() - new Date(b.uploadedAt).getTime());
-
-    console.log('✅ Found mappings total:', mappings.length, mappings);
     
     res.json({
       mappings: mappings,
@@ -235,13 +192,9 @@ app.post('/api/mapping/batch', async (req, res) => {
 });
 
 app.get('/api/mapping/files/all', async (req, res) => {
-  console.log('\n--- GET /api/mapping/files/all ---');
-
   try {
     const keys = await redis.keys('file:*');
     
-    console.log('Found keys:', keys);
-
     const allFiles = [];
 
     for (const key of keys) {
@@ -268,8 +221,6 @@ app.get('/api/mapping/files/all', async (req, res) => {
       groupedFiles[fileName].sort((a, b) => new Date(a.uploadedAt).getTime() - new Date(b.uploadedAt).getTime());
     });
 
-    console.log('✅ All files:', groupedFiles);
-
     res.json({
       files: groupedFiles,
       total: Object.keys(groupedFiles).length
@@ -285,10 +236,6 @@ app.get('/api/mapping/user/:userId', async (req, res) => {
   let { userId } = req.params;
   
   userId = decodeUrlParam(userId);
-  
-  console.log('\n--- GET /api/mapping/user/:userId ---');
-  console.log('Original userId param:', req.params.userId);
-  console.log('Decoded userId:', userId);
 
   if (!userId) {
     return res.status(400).json({ error: 'userId is required' });
@@ -297,8 +244,6 @@ app.get('/api/mapping/user/:userId', async (req, res) => {
   try {
     const keys = await redis.keys('file:*');
     
-    console.log('Found keys for user:', keys);
-
     const allFiles = [];
 
     for (const key of keys) {
@@ -326,8 +271,6 @@ app.get('/api/mapping/user/:userId', async (req, res) => {
     Object.keys(groupedFiles).forEach(fileName => {
       groupedFiles[fileName].sort((a, b) => a.version - b.version);
     });
-
-    console.log('✅ User files:', groupedFiles);
 
     res.json({
       files: groupedFiles,

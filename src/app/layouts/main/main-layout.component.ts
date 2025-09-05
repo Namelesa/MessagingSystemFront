@@ -3,13 +3,12 @@ import { CommonModule } from '@angular/common';
 import { RouterModule, Router, NavigationEnd } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { AuthService } from '../../../entities/session';
-import { ToastComponent } from '../../../shared/ui-elements';
 import { NavigationSideBarComponent } from '../../../widgets/navigation-side-bar';
 
 @Component({
   selector: 'app-main-layout',
   standalone: true,
-  imports: [CommonModule, RouterModule, NavigationSideBarComponent, ToastComponent],
+  imports: [CommonModule, RouterModule, NavigationSideBarComponent],
   templateUrl: './main-layout.component.html',
 })
 export class MainLayoutComponent implements OnInit, OnDestroy {

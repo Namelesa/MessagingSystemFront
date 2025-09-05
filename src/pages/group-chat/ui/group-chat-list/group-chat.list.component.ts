@@ -8,7 +8,7 @@ import { validateCreateGroupForm } from '../../model/validate-group';
 import { SearchUser } from '../../../../entities/search-user';
 import { AuthService } from '../../../../entities/session';
 import { GroupChat } from '../../model/group.chat';
-import { InputComponent, ToastService } from '../../../../shared/ui-elements';
+import { InputComponent, ToastService, ToastComponent } from '../../../../shared/ui-elements';
 import { SearchInputComponent } from '../../../../shared/search';
 import { BaseChatListComponent } from '../../../../shared/realtime';
 import { GroupSearchService } from '../../model/group-search.service';
@@ -17,7 +17,7 @@ import { ListItemComponent } from '../../../../shared/list';
 @Component({
   selector: 'app-group-chat-list',
   standalone: true,
-  imports: [CommonModule, FormsModule, ListItemComponent, SearchInputComponent, InputComponent],
+  imports: [CommonModule, FormsModule, ListItemComponent, SearchInputComponent, InputComponent, ToastComponent],
   templateUrl: './group-chat.list.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -102,7 +102,7 @@ export class GroupChatListComponent extends BaseChatListComponent<GroupChat> imp
     this.cdr.markForCheck();
   }
 
-  private updateFilteredChats() { /* no-op: kept for compatibility */ }
+  private updateFilteredChats() { }
 
   onUserSearchQueryChange(query: string) {
     this.userSearchQuery = query;
@@ -190,6 +190,7 @@ export class GroupChatListComponent extends BaseChatListComponent<GroupChat> imp
 
     if(this.formData.ImageFile == null){
       this.toastService.show('Please select an image for the group.', 'error');
+      return;
     }
 
     const admin = this.authService.getNickName() || this.formData.Admin;

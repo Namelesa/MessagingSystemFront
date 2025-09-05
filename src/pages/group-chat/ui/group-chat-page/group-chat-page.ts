@@ -16,7 +16,6 @@ import { GroupInfoModalComponent } from '../group-info-modal/group-info-modal.co
 import { GroupMessage } from '../../../../entities/group-message';
 import { SearchUser } from '../../../../entities/search-user';
 import { FindUserStore } from '../../../../features/search-user';
-import { FileUploadApiService } from '../../../../features/file-sender';
 import { ChatLayoutComponent } from '../../../../widgets/chat-layout';
 import { GroupMessagesWidget } from '../../../../widgets/chat-messages';
 import { BaseChatPageComponent } from '../../../../shared/realtime';
@@ -155,8 +154,6 @@ export class GroupChatPageComponent extends BaseChatPageComponent {
 
   onFileUpload(fileUploadEvent: { files: File[]; message?: string }) {
     if (this.selectedGroupId && fileUploadEvent.files.length > 0) {
-      console.log('Files to upload to group:', fileUploadEvent.files);
-      console.log('Optional message:', fileUploadEvent.message);
     }
   }
 

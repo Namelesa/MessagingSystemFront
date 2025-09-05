@@ -21,6 +21,16 @@ interface FileValidationError {
   actualType?: string;
 }
 
+interface EditingFile {
+  fileName: string;
+  url: string;
+  type?: string;
+  size?: number;
+  uniqueId?: string;
+  uniqueFileName?: string;
+  file? : File;
+}
+
 @Component({
   selector: 'shared-send-message-area',
   standalone: true,
@@ -34,12 +44,21 @@ export class SendAreaComponent implements OnChanges {
   @Output() replyCancel = new EventEmitter<void>();
   @Output() fileUpload = new EventEmitter<FileUploadEvent>();
   @Output() fileValidationError = new EventEmitter<FileValidationError[]>();
+  @Output() removeFileFromEditingMessage = new EventEmitter<{ messageId: string; uniqueFileName: string }>();
+  @Output() editFile = new EventEmitter<{ messageId: string; file: EditingFile }>();
   
   @Input() editingMessage?: BaseMessage;
   @Input() replyingToMessage?: BaseMessage;
   @Input() maxFileSize: number = 1024 * 1024 * 1024; 
 
   message = '';
+  editingFiles: EditingFile[] = [];
+
+  fileBeingEdited?: EditingFile;
+
+  replyingFiles: EditingFile[] = [];
+  replyingText: string = '';
+  
   readonly maxLength = 2000;
   readonly maxBytes = 8000;
   private lastSentAt = 0;
@@ -55,17 +74,145 @@ export class SendAreaComponent implements OnChanges {
   ngOnChanges(changes: SimpleChanges) {
     if (changes['editingMessage']) {
       if (this.editingMessage) {
-        this.message = this.editingMessage.content;
-      } else if (!this.replyingToMessage) {
+        this.parseEditingMessage();
+      } else {
         this.message = '';
+        this.editingFiles = [];
       }
     }
     
     if (changes['replyingToMessage']) {
-      if (!this.replyingToMessage && !this.editingMessage) {
+      if (this.replyingToMessage) {
+        this.parseReplyingMessage();
+      } else if (!this.editingMessage) {
         this.message = '';
+        this.replyingFiles = [];
       }
     }
+  }
+
+  public parseReplyingMessage() {
+    if (!this.replyingToMessage) return;
+  
+    try {
+      const parsed = JSON.parse(this.replyingToMessage.content);
+  
+      this.replyingText = parsed.text || ''; 
+      this.replyingFiles = (parsed.files || []).map((file: any) => ({
+        fileName: file.fileName || 'Unknown file',
+        url: file.url || '',
+        type: file.type,
+        size: file.size,
+        uniqueId: file.uniqueId || file.uniqueFileName,
+        uniqueFileName: file.uniqueFileName
+      }));
+    } catch (e) {
+      this.replyingText = this.replyingToMessage.content;
+      this.replyingFiles = [];
+    }
+  }
+  
+  private parseEditingMessage() {
+    if (!this.editingMessage) return;
+
+    let parsed: any = null;
+    if ((this.editingMessage as any).parsedContent) {
+      parsed = (this.editingMessage as any).parsedContent;
+    } else if (this.editingMessage.content) {
+      try {
+        parsed = JSON.parse(this.editingMessage.content);
+      } catch (err) {
+        parsed = this.editingMessage.content;
+      }
+    } else {
+      this.message = '';
+      this.editingFiles = [];
+      return;
+    }
+  
+    if (parsed && typeof parsed === 'object' && (parsed.text !== undefined || parsed.files !== undefined)) {
+      this.message = parsed.text || '';
+      this.editingFiles = (parsed.files || []).map((file: any) => ({
+        fileName: file.fileName || file.originalName || file.uniqueFileName || 'Unknown file',
+        url: file.url || '',
+        type: file.type,
+        size: file.size,
+        uniqueId: file.uniqueId || file.uniqueFileName || undefined,
+        uniqueFileName: file.uniqueFileName || file.uniqueId || undefined
+      }));
+      return;
+    }
+  
+    if (typeof parsed === 'string') {
+      this.message = parsed;
+      this.editingFiles = [];
+      return;
+    }
+  
+    this.message = '';
+    this.editingFiles = [];
+  }  
+
+  public detectFileType(fileNameOrUrl: string): string | null {
+    const lower = fileNameOrUrl.toLowerCase();
+    if (lower.match(/\.(jpg|jpeg|png|gif|webp|bmp|svg|ico)$/)) {
+      return 'image';
+    }
+    if (lower.match(/\.(mp4|avi|mov|wmv|flv|webm|mkv|m4v|3gp)$/)) {
+      return 'video';
+    }
+    if (lower.match(/\.(mp3|wav|ogg|aac|flac|wma|m4a)$/)) {
+      return 'audio';
+    }
+    if (lower.match(/\.(pdf|doc|docx|xls|xlsx|ppt|pptx|txt|rtf)$/)) {
+      return 'document';
+    }
+    return 'file';
+  }
+
+  getFileIcon(file: EditingFile): string {
+    const type = this.detectFileType(file.fileName);
+    switch (type) {
+      case 'image':
+        return '🖼️';
+      case 'video':
+        return '🎥';
+      case 'audio':
+        return '🎵';
+      case 'document':
+        return '📄';
+      default:
+        return '📎';
+    }
+  }
+
+  getFileExtension(fileName: string): string {
+    if (!fileName) return 'File';
+    const extension = fileName.split('.').pop()?.toUpperCase();
+    return extension || 'File';
+  }
+
+  formatFileSize(bytes: number): string {
+    if (!bytes || bytes === 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+  }
+
+  removeEditingFile(file: EditingFile) {
+    if (!this.editingMessage || !file.uniqueId) return;
+    
+    this.editingFiles = this.editingFiles.filter(f => f.uniqueId !== file.uniqueId);
+  
+    this.removeFileFromEditingMessage.emit({
+      messageId: this.editingMessage.messageId || this.editingMessage.id || '',
+      uniqueFileName: file.uniqueId
+    });
+  }
+
+  setFileToEdit(file: EditingFile) {
+    this.fileBeingEdited = file;
   }
 
   private handleFiles(files: File[]) {
@@ -93,7 +240,9 @@ export class SendAreaComponent implements OnChanges {
         message: this.message.trim()
       });
       
-      this.message = '';
+      if (!this.isEditing) {
+        this.message = '';
+      }
     }
   }
 
@@ -124,16 +273,6 @@ export class SendAreaComponent implements OnChanges {
       this.handleFiles(files);
       input.value = '';
     }
-  }
-
-  formatFileSize(bytes: number): string {
-    if (bytes === 0) return '0 Bytes';
-
-    const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   }
 
   get maxFileSizeFormatted(): string {
@@ -190,27 +329,39 @@ export class SendAreaComponent implements OnChanges {
 
   emitMessage() {
     const text = this.message.trim();
-    if (!text || this.isTooLong) return;
+    const hasFiles = this.editingFiles.length > 0;
+  
+    if (!text && !hasFiles){
+      return;
+    };
+    
+    if (this.isTooLong) return;
     if (new Blob([text]).size > this.maxBytes) return;
+  
     const now = Date.now();
     if (now - this.lastSentAt < this.minIntervalMs) return;
-
+  
     if (this.isEditing && this.editingMessage) {
+      const content = hasFiles
+        ? JSON.stringify({ text, files: this.editingFiles })
+        : text;
+  
       this.editComplete.emit({
         messageId: (this.editingMessage.messageId || this.editingMessage.id)!,
-        content: text
+        content
       });
     } else {
       this.send.emit(text);
     }
-    
+  
     this.message = '';
     this.lastSentAt = now;
   }
-
+  
   cancelEdit() {
     this.editCancel.emit();
     this.message = '';
+    this.editingFiles = [];
   }
 
   cancelReply() {
@@ -236,5 +387,38 @@ export class SendAreaComponent implements OnChanges {
   get textareaRows(): number {
     const lines = this.message.split('\n').length;
     return Math.min(Math.max(lines, 1), 5);
+  }
+
+  trackByFile(index: number, file: EditingFile): string {
+    return file.uniqueId || file.uniqueFileName || file.fileName || index.toString();
+  }
+
+  onEditFileInputChange(event: Event) {
+    const input = event.target as HTMLInputElement;
+    if (input.files && input.files.length > 0 && this.fileBeingEdited && this.editingMessage) {
+      const newFile = input.files[0];
+  
+      this.editingFiles = this.editingFiles.map(f =>
+        f.uniqueId === this.fileBeingEdited?.uniqueId ? {
+          fileName: newFile.name,
+          url: URL.createObjectURL(newFile),
+          type: newFile.type,
+          size: newFile.size,
+          uniqueId: this.fileBeingEdited?.uniqueId,
+          uniqueFileName: this.fileBeingEdited?.uniqueFileName,
+          file: newFile
+        } : f
+      );
+  
+      const updatedFile = this.editingFiles.find(f => f.uniqueId === this.fileBeingEdited?.uniqueId)!;
+  
+      this.editFile.emit({
+        messageId: this.editingMessage.messageId || this.editingMessage.id || '',
+        file: updatedFile
+      });
+  
+      this.fileBeingEdited = undefined;
+      input.value = '';
+    }
   }
 }

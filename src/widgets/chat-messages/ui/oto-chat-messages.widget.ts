@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter, ViewChild, ElementRef, OnChanges, SimpleChanges, AfterViewInit, OnDestroy } from '@angular/core';
+import { Component, Input, Output, EventEmitter, ViewChild, ElementRef, OnChanges, SimpleChanges, AfterViewInit, OnDestroy, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Observable, Subject } from 'rxjs';
 import { takeUntil, filter } from 'rxjs/operators';
@@ -13,6 +13,7 @@ import { CustomAudioPlayerComponent } from '../../../shared/custom-player';
   standalone: true,
   imports: [CommonModule, ImageViewerComponent, CustomAudioPlayerComponent],
   templateUrl: './oto-chat-messages.widget.html',
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 
 export class OtoChatMessagesWidget implements OnChanges, AfterViewInit, OnDestroy {
@@ -34,9 +35,12 @@ export class OtoChatMessagesWidget implements OnChanges, AfterViewInit, OnDestro
   imageViewerInitialIndex = 0;
   imageViewerKey = 0;
 
-  constructor(private fileUploadApi: FileUploadApiService) {}
+  constructor(
+    private fileUploadApi: FileUploadApiService,
+    private cdr: ChangeDetectorRef
+  ) {}
 
-  messages: OtoMessage[] = [];
+  public messages: OtoMessage[] = [];
   take = 20;
   skip = 0;
   allLoaded = false;
@@ -46,6 +50,8 @@ export class OtoChatMessagesWidget implements OnChanges, AfterViewInit, OnDestro
   contextMenuPosition = { x: 0, y: 0 };
   showContextMenu = false;
   highlightedMessageId: string | null = null;
+  
+  private messageContentCache = new Map<string, string>();
 
   isMessageHighlighted(id: string): boolean {
     return this.highlightedMessageId === id;
@@ -56,47 +62,83 @@ export class OtoChatMessagesWidget implements OnChanges, AfterViewInit, OnDestro
     this.highlightedMessageId = messageId;
     setTimeout(() => {
       if (this.highlightedMessageId === messageId) this.highlightedMessageId = null;
-
     }, 1500);
   }
-
+  
   parseContent(msg: OtoMessage): { text: string; files: any[] } {
+    const currentContent = msg.content;
+    
+    const cachedContent = this.messageContentCache.get(msg.messageId);
+    
+    const contentChanged = cachedContent !== currentContent;
+    const hasCachedResult = !!(msg as any).parsedContent;
+    
+    if (contentChanged || !hasCachedResult) {
+      delete (msg as any).parsedContent;
+      this.messageContentCache.set(msg.messageId, currentContent);
+    }
+  
     if ((msg as any).parsedContent) {
       return (msg as any).parsedContent;
     }
-
+  
+    let result: { text: string; files: any[] };
+  
     try {
-      const parsed = JSON.parse(msg.content);
-      const filesWithType = (parsed.files || []).map((file: any) => {
-        if (!file.type && file.fileName) {
-          file.type = this.detectFileType(file.fileName);
-        }
-        return file;
-      });
+      const parsed = JSON.parse(currentContent);
+      
+      if (typeof parsed === 'object' && parsed !== null && (parsed.hasOwnProperty('text') || parsed.hasOwnProperty('files'))) {
+        const filesWithType = (parsed.files || []).map((file: any) => {
+          if (!file.type && file.fileName) {
+            file.type = this.detectFileType(file.fileName);
+          }
+          if (!file.uniqueId) {
+            file.uniqueId = file.uniqueFileName || file.url || `${file.fileName}_${Date.now()}`;
+          }
+        
+          return file;
+        });
+  
+        result = {
+          text: parsed.text || '',
+          files: filesWithType
+        };
 
-      const result = {
-        text: parsed.text || '',
-        files: filesWithType
-      };
-
-      (msg as any).parsedContent = result;
-      return result;
+      } else {
+        result = { 
+          text: currentContent, 
+          files: [] 
+        };
+      }
     } catch (error) {
-      if (msg.content && typeof msg.content === 'string') {
-        const detectedType = this.detectFileType(msg.content);
+      if (currentContent && typeof currentContent === 'string') {
+        const detectedType = this.detectFileType(currentContent);
         if (detectedType) {
-          return {
+          result = {
             text: '',
             files: [{
-              url: msg.content,
-              fileName: msg.content.split('/').pop() || 'file',
-              type: detectedType
+              url: currentContent,
+              fileName: currentContent.split('/').pop() || 'file',
+              type: detectedType,
+              uniqueId: currentContent
             }]
           };
+        } else {
+          result = { 
+            text: currentContent, 
+            files: [] 
+          };
         }
+      } else {
+        result = { 
+          text: currentContent || '', 
+          files: [] 
+        };
       }
-      return { text: msg.content, files: [] };
     }
+  
+    (msg as any).parsedContent = result;
+    return result;
   }
 
   getFileSize(file: any): string {
@@ -241,6 +283,72 @@ export class OtoChatMessagesWidget implements OnChanges, AfterViewInit, OnDestro
     if (changes['chatNickName'] && this.chatNickName) {
       this.initChat();
     }
+    
+    if (changes['messages$'] && this.messages$) {
+      this.messages$.pipe(takeUntil(this.destroy$)).subscribe(messages => {
+        const previousMessages = this.messages;
+        
+        this.messages = messages;
+        
+        this.clearCacheForUpdatedMessages(previousMessages, messages);
+        
+        if (!previousMessages || previousMessages.length === 0) {
+          this.initChat();
+        } else {
+          const newMessages = messages.filter(msg => 
+            !previousMessages.some(prevMsg => prevMsg.messageId === msg.messageId)
+          );
+          
+          const updatedMessages = messages.filter(msg => {
+            const prevMsg = previousMessages.find(prevMsg => prevMsg.messageId === msg.messageId);
+            return prevMsg && prevMsg.content !== msg.content;
+          });
+          
+          
+          if (newMessages.length > 0 || updatedMessages.length > 0) {
+            const messagesNeedingFiles = [...newMessages, ...updatedMessages].filter(msg => {
+              try {
+                const parsed = JSON.parse(msg.content);
+                return parsed.files && parsed.files.length > 0 && 
+                       parsed.files.some((file: any) => !file.url);
+              } catch {
+                return false;
+              }
+            });
+            
+            if (messagesNeedingFiles.length > 0) {
+              this.loadFilesForMessages(messagesNeedingFiles);
+            }
+            
+            this.cdr.markForCheck();
+            setTimeout(() => this.cdr.detectChanges(), 0);
+          }
+        }
+      });
+    }
+  }
+
+  private clearCacheForUpdatedMessages(previousMessages: OtoMessage[], currentMessages: OtoMessage[]) {
+    if (!previousMessages) return;
+    
+    const prevMap = new Map(previousMessages.map(msg => [msg.messageId, msg.content]));
+    
+    currentMessages.forEach(currentMsg => {
+      const prevContent = prevMap.get(currentMsg.messageId);
+      
+      if (!prevContent || prevContent !== currentMsg.content) {
+        delete (currentMsg as any).parsedContent;
+        this.messageContentCache.delete(currentMsg.messageId);
+        this.messageContentCache.set(currentMsg.messageId, currentMsg.content);
+
+      }
+    });
+    
+    this.cdr.markForCheck();
+
+    setTimeout(() => {
+      this.cdr.detectChanges();
+    }, 0);
   }
 
   ngOnDestroy() {
@@ -249,6 +357,79 @@ export class OtoChatMessagesWidget implements OnChanges, AfterViewInit, OnDestro
     if (this.hideContextMenuHandler) {
       document.removeEventListener('click', this.hideContextMenuHandler);
     }
+    this.messageContentCache.clear();
+  }
+
+  async addFileToMessage(messageId: string, fileData: { fileName: string; uniqueFileName: string; url: string; type?: string }) {
+    const message = this.messages.find(m => m.messageId === messageId);
+    if (!message) {
+      return;
+    }
+
+    try {
+      const parsed = JSON.parse(message.content);
+      if (!parsed.files) {
+        parsed.files = [];
+      }
+      
+      const newFile = {
+        fileName: fileData.fileName,
+        uniqueFileName: fileData.uniqueFileName,
+        url: fileData.url,
+        type: fileData.type || this.detectFileType(fileData.fileName),
+        uniqueId: fileData.uniqueFileName || `${fileData.fileName}_${Date.now()}`
+      };
+      
+      parsed.files.push(newFile);
+      
+      message.content = JSON.stringify(parsed);
+      delete (message as any).parsedContent;
+      this.messageContentCache.set(messageId, message.content);
+
+      this.cdr.detectChanges();
+      
+    } catch (error) {
+      console.error(`❌ Error adding file to message ${messageId}:`, error);
+    }
+  }
+
+  async removeFileFromMessage(messageId: string, uniqueFileName: string) {
+    const message = this.messages.find(m => m.messageId === messageId);
+    if (!message) return;
+
+    try {
+      const parsed = JSON.parse(message.content);
+      if (parsed.files) {
+        const fileIndex = parsed.files.findIndex((file: any) => 
+          file.uniqueFileName === uniqueFileName || file.uniqueId === uniqueFileName
+        );
+        if (fileIndex !== -1) {
+          const removedFile = parsed.files.splice(fileIndex, 1)[0];
+          message.content = JSON.stringify(parsed);
+          delete (message as any).parsedContent;
+          this.messageContentCache.set(messageId, message.content);
+          
+          this.cdr.detectChanges();
+        }
+      }
+    } catch (error) {
+    }
+  }
+
+  trackByFile(index: number, file: any): string {
+    return file.uniqueId || file.uniqueFileName || file.url || `${index}`;
+  }
+
+  trackByMessage(index: number, message: OtoMessage): string {
+    return message.messageId;
+  }
+
+  onImageError(event: Event, file: any) {
+    console.warn(`❌ Failed to load image: ${file.fileName}`, event);
+  }
+
+  onVideoError(event: Event, file: any) {
+    console.warn(`❌ Failed to load video: ${file.fileName}`, event);
   }
 
   get groupedMessages() {
@@ -308,8 +489,8 @@ export class OtoChatMessagesWidget implements OnChanges, AfterViewInit, OnDestro
     setTimeout(() => this.highlightMessage(messageId), 300);
   }
 
-  getRepliedMessage(messageId: string): OtoMessage | null {
-    return this.messages.find(m => m.messageId === messageId) || null;
+  getRepliedMessage(messageId: string): OtoMessage {
+    return this.messages.find(m => m.messageId === messageId) || undefined as any;
   }
 
   onMessageRightClick(event: MouseEvent, msg: OtoMessage) {
@@ -361,6 +542,7 @@ export class OtoChatMessagesWidget implements OnChanges, AfterViewInit, OnDestro
     this.skip = 0;
     this.allLoaded = false;
     this.shouldScrollToBottom = true;
+    this.messageContentCache.clear();
     this.loadMore();
 
     if (!this.messages$) return;
@@ -383,15 +565,13 @@ export class OtoChatMessagesWidget implements OnChanges, AfterViewInit, OnDestro
         this.shouldScrollToBottom = false;
       }
     });
-
   }
 
   private async loadFilesForMessages(messages: OtoMessage[]) {    
     if (!messages || messages.length === 0) {
-      console.log('📝 No messages to process for files');
       return;
     }
-    
+        
     try {
       const fileNames: string[] = [];
       const messageFileMap = new Map<string, { messageIndex: number, fileIndex: number, originalName: string }>();
@@ -400,7 +580,18 @@ export class OtoChatMessagesWidget implements OnChanges, AfterViewInit, OnDestro
         try {
           const parsed = JSON.parse(msg.content);
           if (parsed.files && Array.isArray(parsed.files)) {
-            parsed.files.forEach((file: any, fileIndex: number) => {
+            const uniqueFiles = parsed.files.filter((file: any, index: number, self: any[]) => 
+              index === self.findIndex((f: any) => 
+                f.fileName === file.fileName && f.uniqueFileName === file.uniqueFileName
+              )
+            );
+            
+            if (uniqueFiles.length !== parsed.files.length) {
+              parsed.files = uniqueFiles;
+              msg.content = JSON.stringify(parsed);
+            }
+            
+            uniqueFiles.forEach((file: any, fileIndex: number) => {
               if (file.fileName) {
                 fileNames.push(file.fileName);
                 const uniqueKey = `${file.fileName}_${messageIndex}_${fileIndex}`;
@@ -423,11 +614,7 @@ export class OtoChatMessagesWidget implements OnChanges, AfterViewInit, OnDestro
         }
       });
 
-      console.log('📋 Collected fileNames:', fileNames);
-      console.log('🗺️ Message file map before API call:', Object.fromEntries(messageFileMap));
-      
       const fileUrls = await this.fileUploadApi.getDownloadUrls(fileNames);
-      console.log('📥 Received file URLs:', fileUrls);
 
       const filesByOriginalName = new Map<string, FileUrl[]>();
       fileUrls.forEach(fileUrl => {
@@ -436,12 +623,6 @@ export class OtoChatMessagesWidget implements OnChanges, AfterViewInit, OnDestro
         }
         filesByOriginalName.get(fileUrl.originalName)!.push(fileUrl);
       });
-
-      console.log('📊 Files grouped by originalName:', Object.fromEntries(filesByOriginalName));
-      console.log('🗺️ Message file map:', Object.fromEntries(messageFileMap));
-      
-      console.log('🔤 Available original names:', Array.from(filesByOriginalName.keys()));
-      console.log('📝 Requested file names:', fileNames);
 
       messageFileMap.forEach((mapping, uniqueKey) => {
         const fileName = mapping.originalName;
@@ -455,18 +636,11 @@ export class OtoChatMessagesWidget implements OnChanges, AfterViewInit, OnDestro
                 originalName.toLowerCase() === fileName.toLowerCase() ||
                 this.normalizeFileName(originalName) === this.normalizeFileName(fileName)) {
               availableFiles = files;
-              console.log(`🔍 Found files for "${fileName}" via alternative matching: "${originalName}"`);
               break;
             }
           }
         }
-        
-        console.log(`🔍 Processing file "${fileName}" (key: "${uniqueKey}"):`, {
-          messageIndex: mapping.messageIndex,
-          fileIndex: mapping.fileIndex,
-          availableFiles: availableFiles?.length || 0
-        });
-        
+         
         if (availableFiles && availableFiles.length > 0) {
           let bestMatch: FileUrl;
           
@@ -485,8 +659,6 @@ export class OtoChatMessagesWidget implements OnChanges, AfterViewInit, OnDestro
             });
           }
           
-          console.log(`🎯 Matched file "${fileName}" -> "${bestMatch.uniqueFileName}"`);
-
           try {
             const parsed = JSON.parse(message.content);
             if (parsed.files && parsed.files[mapping.fileIndex]) {
@@ -494,24 +666,23 @@ export class OtoChatMessagesWidget implements OnChanges, AfterViewInit, OnDestro
               parsed.files[mapping.fileIndex].uniqueFileName = bestMatch.uniqueFileName;
               parsed.files[mapping.fileIndex].originalName = bestMatch.originalName;
               message.content = JSON.stringify(parsed);
-              console.log(`✅ Updated message content for "${fileName}"`);
             }
           } catch {
             if (message.content.includes(fileName)) {
               message.content = bestMatch.url;
-              console.log(`✅ Updated message content (fallback) for "${fileName}"`);
             }
           }
         } else {
-          console.warn(`⚠️ No files found for "${fileName}"`);
         }
       });
 
       messages.forEach(msg => {
         delete (msg as any).parsedContent;
+        this.messageContentCache.set(msg.messageId, msg.content);
       });
+      
+      this.cdr.detectChanges();
     } catch (error) {
-      console.error('❌ Failed to load files for messages:', error);
     }
   }
 
@@ -549,6 +720,7 @@ export class OtoChatMessagesWidget implements OnChanges, AfterViewInit, OnDestro
 
   private handleChatUserDeleted() {
     this.messages = [];
+    this.messageContentCache.clear();
     this.chatUserDeleted.emit();
   }
 
@@ -614,10 +786,10 @@ export class OtoChatMessagesWidget implements OnChanges, AfterViewInit, OnDestro
     this.messages = [];
     this.skip = 0;
     this.allLoaded = false;
+    this.messageContentCache.clear();
   }
 
   private scheduleMappingCheck(messages: OtoMessage[], fileNames: string[], messageFileMap: Map<string, { messageIndex: number, fileIndex: number, originalName: string }>) {
-    console.log(`⏰ Scheduling periodic mapping check for files:`, fileNames);
     
     let checkCount = 0;
     const maxChecks = 6;
@@ -626,22 +798,17 @@ export class OtoChatMessagesWidget implements OnChanges, AfterViewInit, OnDestro
     const checkTimer = setInterval(async () => {
       try {
         checkCount++;
-        console.log(`🔍 Periodic mapping check ${checkCount}/${maxChecks} for files:`, fileNames);
         
         const batchMappings = await this.fileUploadApi.getBatchFileMappings(fileNames);
         
         if (batchMappings.mappings && batchMappings.mappings.length > 0) {
-          console.log(`✅ Mappings found in periodic check, processing files`);
           clearInterval(checkTimer);
           await this.loadFilesWithNewSystem(messages, fileNames, messageFileMap);
         } else if (checkCount >= maxChecks) {
-          console.warn(`⚠️ Max periodic checks reached, giving up on files:`, fileNames);
           clearInterval(checkTimer);
         }
       } catch (error) {
-        console.error(`❌ Periodic mapping check ${checkCount} failed:`, error);
         if (checkCount >= maxChecks) {
-          console.warn(`⚠️ Max periodic checks reached, giving up on files:`, fileNames);
           clearInterval(checkTimer);
         }
       }
@@ -650,7 +817,6 @@ export class OtoChatMessagesWidget implements OnChanges, AfterViewInit, OnDestro
 
   private async loadFilesWithNewSystem(messages: OtoMessage[], fileNames: string[], messageFileMap: Map<string, { messageIndex: number, fileIndex: number, originalName: string }>) {
     try {
-      console.log(`🆕 Loading files with new system for:`, fileNames);
       
       let fileUrls: any[] = [];
       let retryCount = 0;
@@ -658,24 +824,19 @@ export class OtoChatMessagesWidget implements OnChanges, AfterViewInit, OnDestro
       
       while (retryCount < maxRetries) {
         try {
-          console.log(`🔍 Attempting to load files (attempt ${retryCount + 1}/${maxRetries})...`);
           fileUrls = await this.fileUploadApi.getDownloadUrls(fileNames);
           
           if (fileUrls && fileUrls.length > 0) {
-            console.log(`✅ Successfully loaded ${fileUrls.length} files`);
             break;
           }
           
           retryCount++;
           if (retryCount < maxRetries) {
-            console.log(`⏳ Retry ${retryCount}/${maxRetries} - waiting 2 seconds...`);
             await new Promise(resolve => setTimeout(resolve, 2000));
           }
         } catch (error) {
-          console.error(`❌ File loading attempt ${retryCount + 1} failed:`, error);
           retryCount++;
           if (retryCount < maxRetries) {
-            console.log(`⏳ Retry ${retryCount}/${maxRetries} - waiting 2 seconds...`);
             await new Promise(resolve => setTimeout(resolve, 2000));
           }
         }
@@ -695,10 +856,8 @@ export class OtoChatMessagesWidget implements OnChanges, AfterViewInit, OnDestro
                 parsed.files[mapping.fileIndex].displayName = `${fileUrl.originalName} (v${fileUrl.version || 1})`;
                 parsed.files[mapping.fileIndex].originalName = fileUrl.originalName;
                 message.content = JSON.stringify(parsed);
-                console.log(`✅ Updated file ${fileUrl.originalName} with new system data`);
               }
             } catch (parseError) {
-              console.error(`❌ Failed to parse message content for file ${fileUrl.originalName}:`, parseError);
               if (message.content.includes(fileUrl.originalName)) {
                 message.content = fileUrl.url;
               }
@@ -708,16 +867,16 @@ export class OtoChatMessagesWidget implements OnChanges, AfterViewInit, OnDestro
         
         messages.forEach(msg => {
           delete (msg as any).parsedContent;
+          this.messageContentCache.set(msg.messageId, msg.content);
         });
         
-        console.log(`✅ Successfully processed ${fileUrls.length} files with new system`);
+        this.cdr.detectChanges();
+        
       } else {
-        console.warn(`⚠️ No files loaded after ${maxRetries} attempts, scheduling periodic check`);
         this.scheduleMappingCheck(messages, fileNames, messageFileMap);
       }
       
     } catch (error) {
-      console.error('❌ Failed to load files with new system:', error);
       this.scheduleMappingCheck(messages, fileNames, messageFileMap);
     }
   }

@@ -175,13 +175,7 @@ export abstract class BaseChatApiService<TChat> {
   protected handleUserInfoDeleted(userInfo: { UserName?: string, userName?: string }): void {
     
     const userName = userInfo.UserName || userInfo.userName || (userInfo as any).userInfo?.userName;
-    
-    if (!userName) {
-      console.error('No valid userName found in userInfo:', userInfo);
-      return;
-    }
-    
-    
+        
     const currentChats = this.chatsSubject.value;
     const updatedChats = currentChats.filter(chat => {
       const chatAny = chat as any;

@@ -7,6 +7,8 @@
   [passwordLength]="passwordLength"
 >
 
+<app-toast></app-toast>
+
   <form (ngSubmit)="onSubmit()" #form="ngForm">
     <app-input
       [(ngModel)]="formData.login"

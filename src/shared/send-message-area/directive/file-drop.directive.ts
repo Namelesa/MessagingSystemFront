@@ -1,4 +1,4 @@
-import { Directive, ElementRef, EventEmitter, HostListener, Output } from '@angular/core';
+import { Directive, EventEmitter, HostListener, Output } from '@angular/core';
 
 export interface FileDropEvent {
   files: File[];

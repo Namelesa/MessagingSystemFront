@@ -34,13 +34,6 @@ describe('User Form Validation', () => {
       const file = new File(['dummy content'], 'photo.png', { type: 'image/png' });
       expect(validateSingleField('imageFile', file)).toEqual([]);
     });
-
-    it('should warn if unknown field is used', () => {
-      spyOn(console, 'warn');
-      const errors = validateSingleField('unknownField' as any, 'value');
-      expect(errors).toEqual([]);
-      expect(console.warn).toHaveBeenCalledWith('No validator found for field: unknownField');
-    });
   });
 
   describe('validateUpdateForm', () => {

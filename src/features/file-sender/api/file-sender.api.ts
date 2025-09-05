@@ -46,6 +46,11 @@ export class FileUploadApiService {
       const formData = new FormData();
       files.forEach(file => formData.append('File', file));
             
+
+      if(files.length >= 40){
+        throw new Error('Max 40 files allowed');
+      }
+      
       const result = await firstValueFrom(
         this.http.post<any[]>(`${this.fileLoaderUrl}get-load-file-url`, formData, { 
           withCredentials: true 
@@ -63,7 +68,6 @@ export class FileUploadApiService {
         return fileUrl;
       });
 
-      console.log('🛠️ Obtained upload URLs:', fileUrls);
       return fileUrls;
     } catch (error) {
       throw error;
@@ -71,7 +75,6 @@ export class FileUploadApiService {
   }
 
   async uploadFileToS3(file: File, url: string, userId: string): Promise<void> {
-    console.log(`🚀 Uploading file ${file.name} to URL:`, url);
 
     try {
       const res = await fetch(url, {
@@ -91,10 +94,13 @@ export class FileUploadApiService {
     }
   }
 
-  uploadFileWithProgress(file: File, url: string, userId: string): { observable: Observable<number>; abort: () => void } {
+  uploadFileWithProgress(file: File, url: string, userId: string): { 
+    observable: Observable<{ progress: number; fileData?: { fileName: string; uniqueFileName: string; url: string } }>; 
+    abort: () => void 
+  } {
     let xhr: XMLHttpRequest | null = null;
 
-    const observable = new Observable<number>((observer: Observer<number>) => {
+    const observable = new Observable<{ progress: number; fileData?: { fileName: string; uniqueFileName: string; url: string } }>((observer: Observer<{ progress: number; fileData?: { fileName: string; uniqueFileName: string; url: string } }>) => {
       xhr = new XMLHttpRequest();
       xhr.open('PUT', url, true);
       if (file.type) xhr.setRequestHeader('Content-Type', file.type);
@@ -102,19 +108,19 @@ export class FileUploadApiService {
       xhr.upload.onprogress = event => {
         if (event.lengthComputable) {
           const progress = Math.round((event.loaded / event.total) * 100);
-          observer.next(progress);
+          observer.next({ progress });
         }
       };
 
       xhr.onload = async () => {
         if (xhr && xhr.status >= 200 && xhr.status < 300) {
           try {
-            await this.createMappingAfterUpload(file, url, userId);
-            observer.next(100);
+            const fileData = await this.createMappingAfterUpload(file, url, userId);
+            observer.next({ progress: 100, fileData });
             observer.complete();
           } catch (mappingError) {
             console.error('❌ Failed to create file mapping:', mappingError);
-            observer.next(100);
+            observer.next({ progress: 100 });
             observer.complete();
           }
         } else {
@@ -181,22 +187,9 @@ export class FileUploadApiService {
 
   async getDownloadUrls(fileNames: string[], userId?: string): Promise<FileUrl[]> {
     try {
-      console.log('🔍 Fetching download URLs for files:', fileNames);
-      console.log('🔍 File names type:', typeof fileNames, Array.isArray(fileNames));
-      console.log('🔍 File names length:', fileNames?.length);
-      console.log('🔍 User ID:', userId);
-
       const batchResult = await this.getBatchFileMappings(fileNames, userId);
-      console.log('📦 Batch mapping result:', batchResult);
       
       const mappings = batchResult.mappings || [];
-      console.log('📋 Mappings found:', mappings);
-      console.log('📊 Mappings details:', mappings.map(m => ({
-        originalName: m.originalName,
-        uniqueFileName: m.uniqueFileName,
-        version: m.version,
-        uploadedAt: m.uploadedAt
-      })));
 
       if (mappings.length === 0) {
         console.warn('❌ No mappings found for files:', fileNames);
@@ -211,8 +204,6 @@ export class FileUploadApiService {
         allVersionsMap.get(mapping.originalName)!.push(mapping);
       });
       
-      console.log('🗺️ All versions map:', Object.fromEntries(allVersionsMap));
-
       allVersionsMap.forEach((versions, originalName) => {
         versions.sort((a, b) => new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime());
       });
@@ -220,9 +211,6 @@ export class FileUploadApiService {
       const allUniqueFileNames = Array.from(allVersionsMap.values())
         .flat()
         .map(mapping => mapping.uniqueFileName);
-
-      console.log('🎯 All unique file names to download:', allUniqueFileNames);
-      console.log('📋 Params being sent to file loader:', allUniqueFileNames);
 
       let params = new HttpParams();
       allUniqueFileNames.forEach(f => params = params.append('fileNames', f));
@@ -235,8 +223,6 @@ export class FileUploadApiService {
           catchError(this.handleError)
         )
       );
-
-      console.log('🌐 Download URLs response:', result);
             
       const fileUrls: FileUrl[] = result.map((item: any) => {
         let originalName = '';
@@ -260,23 +246,17 @@ export class FileUploadApiService {
         return fileUrl;
       });
 
-      console.log('✅ Final file URLs (all versions):', fileUrls);
       return fileUrls;
     } catch (error) {
-      console.error('❌ Error in getDownloadUrls:', error);
       throw error;
     }
   }
 
   async getLatestVersionDownloadUrls(fileNames: string[], userId?: string): Promise<FileUrl[]> {
     try {
-      console.log('🔍 Fetching latest version download URLs for files:', fileNames);
-
       const batchResult = await this.getBatchFileMappings(fileNames, userId);
-      console.log('📦 Batch mapping result:', batchResult);
       
       const mappings = batchResult.mappings || [];
-      console.log('📋 Mappings found:', mappings);
 
       if (mappings.length === 0) {
         console.warn('❌ No mappings found for files:', fileNames);
@@ -294,8 +274,6 @@ export class FileUploadApiService {
       const uniqueFileNames = Array.from(latestVersionsMap.values())
         .map(mapping => mapping.uniqueFileName);
 
-      console.log('🎯 Latest unique file names to download:', uniqueFileNames);
-
       let params = new HttpParams();
       uniqueFileNames.forEach(f => params = params.append('fileNames', f));
 
@@ -307,8 +285,6 @@ export class FileUploadApiService {
           catchError(this.handleError)
         )
       );
-
-      console.log('🌐 Download URLs response:', result);
             
       const fileUrls: FileUrl[] = result.map((item: any) => {
         let originalName = '';
@@ -328,7 +304,6 @@ export class FileUploadApiService {
         return fileUrl;
       });
 
-      console.log('✅ Final file URLs (latest versions only):', fileUrls);
       return fileUrls;
     } catch (error) {
       console.error('❌ Error in getLatestVersionDownloadUrls:', error);
@@ -377,10 +352,8 @@ export class FileUploadApiService {
 
   async deleteSpecificFileVersion(uniqueFileName: string, userId: string): Promise<boolean> {
     try {
-      console.log(`🗑️ Deleting specific file version: ${uniqueFileName} for user: ${userId}`);
       
       await this.deleteFiles([uniqueFileName]);
-      console.log(`✅ File deleted from S3: ${uniqueFileName}`);
       
       const parts = uniqueFileName.split('_');
       if (parts.length < 2) {
@@ -389,11 +362,9 @@ export class FileUploadApiService {
       }
       
       const originalName = parts.slice(1).join('_');
-      console.log(`🔍 Extracted originalName: ${originalName} from uniqueFileName: ${uniqueFileName}`);
       
       try {
         await this.deleteFileVersion(originalName, userId, uniqueFileName);
-        console.log(`✅ Successfully deleted file version: ${uniqueFileName}`);
         return true;
       } catch (deleteError) {
         console.warn(`⚠️ Failed to delete mapping for ${uniqueFileName}:`, deleteError);
@@ -417,13 +388,10 @@ export class FileUploadApiService {
         return false;
       }
 
-      console.log(`🗑️ Deleting ${versions.length} versions of file: ${originalName}`);
-
       for (const version of versions) {
         try {
           await this.deleteFiles([version.uniqueFileName]);
           await this.deleteFileVersion(originalName, userId, version.uniqueFileName);
-          console.log(`✅ Deleted version: ${version.uniqueFileName}`);
         } catch (error) {
           console.error(`❌ Failed to delete version ${version.uniqueFileName}:`, error);
         }
@@ -503,15 +471,12 @@ export class FileUploadApiService {
 
   async getBatchFileMappings(fileNames: string[], userId?: string): Promise<BatchMappingResult> {
     try {
-      console.log('🔍 Requesting batch mappings for files:', fileNames);
       
       const requestBody: any = { fileNames };
       if (userId) {
         requestBody.userId = userId;
       }
       
-      console.log('📤 Request body:', requestBody);
-
       const result = await firstValueFrom(
         this.http.post<BatchMappingResult>(
           `${this.mappingApiUrl}/batch`, 
@@ -521,7 +486,6 @@ export class FileUploadApiService {
         )
       );
       
-      console.log('📥 Batch mapping response:', result);
       return result;
     } catch (error) {
       console.error('❌ Error in getBatchFileMappings:', error);
@@ -629,7 +593,7 @@ export class FileUploadApiService {
     }
   }
   
-  private async createMappingAfterUpload(file: File, uploadUrl: string, userId: string): Promise<void> {
+  private async createMappingAfterUpload(file: File, uploadUrl: string, userId: string): Promise<{ fileName: string; uniqueFileName: string; url: string }> {
     try {
       const uniqueFileName = this.extractUniqueFileNameFromUrl(uploadUrl) || this.generateUniqueFileName(file.name);
       
@@ -640,11 +604,13 @@ export class FileUploadApiService {
         userId: userId
       };
 
-      console.log('📝 Creating file mapping:', mappingData);
-
-      await this.createFileMapping(mappingData);
+      const mapping = await this.createFileMapping(mappingData);
       
-      console.log('✅ File mapping created successfully for:', file.name);
+      return {
+        fileName: file.name,
+        uniqueFileName: uniqueFileName,
+        url: uploadUrl
+      };
     } catch (error) {
       console.error('❌ Failed to create file mapping for:', file.name, error);
       throw error;
@@ -659,7 +625,6 @@ export class FileUploadApiService {
       
       try {
         const decodedFileName = decodeURIComponent(cleanFileName);
-        console.log(`🔍 Extracted filename from URL: "${cleanFileName}" -> "${decodedFileName}"`);
         return decodedFileName;
       } catch (decodeError) {
         console.warn('⚠️ Could not decode filename from URL, using as is:', cleanFileName);
@@ -676,9 +641,7 @@ export class FileUploadApiService {
     const random = Math.random().toString(36).substring(2, 8);
     const extension = originalName.split('.').pop();
     
-    const uniqueName = `${timestamp}_${random}_${originalName}`;
-    console.log(`🎲 Generated unique filename: "${uniqueName}" from original: "${originalName}"`);
-    
+    const uniqueName = `${timestamp}_${random}_${originalName}`;    
     return uniqueName;
   }
 
