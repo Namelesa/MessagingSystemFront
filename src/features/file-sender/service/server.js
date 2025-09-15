@@ -39,7 +39,6 @@ app.post('/api/mapping', async (req, res) => {
           maxVersion = Math.max(maxVersion, existingVersion.version || 0);
         }
       } catch (parseError) {
-        console.warn('⚠️ Error parsing existing data:', parseError);
       }
     }
   }
@@ -80,7 +79,6 @@ app.get('/api/mapping/:originalName', async (req, res) => {
             allVersions.push(version);
           }
         } catch (parseError) {
-          console.warn('⚠️ Error parsing data for key:', key, parseError);
         }
       }
     }
@@ -173,7 +171,6 @@ app.post('/api/mapping/batch', async (req, res) => {
             mappings.push(version);
           }
         } catch (parseError) {
-          console.warn('⚠️ Error parsing data for key:', key, parseError);
         }
       }
     }
@@ -204,7 +201,6 @@ app.get('/api/mapping/files/all', async (req, res) => {
           const version = JSON.parse(data);
           allFiles.push(version);
         } catch (parseError) {
-          console.warn('⚠️ Error parsing data for key:', key, parseError);
         }
       }
     }
@@ -255,7 +251,6 @@ app.get('/api/mapping/user/:userId', async (req, res) => {
             allFiles.push(version);
           }
         } catch (parseError) {
-          console.warn('⚠️ Error parsing data for key:', key, parseError);
         }
       }
     }

@@ -1,14 +1,16 @@
 <div class="min-h-full bg-gray-100 p-6 mx-auto dark:bg-gray-900">
   <div class="space-y-10 text-gray-900 max-w-2xl mx-auto dark:text-white">
+
     <div class="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow space-y-6">
       <h2 class="text-xl font-semibold flex items-center gap-2">
-        <span>🔔</span> Notifications
+        <span class="text-2xl">🔔</span> 
+        <span>Notifications</span>
       </h2>
-      <div class="space-y-4">
-        <div class="flex justify-between items-center" *ngFor="let setting of notificationSettings">
-          <div>
-            <p class="font-medium">{{ setting.title }}</p>
-            <p class="text-sm text-gray-500 dark:text-gray-400">{{ setting.desc }}</p>
+      <div class="space-y-5">
+        <div class="flex justify-between items-center py-3 px-1" *ngFor="let setting of notificationSettings">
+          <div class="flex-1">
+            <p class="font-medium text-gray-900 dark:text-white">{{ setting.title }}</p>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">{{ setting.desc }}</p>
           </div>
           <shared-switch-toggle
             [checked]="settings[setting.key]"
@@ -23,17 +25,78 @@
         <span>🎨</span> Appearance
       </h2>
       <div class="space-y-4">
-        <div class="flex justify-between items-center" *ngFor="let setting of appearanceSettings">
+        <div class="flex justify-between items-center">
           <div>
-            <p class="font-medium">{{ setting.title }}</p>
-            <p class="text-sm text-gray-500 dark:text-gray-400">{{ setting.desc }}</p>
+            <p class="font-medium">Theme</p>
+            <p class="text-sm text-gray-500 dark:text-gray-400">Choose light, dark or system theme</p>
           </div>
-          <shared-switch-toggle
-            [checked]="settings[setting.key]"
-            (toggled)="toggle(setting.key, $event)"
-          />
+          
+          <div class="relative custom-dropdown">
+            <button
+              (click)="toggleThemeDropdown()"
+              class="px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white flex items-center gap-2 min-w-[120px]"
+            >
+              <span>{{ getSelectedTheme().label }}</span>
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+              </svg>
+            </button>
+            
+            <div 
+              *ngIf="themeDropdownOpen"
+              class="absolute right-0 mt-1 w-full bg-white dark:bg-gray-700 border rounded-lg shadow-lg z-50"
+            >
+              <div 
+                *ngFor="let option of themeOptions"
+                (click)="selectTheme(option.value)"
+                class="px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer"
+              >
+                {{ option.label }}
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
+    
+    <div class="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow space-y-6">
+      <h2 class="text-xl font-semibold flex items-center gap-2">
+        <span>🌐</span> Language
+      </h2>
+      <div class="space-y-4">
+        <div class="flex justify-between items-center">
+          <div>
+            <p class="font-medium">Language</p>
+            <p class="text-sm text-gray-500 dark:text-gray-400">Select your preferred language</p>
+          </div>
+          
+          <div class="relative custom-dropdown">
+            <button
+              (click)="toggleLanguageDropdown()"
+              class="px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white flex items-center gap-2 min-w-[120px]"
+            >
+              <span>{{ getSelectedLanguage().label }}</span>
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+              </svg>
+            </button>
+            
+            <div 
+              *ngIf="languageDropdownOpen"
+              class="absolute right-0 mt-1 w-full bg-white dark:bg-gray-700 border rounded-lg shadow-lg z-50"
+            >
+              <div 
+                *ngFor="let option of languageOptions"
+                (click)="selectLanguage(option.value)"
+                class="px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer"
+              >
+                {{ option.label }}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
   </div>
 </div>

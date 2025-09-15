@@ -129,6 +129,7 @@
       <div class="flex-1 relative">
         <textarea
           [(ngModel)]="message"
+          (ngModelChange)="draftTextChange.emit($event)"
           [placeholder]="placeholderText"
           class="w-full h-12 py-3 px-4 border border-gray-300 rounded-3xl resize-none text-sm outline-none bg-gray-100 focus:border-blue-400 dark:bg-gray-800 dark:border-gray-800 dark:text-gray-200 transition-all duration-200"
           [class.pr-16]="showCounter"
@@ -179,11 +180,15 @@
         class="flex-shrink-0 w-10 h-10 bg-blue-500 text-white hover:bg-blue-600 rounded-full flex items-center justify-center transition-colors"
         type="button"
         (click)="emitMessage()"
-        [disabled]="isTooLong || (!message.trim() && editingFiles.length === 0)"
-        [ngClass]="{ 'opacity-50 cursor-not-allowed': isTooLong || (!message.trim() && editingFiles.length === 0) }"
+        [disabled]="isTooLong || (!message.trim() && editingFiles.length === 0) || editFileUploading"
+        [ngClass]="{ 'opacity-50 cursor-not-allowed': isTooLong || (!message.trim() && editingFiles.length === 0) || editFileUploading }"
         
       >
-        <svg *ngIf="!isEditing" width="20" height="20" viewBox="0 0 24 24" fill="none">
+      <svg *ngIf="editFileUploading" class="w-5 h-5 animate-spin" viewBox="0 0 24 24">
+        <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" fill="none" stroke-linecap="round"></circle>
+      </svg>
+
+        <svg *ngIf="!editFileUploading && !isEditing" width="20" height="20" viewBox="0 0 24 24" fill="none">
           <path
             d="M22 2L11 13"
             stroke="currentColor"
@@ -199,7 +204,7 @@
             stroke-linejoin="round"
           />
         </svg>
-        <svg *ngIf="isEditing" width="20" height="20" viewBox="0 0 24 24" fill="none">
+        <svg *ngIf="!editFileUploading && isEditing" width="20" height="20" viewBox="0 0 24 24" fill="none">
           <polyline points="20,6 9,17 4,12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
       </button>

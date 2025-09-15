@@ -22,6 +22,7 @@ export class CustomAudioPlayerComponent implements OnInit, OnDestroy, AfterViewI
   @Input() type: string = '';
   @ViewChild('audioElement') audioElement!: ElementRef<HTMLAudioElement>;
   @ViewChild('fileNameElement') fileNameElement!: ElementRef<HTMLElement>;
+  @ViewChild('volumeContainer') volumeContainer!: ElementRef<HTMLElement>;
 
   isPlaying = false;
   currentTime = 0;
@@ -30,15 +31,32 @@ export class CustomAudioPlayerComponent implements OnInit, OnDestroy, AfterViewI
   isMuted = false;
   isLoading = true;
   shouldScroll = false;
+  showVolumeSlider = false;
+  isVolumeSliderActive = false;
   Math = Math;
 
   private audio: HTMLAudioElement | null = null;
   private lastVolumeBeforeMute = 1;
+  private volumeHideTimeout: any;
+  private isDraggingVolume = false;
+  private volumeBarRect: DOMRect | null = null;
 
-  ngOnInit() { setTimeout(() => this.initAudio()); }
-  ngAfterViewInit() { setTimeout(() => this.checkFileNameScroll(), 100); }
+  ngOnInit() { 
+    setTimeout(() => this.initAudio()); 
+  }
+
+  ngAfterViewInit() { 
+    setTimeout(() => this.checkFileNameScroll(), 100); 
+  }
 
   ngOnDestroy() {
+    if (this.volumeHideTimeout) {
+      clearTimeout(this.volumeHideTimeout);
+    }
+    
+    document.removeEventListener('mousemove', this.onDocumentMouseMove.bind(this));
+    document.removeEventListener('mouseup', this.onDocumentMouseUp.bind(this));
+    
     if (this.audio) {
       this.audio.pause();
       this.audio.src = '';
@@ -71,15 +89,39 @@ export class CustomAudioPlayerComponent implements OnInit, OnDestroy, AfterViewI
     this.isPlaying ? this.audio.pause() : this.audio.play().catch(console.error);
   }
 
-  onTimeUpdate() { if (this.audio) this.currentTime = this.audio.currentTime; }
-  onLoadedMetadata() { if (this.audio) { this.duration = this.audio.duration; this.isLoading = false; } setTimeout(() => this.checkFileNameScroll(), 100); }
-  onCanPlay() { this.isLoading = false; }
-  onEnded() { this.isPlaying = false; this.currentTime = 0; }
+  onTimeUpdate() { 
+    if (this.audio) this.currentTime = this.audio.currentTime; 
+  }
+
+  onLoadedMetadata() { 
+    if (this.audio) { 
+      this.duration = this.audio.duration; 
+      this.isLoading = false; 
+    } 
+    setTimeout(() => this.checkFileNameScroll(), 100); 
+  }
+
+  onCanPlay() { 
+    this.isLoading = false; 
+  }
+
+  onEnded() { 
+    this.isPlaying = false; 
+    this.currentTime = 0; 
+  }
+
+  onPlay() { 
+    this.isPlaying = true; 
+  }
+
+  onPause() { 
+    this.isPlaying = false; 
+  }
 
   onSeek(event: Event) {
     if (!this.audio) return;
-    const v = Number((event.target as HTMLInputElement).value) / 100;
-    this.audio.currentTime = v * this.duration;
+    const value = Number((event.target as HTMLInputElement).value) / 100;
+    this.audio.currentTime = value * this.duration;
   }
 
   onVolumeChange(event: Event) {
@@ -87,6 +129,68 @@ export class CustomAudioPlayerComponent implements OnInit, OnDestroy, AfterViewI
     this.volume = Number((event.target as HTMLInputElement).value) / 100;
     this.audio.volume = this.volume;
     this.isMuted = this.volume === 0;
+    if (this.volume > 0) {
+      this.lastVolumeBeforeMute = this.volume;
+    }
+    
+    if (this.volumeHideTimeout) {
+      clearTimeout(this.volumeHideTimeout);
+    }
+  }
+
+  onVolumeBarClick(event: MouseEvent) {
+    if (this.isLoading) return;
+    this.setVolumeFromPosition(event);
+  }
+
+  onVolumeBarMouseDown(event: MouseEvent) {
+    if (this.isLoading) return;
+    event.preventDefault();
+    this.isDraggingVolume = true;
+    this.isVolumeSliderActive = true;
+    this.volumeBarRect = (event.currentTarget as HTMLElement).getBoundingClientRect();
+    
+    this.setVolumeFromPosition(event);
+    
+    document.addEventListener('mousemove', this.onDocumentMouseMove.bind(this));
+    document.addEventListener('mouseup', this.onDocumentMouseUp.bind(this));
+    
+    if (this.volumeHideTimeout) {
+      clearTimeout(this.volumeHideTimeout);
+    }
+  }
+
+  private onDocumentMouseMove(event: MouseEvent) {
+    if (!this.isDraggingVolume || !this.volumeBarRect) return;
+    this.setVolumeFromPosition(event);
+  }
+
+  private onDocumentMouseUp() {
+    if (this.isDraggingVolume) {
+      this.isDraggingVolume = false;
+      this.isVolumeSliderActive = false;
+      this.volumeBarRect = null;
+      
+      document.removeEventListener('mousemove', this.onDocumentMouseMove.bind(this));
+      document.removeEventListener('mouseup', this.onDocumentMouseUp.bind(this));
+    }
+  }
+
+  private setVolumeFromPosition(event: MouseEvent) {
+    if (!this.audio || !this.volumeBarRect) return;
+
+    const y = event.clientY;
+    const barTop = this.volumeBarRect.top;
+    const barHeight = this.volumeBarRect.height;
+    const barBottom = barTop + barHeight;
+    
+    let newVolume = (barBottom - y) / barHeight;
+    newVolume = Math.max(0, Math.min(1, newVolume));
+    
+    this.volume = newVolume;
+    this.audio.volume = this.volume;
+    this.isMuted = this.volume === 0;
+    
     if (this.volume > 0) {
       this.lastVolumeBeforeMute = this.volume;
     }
@@ -100,6 +204,29 @@ export class CustomAudioPlayerComponent implements OnInit, OnDestroy, AfterViewI
     if (document.activeElement instanceof HTMLElement) {
       document.activeElement.blur();
     }
+  }
+
+  onVolumeContainerLeave(event: MouseEvent) {
+    if (this.isDraggingVolume) return;
+    
+    const relatedTarget = event.relatedTarget as HTMLElement;
+    if (!relatedTarget || !relatedTarget.closest('[data-volume-slider]')) {
+      this.hideVolumeSliderWithDelay();
+    }
+  }
+
+  onVolumeSliderLeave() {
+    if (!this.isVolumeSliderActive && !this.isDraggingVolume) {
+      this.hideVolumeSliderWithDelay();
+    }
+  }
+
+  private hideVolumeSliderWithDelay() {
+    this.volumeHideTimeout = setTimeout(() => {
+      if (!this.isVolumeSliderActive && !this.isDraggingVolume) {
+        this.showVolumeSlider = false;
+      }
+    }, 100);
   }
 
   toggleMute() {
@@ -116,21 +243,18 @@ export class CustomAudioPlayerComponent implements OnInit, OnDestroy, AfterViewI
   }
 
   formatTime(time: number): string {
-    const m = Math.floor(time / 60);
-    const s = Math.floor(time % 60).toString().padStart(2, '0');
-    return `${m}:${s}`;
+    const minutes = Math.floor(time / 60);
+    const seconds = Math.floor(time % 60).toString().padStart(2, '0');
+    return `${minutes}:${seconds}`;
   }
 
   downloadFile() {
-    const a = document.createElement('a');
-    a.href = this.src;
-    a.download = this.fileName || 'audio-file';
-    a.target = '_blank';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
+    const anchor = document.createElement('a');
+    anchor.href = this.src;
+    anchor.download = this.fileName || 'audio-file';
+    anchor.target = '_blank';
+    document.body.appendChild(anchor);
+    anchor.click();
+    document.body.removeChild(anchor);
   }
-
-  onPlay() { this.isPlaying = true; }
-  onPause() { this.isPlaying = false; }
 }

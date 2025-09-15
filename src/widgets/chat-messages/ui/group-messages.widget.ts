@@ -39,6 +39,8 @@ export class GroupMessagesWidget implements OnChanges, AfterViewInit, OnDestroy 
   contextMenuPosition = { x: 0, y: 0 };
   showContextMenu = false;
   highlightedMessageId: string | null = null;
+
+  // Can be shared
   isMessageHighlighted(id: string): boolean {
     return this.highlightedMessageId === id;
   }
@@ -50,6 +52,7 @@ export class GroupMessagesWidget implements OnChanges, AfterViewInit, OnDestroy 
 
   constructor(private cdr: ChangeDetectorRef) {}
 
+  // Can be abstracted
   ngAfterViewInit() {
     setTimeout(() => this.scrollToBottom(), 0);
     const hideContextMenu = () => (this.showContextMenu = false);
@@ -58,6 +61,7 @@ export class GroupMessagesWidget implements OnChanges, AfterViewInit, OnDestroy 
     this.subscribeToUserInfoUpdates();
   }
 
+  // Can be abstracted or shared
   ngOnChanges(changes: SimpleChanges) {
     if (changes['groupId'] && this.groupId) {
       this.initChat();
@@ -69,6 +73,7 @@ export class GroupMessagesWidget implements OnChanges, AfterViewInit, OnDestroy 
     }
   }
 
+  // Can be shared
   ngOnDestroy() {
     this.destroy$.next();
     this.destroy$.complete();
@@ -151,6 +156,7 @@ export class GroupMessagesWidget implements OnChanges, AfterViewInit, OnDestroy 
   isToday = isToday;
   truncateText = truncateText;
 
+  // Can be abstracted or shared
   onScroll() {
     if (this.showContextMenu) this.showContextMenu = false;
     if (!this.scrollContainer || this.loading || this.allLoaded) return;
@@ -161,6 +167,7 @@ export class GroupMessagesWidget implements OnChanges, AfterViewInit, OnDestroy 
     }
   }
 
+  // Can be abstracted or shared
   scrollToMessage(messageId: string) {
     if (!this.scrollContainer) return;
     const el = this.scrollContainer.nativeElement.querySelector(`[data-message-id="${messageId}"]`) as HTMLElement;
@@ -175,10 +182,12 @@ export class GroupMessagesWidget implements OnChanges, AfterViewInit, OnDestroy 
     setTimeout(() => this.highlightMessage(messageId), 300);
   }
 
+  // Can be abstracted or shared
   getRepliedMessage(messageId: string): GroupMessage | null {
     return this.messages.find(m => m.id === messageId) || null;
   }
 
+  // Can be abstracted or shared
   onMessageRightClick(event: MouseEvent, msg: GroupMessage) {
     event.preventDefault();
     event.stopPropagation();
@@ -195,24 +204,28 @@ export class GroupMessagesWidget implements OnChanges, AfterViewInit, OnDestroy 
     this.showContextMenu = true;
   }
 
+  // Can be abstracted or shared
   onEditMessage() {
     const msg = this.messages.find(m => m.id === this.contextMenuMessageId);
     if (msg) this.editMessage.emit(msg);
     this.showContextMenu = false;
   }
 
+  // Can be abstracted or shared
   onDeleteMessage() {
     const msg = this.messages.find(m => m.id === this.contextMenuMessageId);
     if (msg) this.deleteMessage.emit(msg);
     this.showContextMenu = false;
   }
 
+  // Can be abstracted or shared
   onReplyToMessage() {
     const msg = this.messages.find(m => m.id === this.contextMenuMessageId);
     if (msg) this.replyToMessage.emit(msg);
     this.showContextMenu = false;
   }
 
+  // Can be abstracted or shared
   canEditOrDelete(): boolean {
     const msg = this.messages.find(m => m.id === this.contextMenuMessageId);
     if (!msg) return false;
@@ -220,6 +233,7 @@ export class GroupMessagesWidget implements OnChanges, AfterViewInit, OnDestroy 
     return this.isMyMessage(msg);
   }
 
+  // Can be abstracted or shared
   private initChat() {
     this.messages = [];
     this.skip = 0;
@@ -243,6 +257,7 @@ export class GroupMessagesWidget implements OnChanges, AfterViewInit, OnDestroy 
       });
   }
 
+  // Can be abstracted or shared
   private loadMore() {
     if (this.loading || this.allLoaded) return;
     this.loading = true;
@@ -273,22 +288,26 @@ export class GroupMessagesWidget implements OnChanges, AfterViewInit, OnDestroy 
       });
   }
 
+  // Can be abstracted or shared
   private isScrolledToBottom(): boolean {
     if (!this.scrollContainer) return false;
     const el = this.scrollContainer.nativeElement;
     return el.scrollHeight - el.scrollTop <= el.clientHeight + 10;
   }
 
+  // Can be abstracted or shared
   private scrollToBottom() {
     if (!this.scrollContainer) return;
     const el = this.scrollContainer.nativeElement;
     el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
   }
 
+  // Can be abstracted or shared
   isMyMessage(msg: GroupMessage): boolean {
     return msg.sender?.trim().toLowerCase() === this.currentUserNickName.trim().toLowerCase();
   }
 
+  // Can be abstracted or shared
   isMessageDeleted(msg: GroupMessage): boolean {
     return msg.isDeleted === true;
   }
@@ -329,6 +348,7 @@ export class GroupMessagesWidget implements OnChanges, AfterViewInit, OnDestroy 
     return messages[idx].sender !== messages[idx - 1].sender;
   }
 
+  // Can be shared
   highlightMessage(messageId: string) {
     this.highlightedMessageId = null;
     this.highlightedMessageId = messageId;

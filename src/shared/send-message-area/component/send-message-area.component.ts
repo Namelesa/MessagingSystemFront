@@ -46,10 +46,13 @@ export class SendAreaComponent implements OnChanges {
   @Output() fileValidationError = new EventEmitter<FileValidationError[]>();
   @Output() removeFileFromEditingMessage = new EventEmitter<{ messageId: string; uniqueFileName: string }>();
   @Output() editFile = new EventEmitter<{ messageId: string; file: EditingFile }>();
+  @Output() draftTextChange = new EventEmitter<string>();
   
+  @Input() draftText: string = '';
   @Input() editingMessage?: BaseMessage;
   @Input() replyingToMessage?: BaseMessage;
-  @Input() maxFileSize: number = 1024 * 1024 * 1024; 
+  @Input() maxFileSize: number = 1024 * 1024 * 1024;  
+  @Input() editFileUploading: boolean = false;
 
   message = '';
   editingFiles: EditingFile[] = [];
@@ -89,6 +92,10 @@ export class SendAreaComponent implements OnChanges {
         this.replyingFiles = [];
       }
     }
+
+    if (changes['draftText']) {
+      this.message = this.draftText || '';
+    }
   }
 
   public parseReplyingMessage() {
@@ -114,8 +121,28 @@ export class SendAreaComponent implements OnChanges {
   
   private parseEditingMessage() {
     if (!this.editingMessage) return;
-
+  
     let parsed: any = null;
+    
+    if ((this.editingMessage as any).parsedFiles) {
+      this.editingFiles = (this.editingMessage as any).parsedFiles.map((file: any) => ({
+        fileName: file.fileName || file.originalName || file.uniqueFileName || 'Unknown file',
+        url: file.url || '',
+        type: file.type,
+        size: file.size,
+        uniqueId: file.uniqueId || file.uniqueFileName || undefined,
+        uniqueFileName: file.uniqueFileName || file.uniqueId || undefined
+      }));
+      
+      try {
+        const contentParsed = JSON.parse(this.editingMessage.content);
+        this.message = contentParsed.text || '';
+      } catch {
+        this.message = this.editingMessage.content || '';
+      }
+      return;
+    }
+    
     if ((this.editingMessage as any).parsedContent) {
       parsed = (this.editingMessage as any).parsedContent;
     } else if (this.editingMessage.content) {
@@ -151,7 +178,7 @@ export class SendAreaComponent implements OnChanges {
   
     this.message = '';
     this.editingFiles = [];
-  }  
+  } 
 
   public detectFileType(fileNameOrUrl: string): string | null {
     const lower = fileNameOrUrl.toLowerCase();
@@ -328,6 +355,11 @@ export class SendAreaComponent implements OnChanges {
   }
 
   emitMessage() {
+
+    if (this.editFileUploading) {
+      return;
+    }
+
     const text = this.message.trim();
     const hasFiles = this.editingFiles.length > 0;
   
@@ -342,20 +374,37 @@ export class SendAreaComponent implements OnChanges {
     if (now - this.lastSentAt < this.minIntervalMs) return;
   
     if (this.isEditing && this.editingMessage) {
-      const content = hasFiles
-        ? JSON.stringify({ text, files: this.editingFiles })
-        : text;
+      let content: string;
+    
+      if (hasFiles || text) {
+        const filesForContent = this.editingFiles.map(file => ({
+          fileName: file.fileName,
+          url: file.url,
+          type: file.type,
+          size: file.size,
+          uniqueId: file.uniqueId,
+          uniqueFileName: file.uniqueFileName
+        }));
   
+        content = JSON.stringify({
+          text: text || '',
+          files: filesForContent
+        });
+      } else {
+        content = '';
+      }
+    
       this.editComplete.emit({
         messageId: (this.editingMessage.messageId || this.editingMessage.id)!,
         content
       });
     } else {
       this.send.emit(text);
-    }
+    }    
   
     this.message = '';
     this.lastSentAt = now;
+    this.draftTextChange.emit('');
   }
   
   cancelEdit() {
@@ -401,7 +450,7 @@ export class SendAreaComponent implements OnChanges {
       this.editingFiles = this.editingFiles.map(f =>
         f.uniqueId === this.fileBeingEdited?.uniqueId ? {
           fileName: newFile.name,
-          url: URL.createObjectURL(newFile),
+          url: '',
           type: newFile.type,
           size: newFile.size,
           uniqueId: this.fileBeingEdited?.uniqueId,

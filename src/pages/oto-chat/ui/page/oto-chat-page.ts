@@ -45,6 +45,8 @@ export class OtoChatPageComponent extends BaseChatPageComponent implements OnIni
   deletedUserName = '';
   isDragOver = false;
 
+  draftText: string = '';
+
   isUploadModalOpen = false;
   uploadCaption: string = '';
   uploadItems: Array<{ 
@@ -68,6 +70,9 @@ export class OtoChatPageComponent extends BaseChatPageComponent implements OnIni
   
   private subscriptions: Subscription[] = [];
   user$: Observable<SearchUser | null>;
+  private editFileUploadingCount = 0;
+
+  private editingOriginalFiles: Array<any> = [];
 
   maxFileSize: number = 1024 * 1024 * 1024;
 
@@ -301,12 +306,11 @@ export class OtoChatPageComponent extends BaseChatPageComponent implements OnIni
         ).then(() => {
           this.replyingToMessage = undefined;
         }).catch(error => {
-          console.error('Error sending reply:', error);
         });
       } else {
         this.messageService.sendMessage(this.selectedChat, content).catch(error => {
-          console.error('Error sending message:', error);
         });
+        this.draftText = '';
       }
     }
   }
@@ -334,18 +338,108 @@ export class OtoChatPageComponent extends BaseChatPageComponent implements OnIni
     }
   
     if (validFiles.length > 0) {
-      this.uploadItems = validFiles.map(f => ({ 
-        file: f, 
-        name: f.name, 
-        size: f.size, 
-        progress: 0 
-      }));
-      this.uploadCaption = fileUploadEvent.message || '';
-      this.isUploadModalOpen = true;
-  
-      this.checkUploadSizeLimit();
+      if (this.editingMessage) {
+        this.addFilesToEditingMessage(validFiles, fileUploadEvent.message);
+      } else {
+        this.uploadItems = validFiles.map(f => ({ 
+          file: f, 
+          name: f.name, 
+          size: f.size, 
+          progress: 0 
+        }));
+        this.uploadCaption = fileUploadEvent.message || '';
+        this.isUploadModalOpen = true;
+        this.checkUploadSizeLimit();
+      }
     }
-  }  
+  }
+
+  private async addFilesToEditingMessage(files: File[], message?: string) {
+    if (!this.editingMessage) return;
+  
+    try {
+      const uploadUrls = await this.fileUploadApi.getUploadUrls(files);
+      const nameToUrl = new Map(uploadUrls.map(u => [u.originalName, u.url] as const));
+  
+      const uploadedFiles: Array<{ fileName: string; uniqueFileName: string; url: string; type: string; size: number }> = [];
+      
+      await Promise.all(files.map(file => new Promise<void>((resolve, reject) => {
+        const url = nameToUrl.get(file.name);
+        if (!url) {
+          reject(new Error(`No URL for file ${file.name}`));
+          return;
+        }
+  
+        const { observable } = this.fileUploadApi.uploadFileWithProgress(file, url, this.currentUserNickName);
+        
+        observable.subscribe({
+          next: (result: { progress: number; fileData?: { fileName: string; uniqueFileName: string; url: string } }) => {
+            if (result.fileData) {
+              uploadedFiles.push({
+                ...result.fileData,
+                type: file.type,
+                size: file.size
+              });
+            }
+          },
+          error: (err: any) => reject(err),
+          complete: () => resolve()
+        });
+      })));
+  
+      if (uploadedFiles.length > 0) {
+        try {
+          const fileNames = uploadedFiles.map(f => f.fileName);
+          const downloadUrls = await this.fileUploadApi.getDownloadUrls(fileNames);
+          
+          uploadedFiles.forEach(file => {
+            const downloadUrl = downloadUrls.find(d => d.originalName === file.fileName);
+            if (downloadUrl) {
+              file.url = downloadUrl.url;
+            }
+          });
+        } catch (error) {
+        }
+      }
+
+      let parsed: any;
+      try {
+        parsed = JSON.parse(this.editingMessage.content);
+      } catch {
+        parsed = { text: this.editingMessage.content || '', files: [] };
+      }
+  
+      if (message !== undefined) {
+        parsed.text = message;
+      }
+
+      parsed.files = parsed.files || [];
+      
+      const newFiles = uploadedFiles.map(file => ({
+        fileName: file.fileName,
+        uniqueFileName: file.uniqueFileName,
+        url: file.url,
+        type: file.type,
+        size: file.size,
+        uniqueId: file.uniqueFileName
+      }));
+  
+      parsed.files.push(...newFiles);
+  
+      const newEditingMessage = {
+        ...this.editingMessage,
+        content: JSON.stringify(parsed)
+      } as OtoMessage;
+  
+      (newEditingMessage as any).parsedFiles = parsed.files;
+  
+      this.editingMessage = newEditingMessage;
+      this.cdr.detectChanges();
+  
+    } catch (error) {
+      this.toastService.show('Failed to add files to message', 'error');
+    }
+  }
 
   private validateFiles(files: File[]): { validFiles: File[], errors: Array<{
     fileName: string;
@@ -434,24 +528,32 @@ export class OtoChatPageComponent extends BaseChatPageComponent implements OnIni
 
   onFileDrop(files: File[]) {
     if (!this.selectedChat || files.length === 0) return;
-
-    const { validFiles, errors } = this.validateFiles(files);
   
+    const { validFiles, errors } = this.validateFiles(files);
+
     if (errors.length > 0) {
       this.onFileValidationError(errors);
     }
   
     if (validFiles.length > 0) {
-      const newItems = validFiles.map(f => ({ 
-        file: f, 
-        name: f.name, 
-        size: f.size, 
-        progress: 0 
-      }));
-      this.uploadItems.push(...newItems);
+      if (this.editingMessage) {
+        this.addFilesToEditingMessage(validFiles);
+      } else {
+        const newItems = validFiles.map(f => ({ 
+          file: f, 
+          name: f.name, 
+          size: f.size, 
+          progress: 0 
+        }));
+        this.uploadItems.push(...newItems);
+
+        if (this.draftText.trim()) {
+          this.uploadCaption = this.draftText;
+        }
   
-      if (!this.isUploadModalOpen) {
-        this.isUploadModalOpen = true;
+        if (!this.isUploadModalOpen) {
+          this.isUploadModalOpen = true;
+        }
       }
     }
   }
@@ -543,8 +645,8 @@ export class OtoChatPageComponent extends BaseChatPageComponent implements OnIni
           
           const content = JSON.stringify({ text: this.uploadCaption || '', files: updatedFiles });
           await this.messageService.sendMessage(this.selectedChat, content);
+          this.draftText = '';
         } catch (error) {
-          console.error('Failed to get download URLs, using upload URLs:', error);
           const content = JSON.stringify({ text: this.uploadCaption || '', files: uploadedFiles });
           await this.messageService.sendMessage(this.selectedChat, content);
         }
@@ -595,109 +697,436 @@ export class OtoChatPageComponent extends BaseChatPageComponent implements OnIni
   onEditMessage(message: OtoMessage) {
     if (this.messagesComponent) {
       const parsedContent = this.messagesComponent.parseContent(message);
-      
-      const editableMessage: OtoMessage = {
+      const editableMessage: OtoMessage & { parsedFiles?: any[] } = {
         ...message,
-        content: parsedContent.text || ''
+        content: JSON.stringify({
+          text: parsedContent.text || '',
+          files: parsedContent.files || []
+        }),
+        parsedFiles: parsedContent.files || []
       };
   
-      this.editingMessage = {
-        ...editableMessage,
-        parsedFiles: parsedContent.files || []
-      } as OtoMessage & { parsedFiles?: any[] };
+      this.editingMessage = editableMessage;
+
+      this.editingOriginalFiles = (parsedContent.files || []).map((f: any) => ({
+        ...f,
+        originalUniqueId: f.uniqueId || f.uniqueFileName,
+        originalFileName: f.fileName,
+        originalUniqueFileName: f.uniqueFileName
+      }));
+
     } else {
-      this.editingMessage = message;
+      let parsed: any;
+      try {
+        parsed = JSON.parse(message.content);
+      } catch {
+        parsed = { text: message.content, files: [] };
+      }
+  
+      this.editingMessage = {
+        ...message,
+        content: JSON.stringify(parsed),
+        parsedFiles: parsed.files || []
+      } as OtoMessage & { parsedFiles?: any[] };
+
+      this.editingOriginalFiles = (parsed.files || []).map((f: any) => ({
+        ...f,
+        originalUniqueId: f.uniqueId || f.uniqueFileName,
+        originalFileName: f.fileName,
+        originalUniqueFileName: f.uniqueFileName
+      }));
     }
   
     this.replyingToMessage = undefined;
-  }  
+  } 
 
   async onEditComplete(editData: { messageId: string; content: string }) {
     try {
+      let parsedContent: any;
+      try {
+        parsedContent = JSON.parse(editData.content);
+        if (parsedContent.files && parsedContent.files.length > 0) {
+          for (const file of parsedContent.files) {
+            if (!file.url || file.url.includes('s3.amazonaws.com')) {
+              try {
+                const downloadUrls = await this.fileUploadApi.getDownloadUrls([file.fileName], this.currentUserNickName);
+                if (downloadUrls && downloadUrls.length > 0) {
+                  file.url = downloadUrls[0].url;
+                }
+              } catch (error) {
+              }
+            }
+
+            delete file._forceUpdate;
+            delete file._typeChanged;
+            delete file._replacementKey;
+            delete file._isNew;
+            delete file._addedKey;
+          }
+          
+          editData.content = JSON.stringify(parsedContent);
+        }
+      } catch (parseError) {
+      }
+
+      if (this.editingOriginalFiles && this.editingOriginalFiles.length > 0) {
+        const finalFiles = parsedContent?.files || [];
+        await this.deleteRemovedFilesAfterEdit(this.editingOriginalFiles, finalFiles);
+      }
+      
       await this.messageService.editMessage(editData.messageId, editData.content);
+            
+      if (this.messagesComponent) {
+        
+        this.messagesComponent['messageContentCache'].delete(editData.messageId);
+        
+        const message = this.messagesComponent.messages.find(m => m.messageId === editData.messageId);
+        if (message) {
+          delete (message as any).parsedContent;
+          delete (message as any)._hasTemporaryChanges;
+          message.content = editData.content;
+          
+          (message as any)._savedSuccessfully = Date.now();
+        }
+        
+        this.messagesComponent.cdr.detectChanges();
+      }
+
       this.editingMessage = undefined;
+      this.editingOriginalFiles = [];
+      this.cdr.detectChanges();
+      
+      this.forceCompleteMessageUpdate(editData.messageId);
+      
+    } catch (error) {
+    }
+  }
+
+  private async deleteRemovedFilesAfterEdit(originalFiles: any[], finalFiles: any[]): Promise<void> {
+    try {
+      const filesToDelete = originalFiles.filter(originalFile => {
+        const stillExists = finalFiles.some(finalFile => {
+          return originalFile.uniqueFileName === finalFile.uniqueFileName ||
+                 originalFile.fileName === finalFile.fileName ||
+                 originalFile.uniqueId === finalFile.uniqueId;
+        });
+        return !stillExists;
+      });
+  
+      if (filesToDelete.length === 0) {
+        return;
+      }
+    
+      const deletionPromises = filesToDelete.map(async (file) => {
+        try {
+          if (file.uniqueFileName) {
+            const success = await this.fileUploadApi.deleteSpecificFileVersion(
+              file.uniqueFileName, 
+              this.currentUserNickName
+            );
+            
+            return { 
+              fileName: file.fileName, 
+              uniqueFileName: file.uniqueFileName, 
+              success 
+            };
+          }
+          return { 
+            fileName: file.fileName, 
+            uniqueFileName: file.uniqueFileName, 
+            success: false, 
+            error: 'No uniqueFileName' 
+          };
+        } catch (error) {
+          return { 
+            fileName: file.fileName, 
+            uniqueFileName: file.uniqueFileName, 
+            success: false, 
+            error: error 
+          };
+        }
+      });
+  
+      const results = await Promise.all(deletionPromises);
+      const failed = results.filter(r => !r.success);
+      
+      if (failed.length > 0) {
+        this.toastService.show(
+          `Warning: ${failed.length} file(s) could not be deleted from storage`, 
+          'error'
+        );
+      }
+  
     } catch (error) {
     }
   }
 
   onEditCancel() {
     this.editingMessage = undefined;
+    this.editingOriginalFiles = [];
   }
 
-async onEditFile(editData: { messageId: string; file: any }) {
-  const newFile: File = editData.file?.file;
-  if (!newFile) return;
+  get isEditFileUploading(): boolean {
+    return this.editFileUploadingCount > 0;
+  }
 
-  try {
-    // 1. Получаем URL для загрузки
-    const [fileUrl] = await this.fileUploadApi.getUploadUrls([newFile]);
-
-    // 2. Загружаем файл с прогрессом
-    const { observable } = this.fileUploadApi.uploadFileWithProgress(newFile, fileUrl.url, this.currentUserNickName);
-
-    const uploaded = await new Promise<{ fileName: string; uniqueFileName: string; url: string }>((resolve, reject) => {
-      const sub = observable.subscribe({
-        next: ev => {
-          if (ev.fileData) {
-            sub.unsubscribe();
-            resolve(ev.fileData);
+  async onEditFile(editData: { messageId: string; file: any }) {
+    this.editFileUploadingCount = (this.editFileUploadingCount || 0) + 1;
+    this.cdr.detectChanges();
+  
+    try {
+      const newFile: File = editData.file?.file;
+      const messageId = editData.messageId;
+  
+      if (!newFile || !messageId || !this.editingMessage) {
+        return;
+      }
+  
+      const oldFile = editData.file;
+  
+      try {
+        if (oldFile?.uniqueFileName) {
+          try {
+            await this.fileUploadApi.deleteSpecificFileVersion(oldFile.uniqueFileName, this.currentUserNickName);
+          } catch (error) {
+          }
+        }
+  
+        const [uploadUrl] = await this.fileUploadApi.getUploadUrls([newFile]);
+        const uploadedFile = await this.uploadNewFile(newFile, uploadUrl.url);
+  
+        const rawUrl = await this.getDownloadUrl(uploadedFile.fileName).catch(() => uploadedFile.url);
+        const downloadUrl = `${rawUrl}?v=${Date.now()}`;
+  
+        const newFileData = {
+          fileName: uploadedFile.fileName,
+          uniqueFileName: uploadedFile.uniqueFileName,
+          url: downloadUrl,
+          type: newFile.type,
+          size: newFile.size,
+          uniqueId: `${uploadedFile.uniqueFileName}_${Date.now()}`,
+          _refreshKey: `replacement_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+          _forceUpdate: Date.now(),
+          _typeChanged: (oldFile?.type !== newFile.type),
+          _replacementKey: `replace_${Date.now()}_${Math.random()}`
+        };
+  
+        this.updateEditingMessageOnly(oldFile, newFileData);
+  
+        if (this.messagesComponent) {
+          try {
+            this.messagesComponent.clearMessageCache(messageId);
+            setTimeout(() => this.messagesComponent?.forceFileRefresh(messageId, oldFile?.uniqueId), 50);
+            setTimeout(() => this.messagesComponent?.fullMessageRerender(messageId), 100);
+          } catch (e) {
+          }
+        }
+  
+      } catch (err) {
+      }
+    } finally {
+      this.editFileUploadingCount = Math.max(0, (this.editFileUploadingCount || 1) - 1);
+      try {
+        this.cdr.detectChanges();
+      } catch (e) {
+      }
+    }
+  }  
+  
+  private updateEditingMessageOnly(oldFile: any, newFileData: any): void {
+    if (!this.editingMessage) return;
+  
+    let parsed: any;
+    try {
+      parsed = JSON.parse(this.editingMessage.content || '{}');
+    } catch {
+      parsed = { text: this.editingMessage.content || '', files: [] };
+    }
+  
+    parsed.files = parsed.files || [];
+    
+    const fileIndex = this.findFileIndex(parsed.files, oldFile);
+    
+    if (fileIndex >= 0) {
+      const oldFileData = { ...parsed.files[fileIndex] };
+      
+      parsed.files[fileIndex] = {
+        ...newFileData,
+        _forceUpdate: Date.now(), 
+        _typeChanged: oldFileData.type !== newFileData.type, 
+        _replacementKey: `replacement_${Date.now()}_${Math.random()}`
+      };
+      
+    } else {
+    
+      const newFile = {
+        ...newFileData,
+        _isNew: true,
+        _forceUpdate: Date.now(),
+        _addedKey: `added_${Date.now()}_${Math.random()}`
+      };
+      
+      parsed.files.push(newFile);
+      parsed.files = this.removeDuplicateFiles(parsed.files);
+    }
+  
+    this.editingMessage = {
+      ...this.editingMessage,
+      content: JSON.stringify(parsed),
+      _hasTemporaryChanges: true, 
+      lastUpdated: Date.now(),
+      forceRefresh: true,
+      _contentUpdated: Date.now() 
+    } as OtoMessage;
+  
+    (this.editingMessage as any).parsedFiles = parsed.files;
+    
+    if (this.messagesComponent) {
+      this.messagesComponent.clearMessageCache(this.editingMessage.messageId);
+      
+      setTimeout(() => {
+        if (this.messagesComponent) {
+          this.messagesComponent.fullMessageRerender(this.editingMessage!.messageId);
+        }
+      }, 50);
+    }
+    
+    this.cdr.markForCheck();
+    this.cdr.detectChanges();
+  }
+  
+  private async uploadNewFile(
+    file: File, 
+    uploadUrl: string
+  ): Promise<{ fileName: string; uniqueFileName: string; url: string }> {
+    const { observable } = this.fileUploadApi.uploadFileWithProgress(
+      file, 
+      uploadUrl, 
+      this.currentUserNickName
+    );
+  
+    return new Promise((resolve, reject) => {
+      let finalFileData: any = null;
+  
+      const subscription = observable.subscribe({
+        next: result => {
+          if (result.fileData) {
+            finalFileData = result.fileData;
           }
         },
-        error: err => {
-          sub.unsubscribe();
-          reject(err);
+        error: error => {
+          subscription.unsubscribe();
+          reject(error);
+        },
+        complete: () => {
+          subscription.unsubscribe();
+          if (finalFileData) {
+            resolve(finalFileData);
+          } else {
+            reject(new Error('Upload completed but no file data received'));
+          }
         }
       });
     });
-
-    // 3. Парсим текущее содержимое сообщения
-    let parsed: any;
-    try {
-      parsed = JSON.parse(this.editingMessage?.content || '{}');
-    } catch {
-      parsed = { text: this.editingMessage?.content || '', files: [] };
-    }
-
-    // 4. Заменяем старый файл
-    parsed.files = parsed.files || [];
-    const idx = parsed.files.findIndex((f: any) =>
-      f.uniqueFileName === editData.file.uniqueFileName || f.fileName === editData.file.fileName
-    );
-
-    const newMeta = {
-      fileName: uploaded.fileName,
-      uniqueFileName: uploaded.uniqueFileName,
-      url: uploaded.url,
-      type: newFile.type,
-      size: newFile.size
-    };
-
-    if (idx >= 0) {
-      parsed.files[idx] = newMeta;
-    } else {
-      parsed.files.push(newMeta);
-    }
-
-    // 5. Обновляем сообщение
-    this.editingMessage = {
-      ...this.editingMessage!,
-      content: JSON.stringify(parsed)
-    };
-
-    console.log('✅ editingMessage после редактирования файла:', this.editingMessage);
-
-  } catch (err) {
-    console.error('❌ Ошибка при замене файла:', err);
-    this.toastService.show('Не удалось загрузить новый файл', 'error');
   }
-}
+  
+  private removeDuplicateFiles(files: any[]): any[] {
+    const seen = new Set<string>();
+    return files.filter(file => {
+      const key = file.fileName;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  }
+  
+  private async getDownloadUrl(fileName: string): Promise<string> {
+    const downloadUrls = await this.fileUploadApi.getDownloadUrls([fileName], this.currentUserNickName);
+    return downloadUrls?.[0]?.url || '';
+  }
+  
+  private findFileIndex(files: any[], targetFile: any): number {
+    const searchStrategies = [
+      (f: any) => f.uniqueFileName === targetFile.uniqueFileName,
+      
+      (f: any) => f.uniqueId === targetFile.uniqueId || f.uniqueFileName === targetFile.uniqueId,
+      
+      (f: any) => f.url === targetFile.url && f.url,
+      
+      (f: any) => f.fileName === targetFile.fileName && f.type === targetFile.type,
+      
+      (f: any) => f.fileName === targetFile.fileName,
+      
+      (f: any) => f.fileName === targetFile.fileName && f.size === targetFile.size,
 
+      (f: any, index: number) => index === 0 && files.length === 1
+    ];
+  
+    for (let i = 0; i < searchStrategies.length; i++) {
+      const strategy = searchStrategies[i];
+      const index = files.findIndex((f, idx) => strategy(f, idx));
+      
+      if (index >= 0) {
+        return index;
+      }
+    }
+    return -1;
+  }
+    
   onDeleteMessage(message: OtoMessage) {
     this.messageToDelete = message;
     this.isDeleteModalOpen = true;
   }
 
   deleteForBoth: boolean = false;
+
+  public forceCompleteMessageUpdate(messageId: string): void {
+    
+    if (this.messagesComponent) {
+      const message = this.messagesComponent.messages.find(m => m.messageId === messageId);
+      if (message) {
+        
+        delete (message as any).parsedContent;
+        delete (message as any).parsedFiles;
+        this.messagesComponent['messageContentCache'].delete(messageId);
+        
+        (message as any).forceRefresh = true;
+        (message as any).lastUpdated = Date.now();
+        (message as any)._hasTemporaryChanges = false;
+        (message as any)._forceRerender = Date.now();
+        
+        try {
+          const parsed = JSON.parse(message.content);
+          if (parsed.files) {
+            parsed.files.forEach((file: any) => {
+              if (file.type?.startsWith('video/')) {
+                file._videoRefreshKey = Date.now();
+              }
+            });
+            message.content = JSON.stringify(parsed);
+          }
+        } catch (e) {
+        }
+      }
+      
+      this.messagesComponent.fullMessageRerender(messageId);
+
+      setTimeout(() => {
+        if (this.messagesComponent) {
+          this.messagesComponent.cdr.detectChanges();
+        }
+      }, 10);
+      
+      setTimeout(() => {
+        if (this.messagesComponent) {
+          this.messagesComponent.fullMessageRerender(messageId);
+        }
+      }, 100);
+    }
+
+    this.cdr.markForCheck();
+    this.cdr.detectChanges();
+  }  
 
   async onConfirmDelete() {
     if (this.messageToDelete && this.selectedChat) {
@@ -711,7 +1140,6 @@ async onEditFile(editData: { messageId: string; file: any }) {
         await this.messageService.deleteMessage(this.messageToDelete.messageId, deleteType);
         this.closeDeleteModal();
       } catch (error) {
-        console.error('Error deleting message:', error);
       }
     }
   }
@@ -722,45 +1150,49 @@ async onEditFile(editData: { messageId: string; file: any }) {
 
   private async deleteFilesFromMessage(message: OtoMessage) {
     try {
-      const parsed = JSON.parse(message.content);
+      let parsed: any;
       
-      if (parsed.files && Array.isArray(parsed.files)) {
-        const filesToDelete = parsed.files
-          .filter((file: any) => file.fileName && file.uniqueFileName)
-          .map((file: any) => ({
-            fileName: file.fileName,
-            uniqueFileName: file.uniqueFileName
-          }));
-        
-        if (filesToDelete.length > 0) {          
-          const deletionPromises = filesToDelete.map(async (file: { fileName: string; uniqueFileName: string }) => {
-            try {
-              const success = await this.fileUploadApi.deleteSpecificFileVersion(
-                file.uniqueFileName, 
-                this.currentUserNickName
-              );
-              
-              if (success && this.messagesComponent) {
-                await this.messagesComponent.removeFileFromMessage(message.messageId, file.uniqueFileName);
-              }
-              
-              return { fileName: file.fileName, uniqueFileName: file.uniqueFileName, success };
-            } catch (error) {
-              console.error(`❌ Failed to delete file ${file.uniqueFileName}:`, error);
-              return { fileName: file.fileName, uniqueFileName: file.uniqueFileName, success: false, error };
-            }
-          });
-          
-          const results = await Promise.all(deletionPromises);
-          const failed = results.filter(r => !r.success).map(r => r.fileName);
-                    
-          if (failed.length > 0) {
-            console.warn('⚠️ Failed to delete file versions:', failed);
-          }
-        }
+      try {
+        parsed = JSON.parse(message.content);
+      } catch (parseError) {
+        return;
       }
+      
+      if (!parsed.files || !Array.isArray(parsed.files) || parsed.files.length === 0) {
+        return;
+      }
+      
+      const filesToDelete = parsed.files
+        .filter((file: any) => file.fileName && file.uniqueFileName)
+        .map((file: any) => ({
+          fileName: file.fileName,
+          uniqueFileName: file.uniqueFileName
+        }));
+            
+      const deletionPromises = filesToDelete.map(async (file: { fileName: string; uniqueFileName: string }) => {
+        try {
+          const success = await this.fileUploadApi.deleteSpecificFileVersion(
+            file.uniqueFileName, 
+            this.currentUserNickName
+          );
+          
+          if (success && this.messagesComponent) {
+            await this.messagesComponent.removeFileFromMessage(message.messageId, file.uniqueFileName);
+          }
+          
+          return { fileName: file.fileName, uniqueFileName: file.uniqueFileName, success };
+        } catch (error) {
+          return { fileName: file.fileName, uniqueFileName: file.uniqueFileName, success: false, error };
+        }
+      });
+      
+      const results = await Promise.all(deletionPromises);
+      const failed = results.filter(r => !r.success).map(r => r.fileName);
+                    
+      if (failed.length > 0) {
+      }
+      
     } catch (error) {
-      console.error('❌ Error deleting files from message:', error);
     }
   }
 
@@ -785,6 +1217,15 @@ async onEditFile(editData: { messageId: string; file: any }) {
     }
   }
 
+  onUploadEnter(event: KeyboardEvent) {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      if (!this.isUploading && this.uploadItems.length > 0) {
+        this.startUploadAndSend();
+      }
+    }
+  }
+  
   @HostListener('document:keydown', ['$event'])
   onDocumentKeyDown(event: KeyboardEvent) {
     if (event.key === 'Escape') {

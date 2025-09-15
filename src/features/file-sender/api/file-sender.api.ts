@@ -192,7 +192,6 @@ export class FileUploadApiService {
       const mappings = batchResult.mappings || [];
 
       if (mappings.length === 0) {
-        console.warn('❌ No mappings found for files:', fileNames);
         return [];
       }
 
@@ -259,7 +258,6 @@ export class FileUploadApiService {
       const mappings = batchResult.mappings || [];
 
       if (mappings.length === 0) {
-        console.warn('❌ No mappings found for files:', fileNames);
         return [];
       }
 
@@ -357,7 +355,6 @@ export class FileUploadApiService {
       
       const parts = uniqueFileName.split('_');
       if (parts.length < 2) {
-        console.warn(`⚠️ Invalid uniqueFileName format: ${uniqueFileName}`);
         return false;
       }
       
@@ -367,24 +364,18 @@ export class FileUploadApiService {
         await this.deleteFileVersion(originalName, userId, uniqueFileName);
         return true;
       } catch (deleteError) {
-        console.warn(`⚠️ Failed to delete mapping for ${uniqueFileName}:`, deleteError);
         return true;
       }
       
     } catch (error) {
-      console.error(`❌ Error deleting specific file version ${uniqueFileName}:`, error);
       return false;
     }
   }
 
   async deleteFileByOriginalName(originalName: string, userId: string): Promise<boolean> {
     try {
-      console.warn(`⚠️ deleteFileByOriginalName called - this will delete ALL versions of "${originalName}"`);
-      
       const versions = await this.getFileVersionsByUser(originalName, userId);
-      
       if (!versions || versions.length === 0) {
-        console.warn('⚠️ Cannot delete file - no versions found:', originalName);
         return false;
       }
 
@@ -627,11 +618,9 @@ export class FileUploadApiService {
         const decodedFileName = decodeURIComponent(cleanFileName);
         return decodedFileName;
       } catch (decodeError) {
-        console.warn('⚠️ Could not decode filename from URL, using as is:', cleanFileName);
         return cleanFileName;
       }
     } catch (error) {
-      console.warn('⚠️ Could not extract filename from URL:', url);
       return null;
     }
   }

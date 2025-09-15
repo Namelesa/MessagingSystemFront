@@ -108,74 +108,179 @@
                 {{ content.text }}
               </div>
 
-              <div *ngIf="content.files?.length" class="mt-2 flex flex-col gap-2">
-                <ng-container *ngFor="let file of content.files; let fileIndex = index; trackBy: trackByFile">
-                   
-                  <div *ngIf="file.type?.startsWith('image/') && file.url" class="relative">
-                    <img [src]="file.url"
-                         [alt]="file.fileName"
-                         class="max-w-[200px] max-h-[200px] rounded-lg cursor-pointer hover:opacity-90 transition-opacity object-cover"
-                         (click)="openFileViewer(fileIndex, msg.messageId)"
-                         (error)="onImageError($event, file)"/>
-                    <div *ngIf="!file.url || file.url === 'undefined' || file.url === 'null'" 
-                         class="absolute inset-0 bg-gray-200 dark:bg-gray-700 rounded-lg flex items-center justify-center">
-                      <span class="text-xs text-gray-500 dark:text-gray-400">Failed to load image</span>
-                    </div>
-                  </div>
-
-                  <div *ngIf="file.type?.startsWith('video/') && file.url" class="relative">
-                    <video [src]="file.url"
-                           class="max-w-[200px] max-h-[200px] rounded-lg cursor-pointer hover:opacity-90 transition-opacity object-cover"
-                           (click)="openFileViewer(fileIndex, msg.messageId)"
-                           (error)="onVideoError($event, file)"
-                           preload="metadata"
-                           muted
-                           autoplay
-                           loop
-                           playsinline
-                           webkit-playsinline>
-                      <source [src]="file.url" [type]="file.type" />
-                    </video>
-                    <div *ngIf="!file.url || file.url === 'undefined' || file.url === 'null'" 
-                         class="absolute inset-0 bg-gray-200 dark:bg-gray-700 rounded-lg flex items-center justify-center">
-                      <span class="text-xs text-gray-500 dark:text-gray-400">Failed to load video</span>
-                    </div>
-                  </div>
-
-                  <div *ngIf="file.type?.startsWith('audio/') && file.url">
-                    <app-custom-audio-player
-                      [src]="file.url"
-                      [fileName]="file.fileName"
-                      [type]="file.type">
-                    </app-custom-audio-player>
-                  </div>
-
-                  <div *ngIf="!file.type?.startsWith('image/') && !file.type?.startsWith('video/') && !file.type?.startsWith('audio/')" 
-                       class="flex items-center gap-3 py-1">
-                    <a [href]="file.url"
-                       [attr.download]="file.fileName"
-                       target="_blank"
-                       class="flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-105"
-                       [ngClass]="isMyMessage(msg) 
-                         ? 'bg-white/20 hover:bg-white/30 text-white' 
-                         : 'bg-gray-800/10 hover:bg-gray-800/20 dark:bg-white/10 dark:hover:bg-white/20 text-gray-700 dark:text-gray-200'">
-                      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
-                              d="M12 10v6m0 0l-3-3m3 3l3-3"/>
-                      </svg>
-                    </a>
+              <div *ngIf="content.files?.length" class="mt-2">
+                <div class="media-files" 
+                     [style.display]="getMediaFiles(content.files).length > 0 ? 'block' : 'none'">
+                  <div class="grid gap-1 rounded-lg overflow-hidden max-w-xs"
+                  [ngClass]="{
+                    'grid-cols-1': getMediaFiles(content.files).length === 1,
+                    'grid-cols-2': getMediaFiles(content.files).length === 2 
+                                  || getMediaFiles(content.files).length === 3 
+                                  || getMediaFiles(content.files).length === 4
+                                  || getMediaFiles(content.files).length > 4
+                  }">
                     
-                    <div class="flex-1 min-w-0">
-                      <p class="text-sm font-medium truncate leading-tight"
-                         [ngClass]="isMyMessage(msg) 
-                           ? 'text-white' 
-                           : 'text-gray-900 dark:text-white'">
-                        {{ file.fileName || file.originalName || 'Document' }}
-                      </p>
-                    </div>
+                    <ng-container *ngFor="let file of getMediaFiles(content.files); let fileIndex = index; let isFirst = first; trackBy: trackByFileWithRefresh">
+                      
+                      <div *ngIf="file.type?.startsWith('image/') && file.url" 
+                           class="relative group cursor-pointer overflow-hidden bg-gray-200 dark:bg-gray-700"
+                           [ngClass]="{
+                             'aspect-square': getMediaFiles(content.files).length > 1,
+                             'aspect-video': getMediaFiles(content.files).length === 1 && file.type?.startsWith('image/'),
+                             'col-span-2': getMediaFiles(content.files).length === 3 && isFirst,
+                             'row-span-2': getMediaFiles(content.files).length === 5 && isFirst
+                           }"
+                           [attr.data-file-key]="file._refreshKey"
+                           [attr.data-message-id]="msg.messageId"
+                           [attr.data-file-index]="getOriginalFileIndex(content.files, file)"
+                           [attr.data-file-type]="file.type"
+                           [attr.data-unique-id]="file.uniqueId"
+                           [attr.data-force-update]="file._forceUpdate"
+                           [attr.data-type-key]="file._typeKey"
+                           (click)="openFileViewer(getOriginalFileIndex(content.files, file), msg.messageId)">
+                        
+                        <img [src]="file.url"
+                             [alt]="file.fileName"
+                             [attr.data-refresh]="file._refreshKey"
+                             [attr.data-unique-id]="file.uniqueId"
+                             [attr.data-file-type]="file.type"
+                             [attr.data-force-update]="file._forceUpdate"
+                             [attr.data-type-key]="file._typeKey"
+                             class="w-full h-full object-cover group-hover:opacity-90 transition-opacity"/>
+                        
+                        <div *ngIf="getMediaFiles(content.files).length > 4 && fileIndex === 3" 
+                             class="absolute inset-0 bg-black bg-opacity-60 flex items-center justify-center">
+                          <span class="text-white text-lg font-semibold">+{{ getMediaFiles(content.files).length - 4 }}</span>
+                        </div>
+                        
+                        <div *ngIf="!file.url || file.url === 'undefined' || file.url === 'null'" 
+                             class="absolute inset-0 bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
+                          <span class="text-xs text-gray-500 dark:text-gray-400">Failed to load</span>
+                        </div>
+                      </div>
+              
+                      <div *ngIf="file.type?.startsWith('video/') && file.url" 
+                           class="relative group cursor-pointer overflow-hidden bg-gray-200 dark:bg-gray-700"
+                           [ngClass]="{
+                             'aspect-square': getMediaFiles(content.files).length > 1,
+                             'aspect-video': getMediaFiles(content.files).length === 1,
+                             'col-span-2': getMediaFiles(content.files).length === 3 && isFirst,
+                             'row-span-2': getMediaFiles(content.files).length === 5 && isFirst
+                           }"
+                           [attr.data-file-key]="file._refreshKey"
+                           [attr.data-message-id]="msg.messageId"
+                           [attr.data-file-index]="getOriginalFileIndex(content.files, file)"
+                           [attr.data-file-type]="file.type"
+                           [attr.data-unique-id]="file.uniqueId"
+                           [attr.data-force-update]="file._forceUpdate"
+                           [attr.data-type-key]="file._typeKey"
+                           (click)="openFileViewer(getOriginalFileIndex(content.files, file), msg.messageId)">
+                        
+                        <video [src]="file.url"
+                               [attr.data-refresh]="file._refreshKey"
+                               [attr.data-unique-id]="file.uniqueId"
+                               [attr.data-file-type]="file.type"
+                               [attr.data-force-update]="file._forceUpdate"
+                               [attr.data-type-key]="file._typeKey"
+                               class="w-full h-full object-cover group-hover:opacity-90 transition-opacity"
+                               preload="metadata"
+                               muted
+                               playsinline
+                               webkit-playsinline>
+                          <source [src]="file.url" [type]="file.type" />
+                        </video>
+                        
+                        <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
+                          <div class="bg-black bg-opacity-50 rounded-full p-2">
+                            <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
+                              <path d="M8 5v14l11-7z"/>
+                            </svg>
+                          </div>
+                        </div>
+   
+                        <div *ngIf="getMediaFiles(content.files).length > 4 && fileIndex === 3" 
+                             class="absolute inset-0 bg-black bg-opacity-60 flex items-center justify-center">
+                          <span class="text-white text-lg font-semibold">+{{ getMediaFiles(content.files).length - 4 }}</span>
+                        </div>
+                        
+                        <div *ngIf="!file.url || file.url === 'undefined' || file.url === 'null'" 
+                             class="absolute inset-0 bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
+                          <span class="text-xs text-gray-500 dark:text-gray-400">Failed to load</span>
+                        </div>
+                      </div>
+                    </ng-container>
                   </div>
-                </ng-container>
+                </div>
+              
+                <div class="flex flex-col gap-2 mt-2">
+                  <ng-container *ngFor="let file of content.files; let fileIndex = index; trackBy: trackByFileWithRefresh">
+                    <div *ngIf="file.type?.startsWith('audio/') && file.url" 
+                         [attr.data-file-key]="file._refreshKey"
+                         [attr.data-message-id]="msg.messageId"
+                         [attr.data-file-index]="fileIndex"
+                         [attr.data-file-type]="file.type"
+                         [attr.data-unique-id]="file.uniqueId"
+                         [attr.data-force-update]="file._forceUpdate"
+                         [attr.data-type-key]="file._typeKey">
+                      <app-custom-audio-player
+                        [src]="file.url"
+                        [fileName]="file.fileName"
+                        [attr.data-file-key]="file._refreshKey"
+                        [attr.data-unique-id]="file.uniqueId"
+                        [attr.data-file-type]="file.type"
+                        [attr.data-force-update]="file._forceUpdate"
+                        [attr.data-type-key]="file._typeKey">
+                      </app-custom-audio-player>
+                    </div>
+                  </ng-container>
+                </div>
+              
+                <div class="flex flex-col gap-2 mt-2">
+                  <ng-container *ngFor="let file of content.files; let fileIndex = index; trackBy: trackByFileWithRefresh">
+                    <div *ngIf="!file.type?.startsWith('image/') && !file.type?.startsWith('video/') && !file.type?.startsWith('audio/')" 
+                         class="flex items-center gap-3 py-2 px-3 rounded-lg bg-blue-500"
+                         [attr.data-file-key]="file._refreshKey"
+                         [attr.data-message-id]="msg.messageId"
+                         [attr.data-file-index]="fileIndex"
+                         [attr.data-file-type]="file.type"
+                         [attr.data-unique-id]="file.uniqueId"
+                         [attr.data-force-update]="file._forceUpdate"
+                         [attr.data-type-key]="file._typeKey">
+                      
+                      <a [href]="file.url"
+                         [attr.data-file-key]="file._refreshKey"
+                         [attr.data-unique-id]="file.uniqueId"
+                         [attr.data-file-type]="file.type"
+                         [attr.data-force-update]="file._forceUpdate"
+                         [attr.data-type-key]="file._typeKey"
+                         [attr.download]="file.fileName"
+                         target="_blank"
+                         class="flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-105"
+                         [ngClass]="isMyMessage(msg) 
+                           ? 'bg-white/20 hover:bg-white/30 text-white' 
+                           : 'bg-gray-800/10 hover:bg-gray-800/20 dark:hover:bg-white/20 text-gray-700 dark:text-gray-200'">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                d="M12 10v6m0 0l-3-3m3 3l3-3"/>
+                        </svg>
+                      </a>
+                      
+                      <div class="flex-1 min-w-0">
+                        <p class="text-sm font-medium truncate leading-tight"
+                           [ngClass]="isMyMessage(msg) 
+                             ? 'text-white' 
+                             : 'text-gray-900 dark:text-white'">
+                          {{ file.fileName || file.originalName || 'Document' }}
+                        </p>
+                        <p class="text-xs opacity-70 truncate">
+                          {{ getFileExtension(file.fileName) }}
+                        </p>
+                      </div>
+                    </div>
+                  </ng-container>
+                </div>
               </div>
+              
             </ng-container>
 
             <div class="flex items-center gap-1 mt-1 text-xs justify-end"

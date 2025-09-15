@@ -50,6 +50,8 @@
           (replyCancel)="onCancelReply()"
           (fileUpload)="onFileUpload($event)"
           (fileValidationError)="onFileValidationError($event)"
+          [editFileUploading]="isEditFileUploading"
+          [(draftText)]="draftText"
         ></shared-send-message-area>
       </div>
     </ng-container>
@@ -237,6 +239,9 @@
           placeholder="Add a caption..."
           [disabled]="isUploading"
           class="w-full h-12 py-3 px-4 border border-gray-300 rounded-3xl resize-none text-sm outline-none bg-gray-100 focus:border-blue-400 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 disabled:opacity-50 transition-all duration-200"
+          (click)="$event.stopPropagation()"       
+          (mousedown)="$event.stopPropagation()"    
+          (keydown)="onUploadEnter($event)" 
         />
       </div>
 

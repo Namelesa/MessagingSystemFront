@@ -203,7 +203,6 @@ export class ProfilePageStore {
         }
       });
       if (!assigned) {
-        console.warn('Unassigned error:', error);
       }
     });
   }
