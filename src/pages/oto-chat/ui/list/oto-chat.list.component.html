@@ -6,7 +6,7 @@
       (queryChange)="onSearchQueryChange($event)"
       (focus)="onSearchFocused()"
       (clear)="onSearchActiveChange(false)"
-      [placeholder]="'Search...'">
+      [placeholder]="'otoList.search' | translate">
     </shared-search-input>
 
     <ng-container *ngIf="search.trim()">
@@ -25,7 +25,7 @@
       </ng-container>
       <ng-template #notFound>
         <div class="flex items-center justify-center p-4 text-gray-500">
-          Not found users ;(
+          {{'otoList.notFound' | translate}}
         </div>
       </ng-template>
     </ng-container>
@@ -47,14 +47,14 @@
   <ng-template #fallback>
     <ng-container *ngIf="loading$ | async; else notLoading">
       <div class="flex-grow flex items-center justify-center text-gray-500">
-        Loading...
+        {{'otoList.loading' | translate}}
       </div>
     </ng-container>
 
     <ng-template #notLoading>
       <ng-container *ngIf="error$ | async as error; else showChats">
         <div class="flex-grow flex items-center justify-center text-red-500 px-4">
-          Error: {{ error }}
+          {{'otoList.error' | translate }}: {{ error }}
         </div>
       </ng-container>
     </ng-template>

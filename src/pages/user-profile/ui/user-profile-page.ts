@@ -1,13 +1,15 @@
 import { Component, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { TranslateModule } from '@ngx-translate/core';
 import { ProfilePageStore } from '../model/user-profile.store';
 import { InputComponent, ToastComponent } from '../../../shared/ui-elements';
+
 
 @Component({
   selector: 'app-profile-page',
   standalone: true,
-  imports: [CommonModule, FormsModule, InputComponent, ToastComponent],
+  imports: [CommonModule, FormsModule, InputComponent, ToastComponent, TranslateModule],
   providers: [ProfilePageStore],
   templateUrl: './user-profile-page.html',
 })

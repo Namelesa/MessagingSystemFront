@@ -8,7 +8,7 @@
     
     
     <app-modal-header
-      [title]="getModalTitle()"
+      [title]="getModalTitle() | translate"
       [showEditButton]="!isEditing && !isMembersMode"
       [showSaveButton]="(isEditing && !isMembersMode) || isMembersMode"
       [showCancelButton]="isEditing || isMembersMode"
@@ -19,7 +19,7 @@
     </app-modal-header>
 
     <div *ngIf="errors.length > 0 && (isEditing || isMembersMode)" class="mb-4 p-3 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800">
-      <div class="text-red-600 dark:text-red-400 text-sm font-medium mb-1">Validation Errors:</div>
+      <div class="text-red-600 dark:text-red-400 text-sm font-medium mb-1">{{ 'groupInfoModal.validationError' | translate }}:</div>
       <ul class="text-red-600 dark:text-red-400 text-sm">
         <li *ngFor="let error of errors" class="flex items-start">
           <span class="mr-1">•</span>
@@ -28,7 +28,7 @@
       </ul>
     </div>
 
-    <div *ngIf="loading" class="text-center py-4 mt-16">Loading...</div>
+    <div *ngIf="loading" class="text-center py-4 mt-16">{{ 'groupInfoModal.loading' | translate }}</div>
     <div *ngIf="error && !loading" class="text-red-500 text-center py-4 mt-16">{{ error }}</div>
 
     <div *ngIf="groupInfo && !loading && !error" class="mt-4">
@@ -51,42 +51,42 @@
 
       <div *ngIf="!isMembersMode">
         <div class="mb-2">
-          <b>Group Name: </b>
+          <b>{{ 'groupInfoModal.groupName' | translate }}: </b>
           <ng-container *ngIf="!isEditing; else nameEdit">{{ groupInfo.groupName }}</ng-container>
           <ng-template #nameEdit>
             <app-input
               [(ngModel)]="editableGroup.GroupName"
               name="groupName"
               [errors]="getFieldErrors('groupName')"
-              placeholder="Group Name"
+              placeholder="'groupInfoModal.groupName' | translate "
               class="mt-1 w-full">
             </app-input>
           </ng-template>
         </div>
 
         <div class="mb-2">
-          <b>Description: </b>
+          <b>{{'groupInfoModal.groupDescription' | translate}} :</b>
           <ng-container *ngIf="!isEditing; else descriptionEdit">{{ groupInfo.description }}</ng-container>
           <ng-template #descriptionEdit>
             <app-input
               [(ngModel)]="editableGroup.Description"
               name="description"
               [errors]="getFieldErrors('description')"
-              placeholder="Group Description"
+              [placeholder]="'groupInfoModal.groupDescription' | translate "
               class="mt-1 w-full">
             </app-input>
           </ng-template>
         </div>
 
         <div class="mb-2" *ngIf="!isEditing">
-          <b>Admin: </b> {{ groupInfo.admin }}
+          <b>{{'groupInfoModal.admin' | translate }}: </b> {{ groupInfo.admin }}
         </div>
       </div>
 
       <div class="mb-2" *ngIf="!isEditing || isMembersMode">
         <div class="flex items-center justify-between mb-2">
           <div class="flex items-center">
-            <b>Members:</b>
+            <b>{{'groupInfoModal.members' | translate }}:</b>
             <span class="ml-2 text-sm text-gray-500 dark:text-gray-400">({{ memberCountStatus }})</span>
           </div>
           <button
@@ -102,7 +102,7 @@
             type="text"
             [(ngModel)]="userSearchQuery"
             (ngModelChange)="onSearchChange($event)"
-            placeholder="Search users..."
+            [placeholder]="'groupInfoModal.searchUsers' | translate"
             class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
 
@@ -119,7 +119,7 @@
             
             <div *ngIf="showNotFoundMessage" 
                  class="text-gray-500 dark:text-gray-400 text-sm text-center py-2">
-              User not found ;(
+              {{ 'groupInfoModal.userNotFound' | translate }}
             </div>
           </div>
 
@@ -154,7 +154,7 @@
         (click)="deleteGroupInfo()"
         class="w-full py-3 text-sm font-semibold rounded-xl border border-red-600 text-red-600 
                hover:bg-red-600 hover:text-white transition-colors duration-300 dark:border-red-500 dark:text-red-400 dark:hover:bg-red-500">
-        🗑️ Delete Group
+        {{ 'groupInfoModal.deleteGroup' | translate }}
       </button>
     </div>
   </div>

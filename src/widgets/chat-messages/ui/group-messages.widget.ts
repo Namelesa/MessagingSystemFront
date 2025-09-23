@@ -1,5 +1,6 @@
 import { Component, Input, Output, EventEmitter, ViewChild, ElementRef, OnChanges, SimpleChanges, AfterViewInit, OnDestroy, ChangeDetectorRef, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { TranslateModule } from '@ngx-translate/core';
 import { Observable, Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import { GroupMessage } from '../../../entities/group-message';
@@ -9,7 +10,7 @@ import { isToday, truncateText, computeContextMenuPosition } from '../../../shar
 @Component({
   selector: 'widgets-group-messages',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, TranslateModule],
   templateUrl: './group-messages.widget.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

@@ -29,11 +29,9 @@
             "tsConfig": "tsconfig.app.json",
             "inlineStyleLanguage": "scss",
             "assets": [
-              {
-                "glob": "**/*",
-                "input": "public"
-              }
-            ],
+                "src/assets",       
+                { "glob": "favicon.ico", "input": "public", "output": "/" } 
+              ],
             "styles": [
               "src/shared/styles/tailwind.scss"
             ]
@@ -87,11 +85,9 @@
             "tsConfig": "tsconfig.spec.json",
             "inlineStyleLanguage": "scss",
             "assets": [
-              {
-                "glob": "**/*",
-                "input": "public"
-              }
-            ],
+                "src/assets",       
+                { "glob": "favicon.ico", "input": "public", "output": "/" } 
+              ],
             "styles": [
               "src/shared/styles/tailwind.scss"
             ]

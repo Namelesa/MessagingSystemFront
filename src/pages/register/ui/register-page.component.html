@@ -1,8 +1,8 @@
 <auth-page-layout
-  [title]="'Create Account'"
-  [subtitle]="'Join to start secure conversations'"
+  [title]="'auth.createAccountTitle' | translate"
+  [subtitle]="'auth.signUpSubtitle' | translate"
   [bottomText]="bottomText"
-  [bottomLink]="{ href: '/login', text: 'Sign in' }"
+  [bottomLink]="{ href: '/login', text: ('auth.signIn' | translate) }"
   [isPasswordVisible]="isPasswordVisible"
   [passwordLength]="passwordLength"
 >
@@ -14,7 +14,7 @@
       [(ngModel)]="formData.firstName"
       name="firstName"
       [required]="true"
-      placeholder="First Name"
+      [placeholder]="'user.firstName' | translate"
       [errors]="getFieldErrors('firstName')"
       (ngModelChange)="onFirstNameChange($event)"
     ></app-input>
@@ -23,7 +23,7 @@
       [(ngModel)]="formData.lastName"
       name="lastName"
       [required]="true"
-      placeholder="Last Name"
+      [placeholder]="'user.lastName' | translate"
       [errors]="getFieldErrors('lastName')"
       (ngModelChange)="onLastNameChange($event)"
     ></app-input>
@@ -32,7 +32,7 @@
       [(ngModel)]="formData.login"
       name="login"
       [required]="true"
-      placeholder="Login"
+      [placeholder]="'user.login' | translate"
       [errors]="getFieldErrors('login')"
       (ngModelChange)="onLoginChange($event)"
     ></app-input>
@@ -42,7 +42,7 @@
       name="email"
       [required]="true"
       type="email"
-      placeholder="Email"
+      [placeholder]="'user.email' | translate"
       [errors]="getFieldErrors('email')"
       (ngModelChange)="onEmailChange($event)"
     ></app-input>
@@ -51,14 +51,14 @@
       [(ngModel)]="formData.nickName"
       name="nickName"
       [required]="true"
-      placeholder="Nick Name"
+      [placeholder]="'user.nickName' | translate"
       [errors]="getFieldErrors('nickName')"
       (ngModelChange)="onNickNameChange($event)"
     ></app-input>
 
     <app-input
       [type]="isPasswordVisible ? 'text' : 'password'"
-      [placeholder]="'Password'"
+      [placeholder]="'user.password' | translate"
       [required]="true"
       [(ngModel)]="formData.password"
       [name]="'password'"
@@ -135,17 +135,17 @@
             </svg>
             
             <div class="text-center">
-              <div *ngIf="!formData.image" class="font-medium">Upload Avatar</div>
+              <div *ngIf="!formData.image" class="font-medium">{{ 'auth.uploadAvatar' | translate }}</div>
               <div *ngIf="formData.image && !getFieldErrors('image').length" class="font-medium">
                 {{ formData.image.name }}
               </div>
               <div *ngIf="getFieldErrors('image').length > 0" class="font-medium">
-                Fix image error
+                {{'auth.imageLoadError' | translate}}
               </div>
               <div class="text-xs opacity-75 mt-1">
-                <span *ngIf="!formData.image">JPEG, PNG, GIF, WebP, SVG (max 5MB)</span>
-                <span *ngIf="formData.image && !getFieldErrors('image').length">Click to change</span>
-                <span *ngIf="getFieldErrors('image').length > 0">Click to select a valid image</span>
+                <span *ngIf="!formData.image">{{'auth.format' | translate}}</span>
+                <span *ngIf="formData.image && !getFieldErrors('image').length">{{'auth.clickToChange' | translate}}</span>
+                <span *ngIf="getFieldErrors('image').length > 0">{{'auth.clickToSelectValidImage' | translate}}</span>
               </div>
             </div>
           </div>
@@ -167,13 +167,13 @@
       type="submit"
       [disabled]="store.isSubmitting || !store.isFormValid"
     >
-      <span *ngIf="!store.isSubmitting">Sign up</span>
+      <span *ngIf="!store.isSubmitting">{{'auth.signUp' | translate}}</span>
       <span *ngIf="store.isSubmitting" class="flex items-center">
         <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
           <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
           <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
         </svg>
-        Signing up...
+        {{ 'auth.signUp' | translate }}...
       </span>
     </app-button>
   </form>

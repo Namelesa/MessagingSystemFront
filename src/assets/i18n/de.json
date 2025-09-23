@@ -1,0 +1,126 @@
+{
+    "auth":{
+        "signInTitle": "Bei WhisperNet anmelden",
+        "signInSubtitle": "Auf Ihre sicheren Chats und Kontakte zugreifen",
+        "bottomText": "Sie haben noch kein Konto?",
+        "signUp": "Anmelden",
+        "signIn": "Anmelden",
+
+        "createAccountTitle": "Konto erstellen",
+        "signUpSubtitle": "Anmelden, um sichere Unterhaltungen zu starten",
+        "clickToChange": "Zum Ändern klicken",
+        "clickToSelectValidImage": "Zum Auswählen eines gültigen Bildes klicken",
+        "siginUp": "Anmelden",
+        "uploadAvatar": "Avatar hochladen",
+        "imageLoadError": "Bildfehler beheben",
+        "format": "JPEG, PNG, GIF, WebP, SVG (max. 5 MB)"
+    },
+
+    "profile":{
+        "loading": "Wird geladen...",
+        "errorLoading": "Fehler beim Laden des Profils",
+        "change": "Ändern",
+        "online": "Online",
+        "personalInfo": "Persönliche Informationen",
+        "deleteAccount": "Konto löschen",
+        "deleteSubtitle": "Möchten Sie Ihr Konto wirklich dauerhaft löschen? Diese Aktion kann nicht rückgängig gemacht werden und alle Ihre Daten gehen für immer verloren.",
+        "cancel": "Abbrechen"
+    },
+
+    "user":{
+        "email": "E-Mail",
+        "firstName": "Vorname",
+        "lastName": "Nachname",
+        "nickName": "Spitzname",
+        "password": "Passwort",
+        "login": "Anmelden"
+    },
+
+    "messages":{
+        "file": "Datei",
+        "errorLoadingFile": "Laden fehlgeschlagen",
+        "edited": "bearbeitet",
+        "reply": "Antwort",
+        "edit" : "Bearbeiten",
+        "delete": "Löschen",
+        "editPlaceholder": "Nachricht bearbeiten...",
+        "replyToPlaceholder": "Antworten an...",
+        "sendPlaceholder": "Nachricht senden..."
+    },
+
+    "otoList":{
+        "search": "Suchen...",
+        "notFound": "Keine Benutzer gefunden ;(",
+        "loading": "Wird geladen...",
+        "error": "Fehler"
+    },
+
+    "otoPage": {
+        "userDeleted": "Benutzer gelöscht",
+        "chatClosed": "Benutzer wurde gelöscht. Der Chat wurde geschlossen.",
+        "dissmiss": "Ablehnen",
+        "deleteMessage": "Nachricht löschen",
+        "deleteMessageSubtitle": "Möchten Sie diese Nachricht wirklich löschen?",
+        "both": "Auch für beide löschen",
+        "cancel": "ABBRECHEN",
+        "delete": "LÖSCHEN",
+        "send": "Senden",
+        "file": "Datei",
+        "uploaded": "Hochgeladen",
+        "error": "Fehler",
+        "uploading": "Hochladen...",
+        "caption": "Bildunterschrift hinzufügen...",
+        "drop": "Dateien hier ablegen, um sie hinzuzufügen"
+    },
+    
+    "settings":{
+        "notification": "Benachrichtigungen",
+        "appearance": "Darstellung",
+        "theme": "Design",
+        "themeSubtitle": "Design auswählen",
+        "language": "Sprache",
+        "languageSubtitle": "Wählen Sie Ihre bevorzugte Sprache aus",
+
+        "messageNotifications": {
+            "title": "Nachrichtenbenachrichtigungen",
+            "desc": "Benachrichtigungen für neue Nachrichten erhalten"
+          },
+          "soundNotifications": {
+            "title": "Tonbenachrichtigungen",
+            "desc": "Ton beim Empfang von Nachrichten abspielen"
+          }
+    },
+
+    "sendMessageArea":{
+        "editMessage": "Nachricht bearbeiten",
+        "dropFile": "Dateien zum Hochladen hier ablegen",
+        "dropFileSubtitle": "Ziehen Sie Ihre Dateien an eine beliebige Stelle in diesem Bereich"
+    },
+
+    "groupInfoModal":{
+        "validationError": "Validierungsfehler",
+        "loading": "Wird geladen...",
+        "groupName": "Gruppenname",
+        "groupDescription": "Beschreibung",
+        "admin": "Admin",
+        "members": "Mitglieder",
+        "userNotFound": "Benutzer nicht gefunden ;(",
+        "deleteGroup": "🗑️ Gruppe löschen",
+        "groupInfo": "Gruppeninfo",
+        "editGroup": "Gruppe bearbeiten",
+        "manageMembers": "Mitglieder verwalten",
+        "searchUsers": "Benutzer suchen...",
+        "error": "Fehler"
+    },
+
+    "groupList":{
+        "searchPlaceholder": "Gruppen suchen...",
+        "emptyListText": "Keine Gruppen gefunden ;(",
+        "createGroup": "Gruppe erstellen",
+        "change": "Ändern",
+        "uploadAvatar": "Gruppenavatar hochladen",
+        "notFound": "Keine Gruppen gefunden",
+        "clearSearch": "Suche löschen",
+        "deleteForAll": "Auch für alle löschen"
+    }
+}

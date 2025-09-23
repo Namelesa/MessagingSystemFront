@@ -10,11 +10,12 @@ import { BaseChatListComponent } from '../../../../shared/chat';
 import { ListItemComponent } from '../../../../shared/list';
 import { SearchInputComponent } from '../../../../shared/search';
 import { AuthService } from '../../../../entities/session';
+import { TranslateModule } from '@ngx-translate/core';
 
 @Component({
   selector: 'app-oto-chat-list',
   standalone: true,
-  imports: [FormsModule, ListItemComponent, SearchInputComponent, CommonModule],
+  imports: [FormsModule, ListItemComponent, SearchInputComponent, CommonModule, TranslateModule],
   templateUrl: './oto-chat.list.component.html',
 })
 export class OtoChatListComponent extends BaseChatListComponent<OtoChat> implements OnInit, OnDestroy {

@@ -3,6 +3,7 @@ import { Component,  Input, ViewChild, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
+import { TranslateModule } from '@ngx-translate/core';
 import { GroupMessagesApiService } from '../../api/group-message/group-messages.api';
 import { GroupChatApiService } from '../../api/group-chat/group-chat-hub.api';
 import { GroupMember } from '../../model/group-info.model';
@@ -26,7 +27,7 @@ import { SendAreaComponent, FileDropDirective, FileDropOverlayComponent } from '
   standalone: true,
   imports: [CommonModule, GroupChatListComponent,
     FormsModule, ChatLayoutComponent, GroupInfoModalComponent,
-    GroupMessagesWidget, SendAreaComponent, FileDropDirective, FileDropOverlayComponent],
+    GroupMessagesWidget, SendAreaComponent, FileDropDirective, FileDropOverlayComponent, TranslateModule],
   templateUrl: './group-chat-page.html',
 })
 export class GroupChatPageComponent extends BaseChatPageComponent {

@@ -17,12 +17,14 @@ import { ChatLayoutComponent } from '../../../../widgets/chat-layout';
 import { BaseChatPageComponent} from '../../../../shared/chat';
 import { ToastService, ToastComponent } from '../../../../shared/ui-elements';
 import { SendAreaComponent, FileDropDirective, FileDropOverlayComponent } from '../../../../shared/send-message-area';
+import { TranslateModule } from '@ngx-translate/core';
 
 @Component({
   selector: 'app-oto-chat-page',
   standalone: true,
      imports: [CommonModule, OtoChatListComponent, FormsModule,
-    ChatLayoutComponent, OtoChatMessagesWidget, SendAreaComponent, FileDropDirective, FileDropOverlayComponent, ToastComponent],
+               ChatLayoutComponent, OtoChatMessagesWidget, SendAreaComponent, FileDropDirective, 
+               FileDropOverlayComponent, ToastComponent, TranslateModule],
   templateUrl: './oto-chat-page.html',
 })
 export class OtoChatPageComponent extends BaseChatPageComponent implements OnInit, OnDestroy {

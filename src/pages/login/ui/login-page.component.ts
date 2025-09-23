@@ -1,6 +1,7 @@
 import { Component, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { TranslateModule } from '@ngx-translate/core';
 import { LucideAngularModule, Eye, EyeOff } from 'lucide-angular';
 import { AuthPageLayoutComponent } from '../../../widgets/auth-layout';
 import { ButtonComponent, InputComponent, ToastComponent } from '../../../shared/ui-elements';
@@ -16,7 +17,8 @@ import { LoginPageStore } from '../model/login.store';
     CommonModule,
     FormsModule,
     LucideAngularModule,
-    ToastComponent
+    ToastComponent,
+    TranslateModule
 ],
   providers: [LoginPageStore],
   templateUrl: './login-page.component.html',

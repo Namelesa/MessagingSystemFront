@@ -1,10 +1,10 @@
 <app-toast></app-toast>
 
 <div *ngIf="store.isLoading" class="text-center text-gray-600 dark:text-gray-300 transition-colors duration-300">
-  Loading...
+  {{ 'profile.loading' | translate }}
 </div>
 <div *ngIf="store.hasError" class="text-center text-red-600 dark:text-red-400 transition-colors duration-300">
-  Error loading profile
+  {{ 'profile.errorLoading' | translate }}
 </div>
 
 <div *ngIf="store.userProfile && !store.isLoading && !store.hasError"
@@ -50,7 +50,7 @@
               <path stroke-linecap="round" stroke-linejoin="round" d="M3 7h4l3-3h4l3 3h4v12H3V7z" />
               <path stroke-linecap="round" stroke-linejoin="round" d="M16 13a4 4 0 01-8 0" />
             </svg>
-            <span class="text-xs select-none">Change</span>
+            <span class="text-xs select-none">{{ 'profile.change' | translate }}</span>
           </label>
           <input
             type="file"
@@ -75,7 +75,7 @@
         {{ store.userProfile.nickName }}
       </p>
       <p class="text-green-500 dark:text-green-400 text-sm font-medium transition-colors duration-300">
-        Online
+        {{ 'profile.online' | translate }}
       </p>
     </div>
 
@@ -84,7 +84,7 @@
 
       <h3
         class="text-xl font-medium flex items-center gap-3 mb-2 text-gray-800 dark:text-white select-none transition-colors duration-300">
-        📋 Personal Information
+        📋 {{ 'profile.personalInfo' | translate }}
         <button
           type="button"
           (click)="store.toggleEdit()"
@@ -125,7 +125,7 @@
       <div class="space-y-6">
 
         <div class="flex items-center">
-          <span class="text-gray-500 dark:text-gray-400 w-24 transition-colors duration-300">First Name</span>
+          <span class="text-gray-500 dark:text-gray-400 w-24 transition-colors duration-300">{{ 'user.firstName' | translate }}</span>
           <div class="flex flex-1 justify-end">
             <ng-container *ngIf="store.isEditing; else firstNameView">
               <app-input
@@ -134,7 +134,7 @@
                 (blur)="store.onFieldBlur('firstName')"
                 name="firstName"
                 [required]="true"
-                placeholder="First Name"
+                [placeholder]="'user.firstName' | translate"
                 [errors]="store.getFieldErrors('firstName')"
                 class="max-w-xs"
               ></app-input>          
@@ -148,7 +148,7 @@
         </div>
 
         <div class="flex items-center">
-          <span class="text-gray-500 dark:text-gray-400 w-24 transition-colors duration-300">Last Name</span>
+          <span class="text-gray-500 dark:text-gray-400 w-24 transition-colors duration-300">{{ 'user.lastName' | translate }}</span>
           <div class="flex flex-1 justify-end">
             <ng-container *ngIf="store.isEditing; else lastNameView">
               <app-input
@@ -157,7 +157,7 @@
                 (blur)="store.onFieldBlur('lastName')"
                 name="lastName"
                 [required]="true"
-                placeholder="Last Name"
+                [placeholder]="'user.lastName' | translate"
                 [errors]="store.getFieldErrors('lastName')"
                 class="max-w-xs"
               ></app-input>         
@@ -171,7 +171,7 @@
         </div>
 
         <div class="flex items-center">
-          <span class="text-gray-500 dark:text-gray-400 w-24 transition-colors duration-300">NickName</span>
+          <span class="text-gray-500 dark:text-gray-400 w-24 transition-colors duration-300">{{ 'user.nickName' | translate }}</span>
           <div class="flex flex-1 justify-end">
             <ng-container *ngIf="store.isEditing; else nickNameView">
               <app-input
@@ -180,7 +180,7 @@
                 (blur)="store.onFieldBlur('nickName')"
                 name="nickName"
                 [required]="true"
-                placeholder="NickName"
+                [placeholder]="'user.nickName' | translate"
                 [errors]="store.getFieldErrors('nickName')"
                 class="max-w-xs"
               ></app-input>
@@ -194,7 +194,7 @@
         </div>
 
         <div class="flex items-center">
-          <span class="text-gray-500 dark:text-gray-400 w-24 transition-colors duration-300">Email</span>
+          <span class="text-gray-500 dark:text-gray-400 w-24 transition-colors duration-300">{{ 'user.email' | translate }}</span>
           <div class="flex flex-1 justify-end">
             <ng-container *ngIf="store.isEditing; else emailView">
               <app-input
@@ -203,7 +203,7 @@
                 (blur)="store.onFieldBlur('email')"
                 name="email"
                 [required]="true"
-                placeholder="Email"
+                [placeholder]="'user.email' | translate"
                 [errors]="store.getFieldErrors('email')"
                 type="email"
                 class="max-w-xs"
@@ -224,7 +224,7 @@
               (click)="store.showDeleteConfirmation()"
               class="w-full py-3 text-sm font-semibold rounded-xl border border-red-600 text-red-600 
                      hover:bg-red-600 hover:text-white transition-colors duration-300 dark:border-red-500 dark:text-red-400 dark:hover:bg-red-500">
-              🗑️ Delete Account
+              🗑️ {{ 'profile.deleteAccount' | translate }}
             </button>
           </div>
         </ng-container>        
@@ -247,10 +247,10 @@
     
     <div class="text-center mb-6">
       <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-        Delete Account
+        {{ 'profile.deleteAccount' | translate }}
       </h3>
       <p class="text-gray-600 dark:text-gray-300 leading-relaxed">
-        Are you sure you want to permanently delete your account? This action cannot be undone and all your data will be lost forever.
+        {{ 'profile.deleteSubtitle' | translate }}
       </p>
     </div>
     
@@ -261,7 +261,7 @@
         class="flex-1 px-4 py-3 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 
                hover:bg-gray-200 dark:hover:bg-gray-600 rounded-xl transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-gray-300"
       >
-        Cancel
+      {{ 'profile.cancel' | translate }}
       </button>
       <button
         type="button"
@@ -269,7 +269,7 @@
         class="flex-1 px-4 py-3 text-sm font-medium text-white bg-red-600 hover:bg-red-700 
                rounded-xl transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-red-500 shadow-lg"
       >
-        Delete Account
+        {{ 'profile.deleteAccount' | translate }}
       </button>
     </div>
   </div>

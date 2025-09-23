@@ -4,17 +4,36 @@
     <div class="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow space-y-6">
       <h2 class="text-xl font-semibold flex items-center gap-2">
         <span class="text-2xl">🔔</span> 
-        <span>Notifications</span>
+        <span>{{'settings.notification' | translate}}</span>
       </h2>
       <div class="space-y-5">
-        <div class="flex justify-between items-center py-3 px-1" *ngFor="let setting of notificationSettings">
+        <div class="flex justify-between items-center py-3 px-1">
           <div class="flex-1">
-            <p class="font-medium text-gray-900 dark:text-white">{{ setting.title }}</p>
-            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">{{ setting.desc }}</p>
+            <p class="font-medium text-gray-900 dark:text-white">
+              {{ 'settings.messageNotifications.title' | translate }}
+            </p>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
+              {{ 'settings.messageNotifications.desc' | translate }}
+            </p>
           </div>
           <shared-switch-toggle
-            [checked]="settings[setting.key]"
-            (toggled)="toggle(setting.key, $event)"
+            [checked]="settings.messageNotifications"
+            (toggled)="toggle('messageNotifications', $event)"
+          />
+        </div>
+
+        <div class="flex justify-between items-center py-3 px-1">
+          <div class="flex-1">
+            <p class="font-medium text-gray-900 dark:text-white">
+              {{ 'settings.soundNotifications.title' | translate }}
+            </p>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
+              {{ 'settings.soundNotifications.desc' | translate }}
+            </p>
+          </div>
+          <shared-switch-toggle
+            [checked]="settings.soundNotifications"
+            (toggled)="toggle('soundNotifications', $event)"
           />
         </div>
       </div>
@@ -22,13 +41,13 @@
 
     <div class="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow space-y-6">
       <h2 class="text-xl font-semibold flex items-center gap-2">
-        <span>🎨</span> Appearance
+        <span>🎨</span> {{'settings.appearance' | translate}}
       </h2>
       <div class="space-y-4">
         <div class="flex justify-between items-center">
           <div>
-            <p class="font-medium">Theme</p>
-            <p class="text-sm text-gray-500 dark:text-gray-400">Choose light, dark or system theme</p>
+            <p class="font-medium">{{'settings.theme' | translate}}</p>
+            <p class="text-sm text-gray-500 dark:text-gray-400">{{'settings.themeSubtitle' | translate}}</p>
           </div>
           
           <div class="relative custom-dropdown">
@@ -61,13 +80,13 @@
     
     <div class="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow space-y-6">
       <h2 class="text-xl font-semibold flex items-center gap-2">
-        <span>🌐</span> Language
+        <span>🌐</span> {{'settings.language' | translate}}
       </h2>
       <div class="space-y-4">
         <div class="flex justify-between items-center">
           <div>
-            <p class="font-medium">Language</p>
-            <p class="text-sm text-gray-500 dark:text-gray-400">Select your preferred language</p>
+            <p class="font-medium">{{'settings.language' | translate}}</p>
+            <p class="text-sm text-gray-500 dark:text-gray-400">{{'settings.languageSubtitle' | translate}}</p>
           </div>
           
           <div class="relative custom-dropdown">
@@ -97,6 +116,5 @@
         </div>
       </div>
     </div>
-    
   </div>
 </div>

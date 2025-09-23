@@ -9,6 +9,7 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { TranslateModule } from '@ngx-translate/core';
 import { GroupInfoApiService } from '../../api/group-chat/group-info.api';
 import { GroupInfoEditData } from '../../model/group-info-edit.model';
 import { GroupInfoData } from '../../model/group-info.model';
@@ -24,7 +25,7 @@ import { SelectedUsersComponent } from '../group-chat-page/group-chat-ui-element
 @Component({
   selector: 'app-group-info-modal',
   standalone: true,
-  imports: [CommonModule, FormsModule, InputComponent, ModalHeaderComponent, AvatarComponent, UserListComponent, SelectedUsersComponent],
+  imports: [CommonModule, FormsModule, InputComponent, ModalHeaderComponent, AvatarComponent, UserListComponent, SelectedUsersComponent, TranslateModule],
   templateUrl: './group-info-modal.component.html',
 })
 export class GroupInfoModalComponent implements OnChanges, OnInit {
@@ -421,9 +422,15 @@ export class GroupInfoModalComponent implements OnChanges, OnInit {
       this.saveChanges();
     }
   } 
-  
+
   getModalTitle(): string {
-    return this.isMembersMode ? 'Manage Members' : 'Group Info';
+    if (this.isMembersMode) {
+      return 'groupInfoModal.manageMembers';
+    }
+    if (this.isEditing) {
+      return 'groupInfoModal.editGroup';
+    }
+    return 'groupInfoModal.groupInfo';
   }
   
   handleCancel(): void {
@@ -451,4 +458,3 @@ export class GroupInfoModalComponent implements OnChanges, OnInit {
     return `${currentCount}/${this.MAX_MEMBERS}`;
   }
 }
-

@@ -1,6 +1,7 @@
 import { Component, Output, EventEmitter, Input, OnChanges, SimpleChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
 
 interface BaseMessage {
   messageId?: string;
@@ -34,7 +35,7 @@ interface EditingFile {
 @Component({
   selector: 'shared-send-message-area',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, TranslateModule],
   templateUrl: './send-message-area.component.html',
 })
 export class SendAreaComponent implements OnChanges {
@@ -74,6 +75,8 @@ export class SendAreaComponent implements OnChanges {
     GB: 1024 * 1024 * 1024
   };
   
+  constructor(private translate: TranslateService) {}
+
   ngOnChanges(changes: SimpleChanges) {
     if (changes['editingMessage']) {
       if (this.editingMessage) {
@@ -349,9 +352,15 @@ export class SendAreaComponent implements OnChanges {
   }
 
   get placeholderText(): string {
-    if (this.isEditing) return 'Edit Message...';
-    if (this.isReplying) return `Reply to ${this.replyingToMessage?.sender}...`;
-    return 'Send message...';
+    if (this.isEditing) {
+      return this.translate.instant('messages.editPlaceholder');
+    }
+    if (this.isReplying) {
+      return this.translate.instant('messages.replyToPlaceholder', {
+        sender: this.replyingToMessage?.sender ?? ''
+      });
+    }
+    return this.translate.instant('messages.sendPlaceholder');
   }
 
   emitMessage() {

@@ -1,6 +1,8 @@
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Component, Input, OnInit, Output, EventEmitter, HostListener, ChangeDetectorRef, ChangeDetectionStrategy } from '@angular/core';
+import { Component, Input, OnInit, Output, EventEmitter, 
+  HostListener, ChangeDetectorRef, ChangeDetectionStrategy } from '@angular/core';
+import { TranslateModule } from '@ngx-translate/core';
 import { Observable, map, combineLatest, BehaviorSubject } from 'rxjs';
 import { GroupChatApiService } from '../../api/group-chat/group-chat-hub.api';
 import { GroupCreateRequest } from '../../api/group-chat/group-create';
@@ -17,7 +19,8 @@ import { ListItemComponent } from '../../../../shared/list';
 @Component({
   selector: 'app-group-chat-list',
   standalone: true,
-  imports: [CommonModule, FormsModule, ListItemComponent, SearchInputComponent, InputComponent, ToastComponent],
+  imports: [CommonModule, FormsModule, ListItemComponent, SearchInputComponent, 
+    InputComponent, ToastComponent, TranslateModule],
   templateUrl: './group-chat.list.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -27,8 +30,8 @@ export class GroupChatListComponent extends BaseChatListComponent<GroupChat> imp
   @Output() userSearchQueryChange = new EventEmitter<string>();
   @Output() userSearchClear = new EventEmitter<void>();
   @Output() userSearchFocus = new EventEmitter<void>();
-  @Input() searchPlaceholder = 'Search groups...';
-  @Input() emptyListText = 'Groups not found ;(';
+  @Input() searchPlaceholder = '';
+  @Input() emptyListText = '';
 
   constructor(
     private groupChatApi: GroupChatApiService, 

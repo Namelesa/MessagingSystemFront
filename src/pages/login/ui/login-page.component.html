@@ -1,20 +1,20 @@
 <auth-page-layout
-  [title]="'Sign in to WhisperNet'"
-  [subtitle]="'Access your secure chats and contacts'"
-  [bottomText]="'Do not have an account?'"
-  [bottomLink]="{ href: '/register', text: 'Sign up' }"
+  [title]="'auth.signInTitle' | translate"
+  [subtitle]="'auth.signInSubtitle' | translate"
+  [bottomText]="'auth.bottomText' | translate"
+  [bottomLink]="{ href: '/register', text: ('auth.signUp' | translate) }"
   [isPasswordVisible]="isPasswordVisible"
   [passwordLength]="passwordLength"
 >
 
-<app-toast></app-toast>
+  <app-toast></app-toast>
 
   <form (ngSubmit)="onSubmit()" #form="ngForm">
     <app-input
       [(ngModel)]="formData.login"
       name="login"
       [required]="true"
-      placeholder="Login"
+      [placeholder]="'user.login' | translate"
       [errors]="getFieldErrors('login')"
       (ngModelChange)="onLoginChange($event)"
     ></app-input>
@@ -23,14 +23,14 @@
       [(ngModel)]="formData.nickName"
       name="nickName"
       [required]="true"
-      placeholder="Nick Name"
+      [placeholder]="'user.nickName' | translate"
       [errors]="getFieldErrors('nickName')"
       (ngModelChange)="onNickNameChange($event)"
     ></app-input>
 
     <app-input
       [type]="isPasswordVisible ? 'text' : 'password'"
-      [placeholder]="'Password'"
+      [placeholder]="'user.password' | translate"
       [required]="true"
       [(ngModel)]="formData.password"
       [name]="'password'"
@@ -52,13 +52,13 @@
       type="submit"
       [disabled]="store.isSubmitting || !store.isFormValid"
     >
-      <span *ngIf="!store.isSubmitting">Sign in</span>
+      <span *ngIf="!store.isSubmitting">{{ 'auth.signIn' | translate }}</span>
       <span *ngIf="store.isSubmitting" class="flex items-center">
         <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
           <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
           <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
         </svg>
-        Signing in...
+        {{ 'auth.signIn' | translate }}...
       </span>
     </app-button>
   </form>

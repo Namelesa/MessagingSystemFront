@@ -1,5 +1,6 @@
 import { Component, Input, Output, EventEmitter, ViewChild, ElementRef, OnChanges, SimpleChanges, AfterViewInit, OnDestroy, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { TranslateModule } from '@ngx-translate/core';
 import { Observable, Subject } from 'rxjs';
 import { takeUntil, filter } from 'rxjs/operators';
 import { OtoMessage } from '../../../entities/oto-message';
@@ -11,7 +12,7 @@ import { CustomAudioPlayerComponent } from '../../../shared/custom-player';
 @Component({
   selector: 'widgets-oto-chat-messages',
   standalone: true,
-  imports: [CommonModule, ImageViewerComponent, CustomAudioPlayerComponent],
+  imports: [CommonModule, ImageViewerComponent, CustomAudioPlayerComponent, TranslateModule],
   templateUrl: './oto-chat-messages.widget.html',
   changeDetection: ChangeDetectionStrategy.OnPush
 })

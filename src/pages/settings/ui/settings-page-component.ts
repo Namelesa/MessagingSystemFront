@@ -1,12 +1,14 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { SettingKey } from '../../../shared/setting-key';
+import { TranslateService, TranslateModule } from '@ngx-translate/core'; 
+import { SettingKey, Theme, SettingsService } from '../../../shared/setting-key';
 import { SwitcherComponent } from '../../../shared/ui-elements';
+
 
 @Component({
   selector: 'app-settings-page',
   standalone: true,
-  imports: [CommonModule, SwitcherComponent],
+  imports: [CommonModule, SwitcherComponent, TranslateModule],
   templateUrl: './settings-page-component.html',
 })
 export class SettingsPageComponent {
@@ -61,21 +63,24 @@ export class SettingsPageComponent {
     }
   ];
 
-  readonly themeOptions = [
+  readonly themeOptions: { value: Theme; label: string }[] = [
     { value: 'light', label: 'Light' },
     { value: 'dark', label: 'Dark' },
-    { value: 'system', label: 'System' }
-  ];
+  ];  
 
   readonly languageOptions = [
     { value: 'en', label: 'English' },
     { value: 'uk', label: 'Українська' },
     { value: 'de', label: 'Deutsch' },
-    { value: 'fr', label: 'Français' }
+    { value: 'es', label: 'Español' }
   ];
 
-  constructor() {
+  constructor(private translate: TranslateService, private settingsService: SettingsService) {
     this.loadSettings();
+    this.settingsService.settings$.subscribe(settings => {
+      this.settings = settings;
+      this.translate.use(settings.language);
+    });
   }
 
   toggle(key: SettingKey, value: boolean) {
@@ -83,16 +88,16 @@ export class SettingsPageComponent {
     localStorage.setItem('settings', JSON.stringify(this.settings));
   }
 
-  selectTheme(theme: string) {
-    this.settings['theme'] = theme;
+  selectTheme(theme: Theme) {
+    this.settingsService.set('theme', theme as Theme);
     this.themeDropdownOpen = false;
-    localStorage.setItem('settings', JSON.stringify(this.settings));
-  }
+  }  
 
   selectLanguage(language: string) {
     this.settings['language'] = language;
     this.languageDropdownOpen = false;
     localStorage.setItem('settings', JSON.stringify(this.settings));
+    this.translate.use(language);
   }
 
   toggleThemeDropdown() {

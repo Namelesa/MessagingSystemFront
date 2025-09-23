@@ -1,5 +1,6 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, Inject } from '@angular/core';
 import { NgIf } from '@angular/common';
+import { SettingsService } from '../../../setting-key';
 
 @Component({
   selector: 'app-theme-switcher',
@@ -7,18 +8,17 @@ import { NgIf } from '@angular/common';
   imports: [NgIf],
   templateUrl: './theme-switcher.component.html',
 })
-export class ThemeSwitcherComponent implements OnInit {
+export class ThemeSwitcherComponent{
   isDark = false;
 
-  ngOnInit(): void {
-    const savedTheme = localStorage.getItem('theme');
-    this.isDark = savedTheme === 'dark';
-    document.documentElement.classList.toggle('dark', this.isDark);
+  constructor(@Inject(SettingsService) private settings: SettingsService) {
+    this.settings.settings$.subscribe(settings => {
+      this.isDark = settings.theme === 'dark';
+    });
   }
 
   toggleTheme() {
-    this.isDark = !this.isDark;
-    document.documentElement.classList.toggle('dark', this.isDark);
-    localStorage.setItem('theme', this.isDark ? 'dark' : 'light');
-  }
+    const newTheme = this.isDark ? 'light' : 'dark';
+    this.settings.set('theme', newTheme);
+  }  
 }
