@@ -1,7 +1,7 @@
-<div class="min-h-full bg-gray-100 p-6 mx-auto dark:bg-gray-900">
-  <div class="space-y-10 text-gray-900 max-w-2xl mx-auto dark:text-white">
+<div class="min-h-full p-6 mx-auto" style="background-color: var(--bg-secondary);">
+  <div class="space-y-10 max-w-2xl mx-auto" style="color: var(--text-primary);">
 
-    <div class="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow space-y-6">
+    <div class="p-6 rounded-2xl shadow space-y-6" style="background-color: var(--bg-primary);">
       <h2 class="text-xl font-semibold flex items-center gap-2">
         <span class="text-2xl">🔔</span> 
         <span>{{'settings.notification' | translate}}</span>
@@ -9,10 +9,10 @@
       <div class="space-y-5">
         <div class="flex justify-between items-center py-3 px-1">
           <div class="flex-1">
-            <p class="font-medium text-gray-900 dark:text-white">
+            <p class="font-medium" style="color: var(--text-primary);">
               {{ 'settings.messageNotifications.title' | translate }}
             </p>
-            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
+            <p class="text-sm mt-1" style="color: var(--text-secondary);">
               {{ 'settings.messageNotifications.desc' | translate }}
             </p>
           </div>
@@ -24,10 +24,10 @@
 
         <div class="flex justify-between items-center py-3 px-1">
           <div class="flex-1">
-            <p class="font-medium text-gray-900 dark:text-white">
+            <p class="font-medium" style="color: var(--text-primary);">
               {{ 'settings.soundNotifications.title' | translate }}
             </p>
-            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
+            <p class="text-sm mt-1" style="color: var(--text-secondary);">
               {{ 'settings.soundNotifications.desc' | translate }}
             </p>
           </div>
@@ -39,7 +39,7 @@
       </div>
     </div>
 
-    <div class="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow space-y-6">
+    <div class="p-6 rounded-2xl shadow space-y-6" style="background-color: var(--bg-primary);">
       <h2 class="text-xl font-semibold flex items-center gap-2">
         <span>🎨</span> {{'settings.appearance' | translate}}
       </h2>
@@ -47,27 +47,30 @@
         <div class="flex justify-between items-start">
           <div>
             <p class="font-medium">{{'settings.theme' | translate}}</p>
-            <p class="text-sm text-gray-500 dark:text-gray-400">{{'settings.themeSubtitle' | translate}}</p>
+            <p class="text-sm" style="color: var(--text-secondary);">{{'settings.themeSubtitle' | translate}}</p>
           </div>
           
-          <div class="flex gap-3">
+          <div class="flex flex-wrap gap-3 max-w-md justify-end">
             <button
               *ngFor="let option of themeOptions"
               (click)="selectTheme(option.value)"
-              class="relative w-12 h-12 rounded-full transition-all hover:scale-110 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              class="relative w-14 h-14 rounded-xl transition-all hover:scale-110 focus:outline-none focus:ring-2 focus:ring-offset-2 shadow-md"
               [style.background]="option.color"
+              [style.--tw-ring-color]="'var(--accent)'"
               [attr.aria-label]="option.label"
               [title]="option.label"
             >
               <span 
                 *ngIf="settings.theme === option.value"
-                class="absolute inset-0 flex items-center justify-center text-white text-xl"
+                class="absolute inset-0 flex items-center justify-center text-white text-2xl font-bold drop-shadow-lg"
               >
                 ✓
               </span>
               <span 
                 *ngIf="settings.theme === option.value"
-                class="absolute inset-0 rounded-full ring-2 ring-blue-500 ring-offset-2 dark:ring-offset-gray-800"
+                class="absolute inset-0 rounded-xl ring-2 ring-offset-2"
+                [style.border-color]="'var(--accent)'"
+                style="border-width: 2px;"
               ></span>
             </button>
           </div>
@@ -75,7 +78,7 @@
       </div>
     </div>
     
-    <div class="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow space-y-6">
+    <div class="p-6 rounded-2xl shadow space-y-6" style="background-color: var(--bg-primary);">
       <h2 class="text-xl font-semibold flex items-center gap-2">
         <span>🌐</span> {{'settings.language' | translate}}
       </h2>
@@ -83,13 +86,14 @@
         <div class="flex justify-between items-center">
           <div>
             <p class="font-medium">{{'settings.language' | translate}}</p>
-            <p class="text-sm text-gray-500 dark:text-gray-400">{{'settings.languageSubtitle' | translate}}</p>
+            <p class="text-sm" style="color: var(--text-secondary);">{{'settings.languageSubtitle' | translate}}</p>
           </div>
           
           <div class="relative custom-dropdown">
             <button
               (click)="toggleLanguageDropdown()"
-              class="px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white flex items-center gap-2 min-w-[120px]"
+              class="px-3 py-2 border rounded-lg flex items-center gap-2 min-w-[120px]"
+              style="background-color: var(--bg-primary); border-color: var(--border-color); color: var(--text-primary);"
             >
               <span>{{ getSelectedLanguage().label }}</span>
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -99,12 +103,16 @@
             
             <div 
               *ngIf="languageDropdownOpen"
-              class="absolute right-0 mt-1 w-full bg-white dark:bg-gray-700 border rounded-lg shadow-lg z-50"
+              class="absolute right-0 mt-1 w-full border rounded-lg shadow-lg z-50"
+              style="background-color: var(--bg-primary); border-color: var(--border-color);"
             >
               <div 
                 *ngFor="let option of languageOptions"
                 (click)="selectLanguage(option.value)"
-                class="px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer"
+                (mouseenter)="onMouseEnter($event)"
+                (mouseleave)="onMouseLeave($event)"
+                class="px-3 py-2 cursor-pointer transition-colors"
+                style="color: var(--text-primary);"
               >
                 {{ option.label }}
               </div>

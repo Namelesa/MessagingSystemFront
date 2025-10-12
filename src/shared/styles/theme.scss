@@ -6,6 +6,7 @@
     --text-secondary: #6b7280;
     --border-color: #e5e7eb;
     --accent: #3b82f6;
+    --bg-active: #d1d5db;
   }
   
   [data-theme="dark"] {
@@ -16,6 +17,7 @@
     --text-secondary: #9ca3af;
     --border-color: #374151;
     --accent: #60a5fa;
+    --bg-active: #4b5563;
   }
   
   [data-theme="ocean"] {
@@ -26,6 +28,7 @@
     --text-secondary: #7dd3fc;
     --border-color: #075985;
     --accent: #38bdf8;
+    --bg-active: #0284c7;
   }
   
   [data-theme="forest"] {
@@ -36,6 +39,7 @@
     --text-secondary: #86efac;
     --border-color: #166534;
     --accent: #4ade80;
+    --bg-active: #22c55e;
   }
   
   [data-theme="sunset"] {
@@ -46,6 +50,7 @@
     --text-secondary: #fdba74;
     --border-color: #9a3412;
     --accent: #fb923c;
+    --bg-active: #ea580c;
   }
   
   [data-theme="purple"] {
@@ -56,6 +61,7 @@
     --text-secondary: #d8b4fe;
     --border-color: #6b21a8;
     --accent: #a855f7;
+    --bg-active: #9333ea;
   }
   
   [data-theme="rose"] {
@@ -66,6 +72,7 @@
     --text-secondary: #fbcfe8;
     --border-color: #9f1239;
     --accent: #f43f5e;
+    --bg-active: #e11d48;
   }
   
   [data-theme="amber"] {
@@ -76,6 +83,7 @@
     --text-secondary: #fde68a;
     --border-color: #92400e;
     --accent: #fbbf24;
+    --bg-active: #d97706;
   }
   
   .bg-theme-primary { background-color: var(--bg-primary); }
@@ -86,3 +94,4 @@
   .border-theme { border-color: var(--border-color); }
   .text-theme-accent { color: var(--accent); }
   .bg-theme-accent { background-color: var(--accent); }
+  .bg-theme-active { background-color: var(--bg-active); }

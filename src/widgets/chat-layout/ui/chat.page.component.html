@@ -1,16 +1,17 @@
-<div class="flex h-screen dark:bg-gray-700 text-white">
+<div class="flex h-screen text-white" style="background-color: var(--bg-primary);">
   <ng-content select="[chat-sidebar]"></ng-content>
 
   <main class="flex-grow flex flex-col">
     <div
       *ngIf="selectedChat"
-      class="h-20 px-6 py-3 flex items-center gap-4 border border-white dark:border-transparent bg-gray-100 dark:bg-gray-800 shadow-sm"
+      class="h-20 px-6 py-3 flex items-center gap-4 shadow-sm"
+      style="background-color: var(--bg-secondary); border-color: var(--border-color);"
       [class.cursor-pointer]="groupId"
       (click)="groupId ? headerClick.emit() : null"
       [attr.title]="groupId ? 'Show info group' : null"
     >
       <ng-container *ngIf="selectedChat === 'SavedMessage'; else defaultAvatar">
-        <div class="w-14 h-14 flex-shrink-0 rounded-full bg-blue-500 flex items-center justify-center">
+        <div class="w-14 h-14 flex-shrink-0 rounded-full flex items-center justify-center" style="background-color: var(--accent);">
           <svg width="32" height="32" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5v14l7-7 7 7V5a2 2 0 00-2-2H7a2 2 0 00-2 2z"/>
           </svg>
@@ -21,17 +22,18 @@
         *ngIf="selectedChatImage"
         [src]="selectedChatImage"
         alt="Avatar"
-        class="w-14 h-14 flex-shrink-0 rounded-full object-cover border-2 border-gray-300 dark:border-gray-600"
+        class="w-14 h-14 flex-shrink-0 rounded-full object-cover border-2"
+        style="border-color: var(--border-color);"
       />
       </ng-template>
       <div class="flex flex-col justify-center">
-        <span class="text-lg font-semibold text-black truncate dark:text-white">
+        <span class="text-lg font-semibold truncate" style="color: var(--text-primary);">
           {{ selectedChat }}
         </span>
       </div>
     </div>
 
-    <div class="flex-grow p-6 pb-0 overflow-y-auto text-black bg-gray-300 dark:text-white dark:bg-gray-700">
+    <div class="flex-grow p-6 pb-0 overflow-y-auto" style="background-color: var(--bg-tertiary); color: var(--text-primary);">
       <ng-content select="[chat-content]"></ng-content>
     </div>
   </main>

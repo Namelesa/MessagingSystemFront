@@ -1,6 +1,6 @@
-<nav class="h-screen flex flex-col items-center bg-white dark:bg-gray-800 text-gray-900 dark:text-white p-3">
+<nav class="h-screen flex flex-col items-center bg-theme-primary text-theme-primary p-3">
   <div class="mb-6 mt-4">
-    <div class="w-12 h-12 flex items-center justify-center rounded-xl bg-blue-500 text-white font-bold text-xl">
+    <div class="w-12 h-12 flex items-center justify-center rounded-xl bg-theme-accent text-theme-primary font-bold text-xl">
       W
     </div>
   </div>
@@ -13,7 +13,7 @@
 
   <div class="mt-auto mb-2 relative">
     <div 
-      class="context-menu absolute bottom-full left-1/2 transform -translate-x-1/2 mb-3 z-50"
+      class="context-menu absolute bottom-full left-1/2 transform -translate-x-1/2 mb-3 z-50 transition-all duration-200"
       [class.opacity-0]="!showContextMenu"
       [class.opacity-100]="showContextMenu"
       [class.scale-95]="!showContextMenu"
@@ -22,14 +22,13 @@
       [class.translate-y-0]="showContextMenu"
       [class.pointer-events-none]="!showContextMenu"
       [class.pointer-events-auto]="showContextMenu"
-      style="transition: all 0.2s ease-in-out;"
     >
       <div class="relative">
         <div class="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-l-transparent border-r-transparent border-t-red-500"></div>
         
         <button 
           (click)="logout()" 
-          class="w-12 h-12 bg-red-500 hover:bg-red-600 text-white rounded-full shadow-lg flex items-center justify-center transition-colors duration-200 ring-2 ring-white dark:ring-gray-800"
+          class="w-12 h-12 bg-theme-contrast hover:bg-theme-active text-theme-primary rounded-full shadow-lg flex items-center justify-center transition-colors duration-200 ring-2 ring-theme-primary"
           [disabled]="!showContextMenu"
           title="Logout"
         >

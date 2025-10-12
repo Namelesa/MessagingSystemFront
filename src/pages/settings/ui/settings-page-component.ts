@@ -4,7 +4,6 @@ import { TranslateService, TranslateModule } from '@ngx-translate/core';
 import { SettingKey, Theme, SettingsService } from '../../../shared/setting-key';
 import { SwitcherComponent } from '../../../shared/ui-elements';
 
-
 @Component({
   selector: 'app-settings-page',
   standalone: true,
@@ -15,57 +14,21 @@ export class SettingsPageComponent {
   settings: Record<SettingKey, any> = {
     messageNotifications: true,
     soundNotifications: true,
-    theme: '',
+    theme: 'light',
     language: 'en',
   };
 
-  themeDropdownOpen = false;
   languageDropdownOpen = false;
 
-  readonly notificationSettings: {
-    key: SettingKey;
-    title: string;
-    desc: string;
-  }[] = [
-    {
-      key: 'messageNotifications',
-      title: 'Message Notifications',
-      desc: 'Receive notifications for new messages',
-    },
-    {
-      key: 'soundNotifications',
-      title: 'Sound Notifications',
-      desc: 'Play sound when receiving messages',
-    },
-  ];
-
-  readonly appearanceSettings: {
-    key: SettingKey;
-    title: string;
-    desc: string;
-  }[] = [
-    {
-      key: 'theme',
-      title: 'Theme',
-      desc: 'Use your theme for the interface',
-    }
-  ];
-
-  readonly languageSettings: {
-    key: SettingKey;
-    title: string;
-    desc: string;
-  }[] = [
-    {
-      key: 'language',
-      title: 'Language',
-      desc: 'Select your preferred language',
-    }
-  ];
-
   readonly themeOptions: { value: Theme; label: string; color: string }[] = [
-    { value: 'light', label: 'Light', color: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' },
-    { value: 'dark', label: 'Dark', color: 'linear-gradient(135deg, #1e3a8a 0%, #1e293b 100%)' },
+    { value: 'light', label: 'Light', color: 'linear-gradient(135deg, #ffffff 0%, #f3f4f6 100%)' },
+    { value: 'dark', label: 'Dark', color: 'linear-gradient(135deg, #1f2937 0%, #111827 100%)' },
+    { value: 'ocean', label: 'Ocean', color: 'linear-gradient(135deg, #0c4a6e 0%, #075985 100%)' },
+    { value: 'forest', label: 'Forest', color: 'linear-gradient(135deg, #14532d 0%, #166534 100%)' },
+    { value: 'sunset', label: 'Sunset', color: 'linear-gradient(135deg, #7c2d12 0%, #c2410c 100%)' },
+    { value: 'purple', label: 'Purple', color: 'linear-gradient(135deg, #581c87 0%, #7e22ce 100%)' },
+    { value: 'rose', label: 'Rose', color: 'linear-gradient(135deg, #881337 0%, #be123c 100%)' },
+    { value: 'amber', label: 'Amber', color: 'linear-gradient(135deg, #78350f 0%, #b45309 100%)' },
   ];
 
   readonly languageOptions = [
@@ -84,44 +47,44 @@ export class SettingsPageComponent {
   }
 
   toggle(key: SettingKey, value: boolean) {
-    this.settings[key] = value;
-    localStorage.setItem('settings', JSON.stringify(this.settings));
+    this.settingsService.set(key, value);
   }
 
   selectTheme(theme: Theme) {
-    this.settingsService.set('theme', theme as Theme);
-    this.themeDropdownOpen = false;
+    this.settingsService.set('theme', theme);
   }  
 
   selectLanguage(language: string) {
-    this.settings['language'] = language;
+    this.settingsService.set('language', language);
     this.languageDropdownOpen = false;
-    localStorage.setItem('settings', JSON.stringify(this.settings));
     this.translate.use(language);
-  }
-
-  toggleThemeDropdown() {
-    this.themeDropdownOpen = !this.themeDropdownOpen;
-    this.languageDropdownOpen = false;
   }
 
   toggleLanguageDropdown() {
     this.languageDropdownOpen = !this.languageDropdownOpen;
-    this.themeDropdownOpen = false;
-  }
-
-  getSelectedTheme() {
-    return this.themeOptions.find(option => option.value === this.settings['theme']) || this.themeOptions[0];
   }
 
   getSelectedLanguage() {
     return this.languageOptions.find(option => option.value === this.settings['language']) || this.languageOptions[0];
   }
 
+  onMouseEnter(event: MouseEvent) {
+    const target = event.target as HTMLElement;
+    if (target) {
+      target.style.backgroundColor = 'var(--bg-tertiary)';
+    }
+  }
+
+  onMouseLeave(event: MouseEvent) {
+    const target = event.target as HTMLElement;
+    if (target) {
+      target.style.backgroundColor = 'transparent';
+    }
+  }
+
   onDocumentClick(event: Event) {
     const target = event.target as HTMLElement;
     if (!target.closest('.custom-dropdown')) {
-      this.themeDropdownOpen = false;
       this.languageDropdownOpen = false;
     }
   }

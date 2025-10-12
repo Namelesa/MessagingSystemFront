@@ -1,7 +1,8 @@
 <div #scrollContainer (scroll)="onScroll()" class="overflow-y-auto h-full relative scroll-smooth">
   <ng-container *ngFor="let group of groupedMessages; trackBy: trackByGroup">
     <div class="flex justify-center my-4">
-      <span class="inline-block bg-gray-400 text-white px-3 py-1 rounded-full opacity-80 text-sm dark:bg-gray-500 dark:text-white shadow-md">
+      <span class="inline-block px-3 py-1 rounded-full opacity-80 text-sm shadow-md" 
+            style="background-color: var(--bg-tertiary); color: var(--text-primary);">
         {{ isToday(group.messages[0].sentAt) ? 'Today' : (group.messages[0].sentAt | date:'d MMMM yyyy') }}
       </span>
     </div>
@@ -18,18 +19,20 @@
             class="px-3 py-2 rounded-2xl shadow-sm text-sm min-w-[48px] min-h-[32px] message-block transition-all duration-300"
             [ngClass]="[
               isMyMessage(msg)
-                ? 'ml-auto bg-blue-500 text-white rounded-br-md'
-                : 'mr-auto bg-gray-200 text-gray-900 dark:bg-gray-600 dark:text-white rounded-bl-md',
+                ? 'ml-auto text-white rounded-br-md'
+                : 'mr-auto rounded-bl-md',
               (isMessageDeleted(msg) && msg.deleteType === 'hard') ? 'opacity-60 italic' : '',
-              isMessageHighlighted(msg.messageId) ? 'ring-2 ring-blue-400 ring-opacity-80 shadow-md' : ''
+              isMessageHighlighted(msg.messageId) ? 'ring-2 ring-opacity-80 shadow-md' : ''
             ]"
+            [style.background-color]="isMyMessage(msg) ? 'var(--accent)' : 'var(--bg-secondary)'"
+            [style.color]="isMyMessage(msg) ? '#ffffff' : 'var(--text-primary)'"
+            [style.ring-color]="isMessageHighlighted(msg.messageId) ? 'var(--accent)' : ''"
             style="word-break: break-word;"
           >
             <div *ngIf="msg.replyFor && getRepliedMessage(msg.replyFor)" 
                  class="mb-2 p-2 rounded-lg border-l-2 cursor-pointer transition-colors"
-                 [ngClass]="isMyMessage(msg) 
-                   ? 'bg-blue-400/20 border-blue-200 hover:bg-blue-400/30' 
-                   : 'bg-gray-300/50 dark:bg-gray-500/30 border-gray-400 dark:border-gray-500 hover:bg-gray-300/70 dark:hover:bg-gray-500/50'"
+                 [style.background-color]="isMyMessage(msg) ? 'rgba(255, 255, 255, 0.2)' : 'var(--bg-tertiary)'"
+                 [style.border-color]="isMyMessage(msg) ? 'rgba(255, 255, 255, 0.4)' : 'var(--border-color)'"
                  (click)="onScrollToReplyMessage(msg.replyFor!)"
             >
               <div class="flex items-center space-x-1 mb-1">
@@ -104,7 +107,8 @@
 
             <ng-container *ngIf="parseContent(msg) as content">
               <div *ngIf="content.text" class="whitespace-pre-line break-words"
-                   [ngClass]="(isMessageDeleted(msg) && msg.deleteType === 'hard') ? 'italic text-gray-500 dark:text-gray-400' : ''">
+                   [ngClass]="(isMessageDeleted(msg) && msg.deleteType === 'hard') ? 'italic' : ''"
+                   [style.color]="(isMessageDeleted(msg) && msg.deleteType === 'hard') ? 'var(--text-secondary)' : ''">
                 {{ content.text }}
               </div>
 
@@ -123,7 +127,8 @@
                     <ng-container *ngFor="let file of getMediaFiles(content.files); let fileIndex = index; let isFirst = first; trackBy: trackByFileWithRefresh">
                       
                       <div *ngIf="file.type?.startsWith('image/') && file.url" 
-                           class="relative group cursor-pointer overflow-hidden bg-gray-200 dark:bg-gray-700"
+                           class="relative group cursor-pointer overflow-hidden"
+                           [style.background-color]="'var(--bg-secondary)'"
                            [ngClass]="{
                              'aspect-square': getMediaFiles(content.files).length > 1,
                              'aspect-video': getMediaFiles(content.files).length === 1 && file.type?.startsWith('image/'),
@@ -154,13 +159,15 @@
                         </div>
                         
                         <div *ngIf="!file.url || file.url === 'undefined' || file.url === 'null'" 
-                             class="absolute inset-0 bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
-                          <span class="text-xs text-gray-500 dark:text-gray-400">{{'messages.errorLoadingFile' | translate}}</span>
+                             class="absolute inset-0 flex items-center justify-center"
+                             [style.background-color]="'var(--bg-secondary)'">
+                          <span class="text-xs" style="color: var(--text-secondary);">{{'messages.errorLoadingFile' | translate}}</span>
                         </div>
                       </div>
               
                       <div *ngIf="file.type?.startsWith('video/') && file.url" 
-                           class="relative group cursor-pointer overflow-hidden bg-gray-200 dark:bg-gray-700"
+                           class="relative group cursor-pointer overflow-hidden"
+                           [style.background-color]="'var(--bg-secondary)'"
                            [ngClass]="{
                              'aspect-square': getMediaFiles(content.files).length > 1,
                              'aspect-video': getMediaFiles(content.files).length === 1,
@@ -204,8 +211,9 @@
                         </div>
                         
                         <div *ngIf="!file.url || file.url === 'undefined' || file.url === 'null'" 
-                             class="absolute inset-0 bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
-                          <span class="text-xs text-gray-500 dark:text-gray-400">{{'messages.errorLoadingFile' | translate}}</span>
+                             class="absolute inset-0 flex items-center justify-center"
+                             [style.background-color]="'var(--bg-secondary)'">
+                          <span class="text-xs" style="color: var(--text-secondary);">{{'messages.errorLoadingFile' | translate}}</span>
                         </div>
                       </div>
                     </ng-container>
@@ -238,7 +246,8 @@
                 <div class="flex flex-col gap-2 mt-2">
                   <ng-container *ngFor="let file of content.files; let fileIndex = index; trackBy: trackByFileWithRefresh">
                     <div *ngIf="!file.type?.startsWith('image/') && !file.type?.startsWith('video/') && !file.type?.startsWith('audio/')" 
-                         class="flex items-center gap-3 py-2 px-3 rounded-lg bg-blue-500"
+                         class="flex items-center gap-3 py-2 px-3 rounded-lg"
+                         [style.background-color]="isMyMessage(msg) ? 'var(--accent)' : 'var(--bg-tertiary)'"
                          [attr.data-file-key]="file._refreshKey"
                          [attr.data-message-id]="msg.messageId"
                          [attr.data-file-index]="fileIndex"
@@ -256,9 +265,8 @@
                          [attr.download]="file.fileName"
                          target="_blank"
                          class="flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-105"
-                         [ngClass]="isMyMessage(msg) 
-                           ? 'bg-white/20 hover:bg-white/30 text-white' 
-                           : 'bg-gray-800/10 hover:bg-gray-800/20 dark:hover:bg-white/20 text-gray-700 dark:text-gray-200'">
+                         [style.background-color]="'rgba(255, 255, 255, 0.2)'"
+                         [style.color]="isMyMessage(msg) ? '#ffffff' : 'var(--text-primary)'">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
                                 d="M12 10v6m0 0l-3-3m3 3l3-3"/>
@@ -267,9 +275,7 @@
                       
                       <div class="flex-1 min-w-0">
                         <p class="text-sm font-medium truncate leading-tight"
-                           [ngClass]="isMyMessage(msg) 
-                             ? 'text-white' 
-                             : 'text-gray-900 dark:text-white'">
+                           [style.color]="isMyMessage(msg) ? '#ffffff' : 'var(--text-primary)'">
                           {{ file.fileName || file.originalName || 'Document' }}
                         </p>
                         <p class="text-xs opacity-70 truncate">
@@ -283,14 +289,11 @@
               
             </ng-container>
 
-            <div class="flex items-center gap-1 mt-1 text-xs justify-end"
-                 [ngClass]="isMyMessage(msg)
-                   ? 'text-blue-200 dark:text-gray-200'
-                   : 'text-gray-500 dark:text-gray-200'">
+            <div class="flex items-center gap-1 mt-1 text-xs justify-end opacity-75">
               <span>{{ msg.sentAt | date:'shortTime' }}</span>
               <ng-container *ngIf="msg.isEdited && msg.editedAt && !(isMessageDeleted(msg) && msg.deleteType === 'hard')">
                 <span class="mx-1">•</span>
-                <span class="italic opacity-75">{{'messages.edited' | translate}} {{ msg.editedAt | date:'shortTime' }}</span>
+                <span class="italic">{{'messages.edited' | translate}} {{ msg.editedAt | date:'shortTime' }}</span>
               </ng-container>
             </div>
 
@@ -301,12 +304,15 @@
   </ng-container>
 
   <div *ngIf="showContextMenu"
-       class="fixed bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg py-1 z-50 min-w-[150px]"
+       class="fixed border rounded-lg shadow-lg py-1 z-50 min-w-[150px]"
+       style="background-color: var(--bg-primary); border-color: var(--border-color);"
        [style.left.px]="contextMenuPosition.x"
        [style.top.px]="contextMenuPosition.y"
        (click)="$event.stopPropagation()"
   >
-    <button class="w-full px-3 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
+    <button class="w-full px-3 py-2 text-left text-sm flex items-center gap-2 transition-colors"
+            style="color: var(--text-primary);"
+            [style.background-color]="'transparent'"
             (click)="onReplyToMessage()">
       <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"></path>
@@ -315,7 +321,8 @@
     </button>
 
     <button *ngIf="canEditOrDelete()"
-            class="w-full px-3 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
+            class="w-full px-3 py-2 text-left text-sm flex items-center gap-2 transition-colors"
+            style="color: var(--text-primary);"
             (click)="onEditMessage()">
       <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
@@ -324,7 +331,8 @@
     </button>
 
     <button *ngIf="canEditOrDelete()"
-            class="w-full px-3 py-2 text-left text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-2"
+            class="w-full px-3 py-2 text-left text-sm flex items-center gap-2 transition-colors"
+            style="color: #ef4444;"
             (click)="onDeleteMessage()">
       <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>

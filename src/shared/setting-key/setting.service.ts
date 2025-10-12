@@ -1,7 +1,9 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject } from 'rxjs';
 
-export type Theme = 'light' | 'dark' | 'system';
+export type Theme = 'light' | 'dark' | 'ocean' | 'forest' | 'sunset' | 'purple' | 'rose' | 'amber';
+
+export type SettingKey = keyof AppSettings;
 
 export interface AppSettings {
   theme: Theme;
@@ -53,10 +55,15 @@ export class SettingsService {
   }
 
   private applyTheme(theme: Theme) {
-    const isDark =
-      theme === 'dark' ||
-      (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
-
-    document.documentElement.classList.toggle('dark', isDark);
+    // Удаляем класс dark и все data-theme атрибуты
+    document.documentElement.classList.remove('dark');
+    
+    // Устанавливаем новый атрибут темы
+    document.documentElement.setAttribute('data-theme', theme);
+    
+    // Добавляем класс dark только для темной темы (для совместимости с Tailwind)
+    if (theme === 'dark') {
+      document.documentElement.classList.add('dark');
+    }
   }
 }

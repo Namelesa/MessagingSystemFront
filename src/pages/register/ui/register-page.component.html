@@ -69,7 +69,10 @@
       <button
         type="button"
         (click)="togglePasswordVisibility()"
-        class="flex items-center text-gray-500 hover:text-gray-700 focus:outline-none z-10 p-1 rounded transition-colors duration-200"
+        class="flex items-center focus:outline-none z-10 p-1 rounded transition-colors duration-200"
+        style="color: var(--text-secondary);"
+        (mouseenter)="$any($event.target).style.color = 'var(--text-primary)'"
+        (mouseleave)="$any($event.target).style.color = 'var(--text-secondary)'"
       >
         <lucide-icon [img]="EyeIcon" *ngIf="!isPasswordVisible" size="20"></lucide-icon>
         <lucide-icon [img]="EyeOffIcon" *ngIf="isPasswordVisible" size="20"></lucide-icon>
@@ -90,36 +93,14 @@
         <button
           type="button"
           (click)="fileInput.click()"
-          class="w-full px-4 py-3 rounded-lg text-left
-                 transition-all duration-300
-                 focus:outline-none focus:ring-2 focus:ring-blue-500
-                 border-2 border-dashed"
-          [class.bg-gray-50]="!getFieldErrors('image').length && !formData.image"
-          [class.dark:bg-gray-800]="!getFieldErrors('image').length && !formData.image"
-          [class.text-gray-600]="!getFieldErrors('image').length && !formData.image"
-          [class.dark:text-gray-400]="!getFieldErrors('image').length && !formData.image"
-          [class.border-gray-300]="!getFieldErrors('image').length && !formData.image"
-          [class.dark:border-gray-600]="!getFieldErrors('image').length && !formData.image"
-          [class.hover:bg-gray-100]="!getFieldErrors('image').length && !formData.image"
-          [class.dark:hover:bg-gray-700]="!getFieldErrors('image').length && !formData.image"
-          [class.hover:border-gray-400]="!getFieldErrors('image').length && !formData.image"
-          [class.dark:hover:border-gray-500]="!getFieldErrors('image').length && !formData.image"
-          [class.bg-green-50]="!getFieldErrors('image').length && formData.image"
-          [class.dark:bg-green-900]="!getFieldErrors('image').length && formData.image"
-          [class.text-green-700]="!getFieldErrors('image').length && formData.image"
-          [class.dark:text-green-400]="!getFieldErrors('image').length && formData.image"
-          [class.border-green-300]="!getFieldErrors('image').length && formData.image"
-          [class.dark:border-green-600]="!getFieldErrors('image').length && formData.image"
-          [class.hover:bg-green-100]="!getFieldErrors('image').length && formData.image"
-          [class.dark:hover:bg-green-900]="!getFieldErrors('image').length && formData.image"
-          [class.bg-red-50]="getFieldErrors('image').length > 0"
-          [class.dark:bg-red-900]="getFieldErrors('image').length > 0"
-          [class.text-red-600]="getFieldErrors('image').length > 0"
-          [class.dark:text-red-400]="getFieldErrors('image').length > 0"
-          [class.border-red-300]="getFieldErrors('image').length > 0"
-          [class.dark:border-red-600]="getFieldErrors('image').length > 0"
-          [class.hover:bg-red-100]="getFieldErrors('image').length > 0"
-          [class.dark:hover:bg-red-900]="getFieldErrors('image').length > 0"
+          class="w-full px-4 py-3 rounded-lg text-left transition-all duration-300 focus:outline-none border-2 border-dashed"
+          [style.background-color]="getUploadButtonBgColor()"
+          [style.color]="getUploadButtonTextColor()"
+          [style.border-color]="getUploadButtonBorderColor()"
+          [ngStyle]="{'--hover-bg': getUploadButtonHoverColor()}"
+          style="transition: all 0.3s ease;"
+          (mouseenter)="$any($event.target).style.backgroundColor = $any($event.target).style.getPropertyValue('--hover-bg')"
+          (mouseleave)="$any($event.target).style.backgroundColor = getUploadButtonBgColor()"
         >
           <div class="flex items-center justify-center space-x-2">
             <svg *ngIf="!formData.image" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -155,7 +136,8 @@
 
     <div *ngIf="getFieldErrors('image').length > 0" class="mt-2">
       <div *ngFor="let error of getFieldErrors('image')" 
-           class="text-sm text-red-600 dark:text-red-400 flex items-center">
+           class="text-sm flex items-center"
+           style="color: #dc2626;">
         <svg class="w-4 h-4 mr-1 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
           <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
         </svg>

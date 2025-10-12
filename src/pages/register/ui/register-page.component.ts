@@ -89,4 +89,56 @@ export class RegisterPageComponent implements OnDestroy {
   ngOnDestroy(): void {
     this.store.dispose();
   }
+
+getUploadButtonBgColor(): string {
+  const hasErrors = this.getFieldErrors('image').length > 0;
+  const hasImage = !!this.formData.image;
+  
+  if (hasErrors) {
+    return '#fef2f2';
+  } else if (hasImage) {
+    return '#f0fdf4';
+  } else {
+    return 'var(--bg-secondary)';
+  }
+}
+
+getUploadButtonTextColor(): string {
+  const hasErrors = this.getFieldErrors('image').length > 0;
+  const hasImage = !!this.formData.image;
+  
+  if (hasErrors) {
+    return '#dc2626';
+  } else if (hasImage) {
+    return '#15803d';
+  } else {
+    return 'var(--text-primary)';
+  }
+}
+
+getUploadButtonBorderColor(): string {
+  const hasErrors = this.getFieldErrors('image').length > 0;
+  const hasImage = !!this.formData.image;
+  
+  if (hasErrors) {
+    return '#fca5a5';
+  } else if (hasImage) {
+    return '#86efac';
+  } else {
+    return 'var(--border-color)';
+  }
+}
+
+getUploadButtonHoverColor(): string {
+  const hasErrors = this.getFieldErrors('image').length > 0;
+  const hasImage = !!this.formData.image;
+  
+  if (hasErrors) {
+    return '#fee2e2'; 
+  } else if (hasImage) {
+    return '#dcfce7';
+  } else {
+    return 'var(--bg-tertiary)';
+  }
+}
 }

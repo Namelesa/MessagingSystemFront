@@ -6,34 +6,41 @@ import { CommonModule } from '@angular/common';
   standalone: true,
   imports: [CommonModule],
   template: `
-    <div class="flex items-center justify-between">
-      <h2 class="text-2xl font-bold">{{ title }}</h2>
+    <div class="flex items-center justify-between border-b border-theme pb-3 mb-4">
+      <h2 class="text-xl font-semibold text-theme-primary transition-colors duration-300">
+        {{ title }}
+      </h2>
 
-      <div class="flex gap-2">
+      <div class="flex gap-2 items-center">
         <button
           *ngIf="showEditButton"
           (click)="editClick.emit()"
-          class="text-green-600 hover:text-green-800 dark:text-green-400 dark:hover:text-green-600 transition-colors duration-200"
-          aria-label="Edit">
+          class="text-theme-accent hover:opacity-80 transition-opacity duration-200"
+          aria-label="Edit"
+        >
           ✏️
         </button>
-        
+
         <button
           *ngIf="showSaveButton"
           (click)="saveClick.emit()"
           [disabled]="saveDisabled"
-          class="text-green-600 hover:text-green-800 dark:text-green-400 dark:hover:text-green-600 transition disabled:opacity-50">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
+          class="text-theme-accent hover:opacity-80 transition-opacity duration-200 disabled:opacity-40"
+          aria-label="Save"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
                stroke="currentColor" stroke-width="2">
             <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
           </svg>
         </button>
-        
+
         <button
           *ngIf="showCancelButton"
           (click)="cancelClick.emit()"
-          class="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-600 transition-colors duration-200">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
+          class="text-red-500 hover:opacity-80 transition-opacity duration-200"
+          aria-label="Cancel"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
                stroke="currentColor" stroke-width="2">
             <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
           </svg>
@@ -48,9 +55,8 @@ export class ModalHeaderComponent {
   @Input() showSaveButton = false;
   @Input() showCancelButton = false;
   @Input() saveDisabled = false;
-  
+
   @Output() editClick = new EventEmitter<void>();
   @Output() saveClick = new EventEmitter<void>();
   @Output() cancelClick = new EventEmitter<void>();
 }
-
