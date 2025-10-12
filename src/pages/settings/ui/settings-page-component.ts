@@ -63,10 +63,10 @@ export class SettingsPageComponent {
     }
   ];
 
-  readonly themeOptions: { value: Theme; label: string }[] = [
-    { value: 'light', label: 'Light' },
-    { value: 'dark', label: 'Dark' },
-  ];  
+  readonly themeOptions: { value: Theme; label: string; color: string }[] = [
+    { value: 'light', label: 'Light', color: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' },
+    { value: 'dark', label: 'Dark', color: 'linear-gradient(135deg, #1e3a8a 0%, #1e293b 100%)' },
+  ];
 
   readonly languageOptions = [
     { value: 'en', label: 'English' },

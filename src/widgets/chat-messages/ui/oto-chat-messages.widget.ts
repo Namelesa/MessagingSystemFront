@@ -881,11 +881,7 @@ export class OtoChatMessagesWidget implements OnChanges, AfterViewInit, OnDestro
 
     loadHistory(this.chatNickName, this.take, this.skip)
       .pipe(takeUntil(this.destroy$))
-      .subscribe((newMsgs: OtoMessage[]) => {
-        const filtered = newMsgs.filter(m => !m.isDeleted || !this.isMyMessage(m));
-        const existingIds = new Set(this.messages.map(m => m.messageId));
-        const unique = filtered.filter(m => !existingIds.has(m.messageId));
-        
+      .subscribe((newMsgs: OtoMessage[]) => {        
         if (newMsgs.length === 0) {
           this.allLoaded = true;
         } else {

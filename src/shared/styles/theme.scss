@@ -1,0 +1,88 @@
+:root {
+    --bg-primary: #ffffff;
+    --bg-secondary: #f3f4f6;
+    --bg-tertiary: #e5e7eb;
+    --text-primary: #1f2937;
+    --text-secondary: #6b7280;
+    --border-color: #e5e7eb;
+    --accent: #3b82f6;
+  }
+  
+  [data-theme="dark"] {
+    --bg-primary: #1f2937;
+    --bg-secondary: #111827;
+    --bg-tertiary: #374151;
+    --text-primary: #f3f4f6;
+    --text-secondary: #9ca3af;
+    --border-color: #374151;
+    --accent: #60a5fa;
+  }
+  
+  [data-theme="ocean"] {
+    --bg-primary: #0c4a6e;
+    --bg-secondary: #075985;
+    --bg-tertiary: #0e7490;
+    --text-primary: #e0f2fe;
+    --text-secondary: #7dd3fc;
+    --border-color: #075985;
+    --accent: #38bdf8;
+  }
+  
+  [data-theme="forest"] {
+    --bg-primary: #14532d;
+    --bg-secondary: #166534;
+    --bg-tertiary: #15803d;
+    --text-primary: #dcfce7;
+    --text-secondary: #86efac;
+    --border-color: #166534;
+    --accent: #4ade80;
+  }
+  
+  [data-theme="sunset"] {
+    --bg-primary: #7c2d12;
+    --bg-secondary: #9a3412;
+    --bg-tertiary: #c2410c;
+    --text-primary: #fed7aa;
+    --text-secondary: #fdba74;
+    --border-color: #9a3412;
+    --accent: #fb923c;
+  }
+  
+  [data-theme="purple"] {
+    --bg-primary: #581c87;
+    --bg-secondary: #6b21a8;
+    --bg-tertiary: #7e22ce;
+    --text-primary: #f3e8ff;
+    --text-secondary: #d8b4fe;
+    --border-color: #6b21a8;
+    --accent: #a855f7;
+  }
+  
+  [data-theme="rose"] {
+    --bg-primary: #881337;
+    --bg-secondary: #9f1239;
+    --bg-tertiary: #be123c;
+    --text-primary: #fce7f3;
+    --text-secondary: #fbcfe8;
+    --border-color: #9f1239;
+    --accent: #f43f5e;
+  }
+  
+  [data-theme="amber"] {
+    --bg-primary: #78350f;
+    --bg-secondary: #92400e;
+    --bg-tertiary: #b45309;
+    --text-primary: #fef3c7;
+    --text-secondary: #fde68a;
+    --border-color: #92400e;
+    --accent: #fbbf24;
+  }
+  
+  .bg-theme-primary { background-color: var(--bg-primary); }
+  .bg-theme-secondary { background-color: var(--bg-secondary); }
+  .bg-theme-tertiary { background-color: var(--bg-tertiary); }
+  .text-theme-primary { color: var(--text-primary); }
+  .text-theme-secondary { color: var(--text-secondary); }
+  .border-theme { border-color: var(--border-color); }
+  .text-theme-accent { color: var(--accent); }
+  .bg-theme-accent { background-color: var(--accent); }

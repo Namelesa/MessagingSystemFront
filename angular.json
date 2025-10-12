@@ -33,7 +33,8 @@
                 { "glob": "favicon.ico", "input": "public", "output": "/" } 
               ],
             "styles": [
-              "src/shared/styles/tailwind.scss"
+              "src/shared/styles/tailwind.scss",
+              "src/shared/styles/theme.scss"
             ]
           },
           "configurations": {
@@ -89,7 +90,8 @@
                 { "glob": "favicon.ico", "input": "public", "output": "/" } 
               ],
             "styles": [
-              "src/shared/styles/tailwind.scss"
+              "src/shared/styles/tailwind.scss",
+              "src/shared/styles/theme.scss"
             ]
           }
         }

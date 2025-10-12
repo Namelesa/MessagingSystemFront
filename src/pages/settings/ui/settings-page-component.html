@@ -44,35 +44,32 @@
         <span>🎨</span> {{'settings.appearance' | translate}}
       </h2>
       <div class="space-y-4">
-        <div class="flex justify-between items-center">
+        <div class="flex justify-between items-start">
           <div>
             <p class="font-medium">{{'settings.theme' | translate}}</p>
             <p class="text-sm text-gray-500 dark:text-gray-400">{{'settings.themeSubtitle' | translate}}</p>
           </div>
           
-          <div class="relative custom-dropdown">
+          <div class="flex gap-3">
             <button
-              (click)="toggleThemeDropdown()"
-              class="px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white flex items-center gap-2 min-w-[120px]"
+              *ngFor="let option of themeOptions"
+              (click)="selectTheme(option.value)"
+              class="relative w-12 h-12 rounded-full transition-all hover:scale-110 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              [style.background]="option.color"
+              [attr.aria-label]="option.label"
+              [title]="option.label"
             >
-              <span>{{ getSelectedTheme().label }}</span>
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-              </svg>
-            </button>
-            
-            <div 
-              *ngIf="themeDropdownOpen"
-              class="absolute right-0 mt-1 w-full bg-white dark:bg-gray-700 border rounded-lg shadow-lg z-50"
-            >
-              <div 
-                *ngFor="let option of themeOptions"
-                (click)="selectTheme(option.value)"
-                class="px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer"
+              <span 
+                *ngIf="settings.theme === option.value"
+                class="absolute inset-0 flex items-center justify-center text-white text-xl"
               >
-                {{ option.label }}
-              </div>
-            </div>
+                ✓
+              </span>
+              <span 
+                *ngIf="settings.theme === option.value"
+                class="absolute inset-0 rounded-full ring-2 ring-blue-500 ring-offset-2 dark:ring-offset-gray-800"
+              ></span>
+            </button>
           </div>
         </div>
       </div>
