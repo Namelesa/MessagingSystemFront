@@ -1,8 +1,9 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { TranslateService, TranslateModule } from '@ngx-translate/core'; 
 import { SettingKey, Theme, SettingsService } from '../../../shared/setting-key';
 import { SwitcherComponent } from '../../../shared/ui-elements';
+import { NotificationService } from '../../../shared/notification';
 
 @Component({
   selector: 'app-settings-page',
@@ -10,7 +11,7 @@ import { SwitcherComponent } from '../../../shared/ui-elements';
   imports: [CommonModule, SwitcherComponent, TranslateModule],
   templateUrl: './settings-page-component.html',
 })
-export class SettingsPageComponent {
+export class SettingsPageComponent implements OnInit {
   settings: Record<SettingKey, any> = {
     messageNotifications: true,
     soundNotifications: true,
@@ -19,6 +20,8 @@ export class SettingsPageComponent {
   };
 
   languageDropdownOpen = false;
+  notificationSupported = false;
+  notificationStatus: string = '';
 
   readonly themeOptions: { value: Theme; label: string; color: string }[] = [
     { value: 'light', label: 'Light', color: 'linear-gradient(135deg, #ffffff 0%, #f3f4f6 100%)' },
@@ -38,7 +41,11 @@ export class SettingsPageComponent {
     { value: 'es', label: 'Español' }
   ];
 
-  constructor(private translate: TranslateService, private settingsService: SettingsService) {
+  constructor(
+    private translate: TranslateService, 
+    private settingsService: SettingsService,
+    private notificationService: NotificationService
+  ) {
     this.loadSettings();
     this.settingsService.settings$.subscribe(settings => {
       this.settings = settings;
@@ -46,8 +53,69 @@ export class SettingsPageComponent {
     });
   }
 
-  toggle(key: SettingKey, value: boolean) {
+  ngOnInit() {
+    this.checkNotificationSupport();
+    this.syncNotificationPermission();
+  }
+
+  checkNotificationSupport() {
+    const permission = this.notificationService.getPermission();
+    this.notificationSupported = permission !== 'unsupported';
+    
+    if (!this.notificationSupported) {
+      this.notificationStatus = 'Notifications not supported in this browser';
+    } else {
+      this.updateNotificationStatus();
+    }
+  }
+
+  updateNotificationStatus() {
+    const permission = this.notificationService.getPermission();
+    switch(permission) {
+      case 'granted':
+        this.notificationStatus = 'Notifications enabled ✓';
+        break;
+      case 'denied':
+        this.notificationStatus = 'Notifications blocked - check browser settings';
+        break;
+      case 'default':
+        this.notificationStatus = 'Click to enable notifications';
+        break;
+      default:
+        this.notificationStatus = 'Notifications not available';
+    }
+  }
+
+  async toggle(key: SettingKey, value: boolean) {
     this.settingsService.set(key, value);
+  
+    if (key === 'messageNotifications') {
+      if (value) {
+        const permission = await this.notificationService.requestPermission();
+        if (permission === 'granted') {
+          this.settings.messageNotifications = true;
+          this.updateNotificationStatus();
+        } else {
+          this.settings.messageNotifications = false;
+          alert('Please enable notifications in your browser settings.');
+        }
+      } else {
+        alert('To fully disable notifications, please block them in browser settings.');
+      }
+    }
+  
+    if (key === 'soundNotifications') {
+      this.settings.soundNotifications = value;
+    }
+  }
+
+  syncNotificationPermission() {
+    const permission = this.notificationService.getPermission();
+    if (permission === 'granted') {
+      this.settings.messageNotifications = true;
+    } else {
+      this.settings.messageNotifications = false;
+    }
   }
 
   selectTheme(theme: Theme) {
@@ -93,6 +161,46 @@ export class SettingsPageComponent {
     const saved = localStorage.getItem('settings');
     if (saved) {
       this.settings = { ...this.settings, ...JSON.parse(saved) };
+    }
+  }
+
+  async enableNotifications() {
+    const permission = await this.notificationService.requestPermission();
+    if (permission === 'granted') {
+      this.settings.messageNotifications = true;
+      this.settingsService.set('messageNotifications', true);
+      this.updateNotificationStatus();
+    } else {
+      this.updateNotificationStatus();
+    }
+  }
+
+  async testNotification() {
+    if (!this.notificationSupported) return; 
+
+    const currentPermission = this.notificationService.getPermission();
+    if (currentPermission !== 'granted') {
+      const permission = await this.notificationService.requestPermission();
+      
+      if (permission !== 'granted') {
+        this.updateNotificationStatus();
+        return;
+      }
+      this.updateNotificationStatus();
+    }
+
+    try {
+      this.notificationService.showNotification('Test Notification', {
+        body: 'This is a test notification! 🎉',
+        icon: '/assets/icon.png', 
+        badge: '/assets/badge.png',
+        tag: 'test-notification',
+        requireInteraction: false,
+        silent: false
+      });
+
+    } catch (error) {
+      console.error('❌ Error showing notification:', error);
     }
   }
 }

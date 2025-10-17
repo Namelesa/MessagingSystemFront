@@ -6,11 +6,14 @@ import { takeUntil } from 'rxjs/operators';
 import { GroupMessage } from '../../../entities/group-message';
 import { isToday, truncateText, computeContextMenuPosition } from '../../../shared/realtime';
 import { BaseChatMessagesWidget } from '../../../shared/chat-widget';
+import { ImageViewerItem, ImageViewerComponent } from '../../../shared/image-viewer';
+import { FileUploadApiService, FileUrl } from '../../../features/file-sender';
+import { CustomAudioPlayerComponent } from "../../../shared/custom-player/component/custom-audio-player.component";
 
 @Component({
   selector: 'widgets-group-messages',
   standalone: true,
-  imports: [CommonModule, TranslateModule],
+  imports: [CommonModule, TranslateModule, ImageViewerComponent, CustomAudioPlayerComponent],
   templateUrl: './group-messages.widget.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -30,10 +33,160 @@ export class GroupMessagesWidget extends BaseChatMessagesWidget<GroupMessage> im
   take = 20;
   skip = 0;
   
+  showImageViewer = false;
+  imageViewerImages: ImageViewerItem[] = [];
+  imageViewerInitialIndex = 0;
+  imageViewerKey = 0;
+
   private avatarCache = new Map<string, string | undefined>();
 
-  constructor(private cdr: ChangeDetectorRef) {
+  constructor(
+    private cdr: ChangeDetectorRef,
+    private fileUploadApi: FileUploadApiService
+  ) {
     super();
+  }
+
+  // Методы для работы с файлами
+  override getFileSize(file: any): string {
+    return this.getFileSize(file.size || 0);
+  }
+
+  override getFileExtension(fileName: string): string {
+    return this.getFileExtension(fileName);
+  }
+
+  override formatFileSize(bytes: number): string {
+    return this.formatFileSize(bytes);
+  }
+
+  protected override detectFileType(fileNameOrUrl: string): string | null {
+    return this.detectFileType(fileNameOrUrl);
+  }
+
+  override trackByFileWithRefresh(index: number, file: any): string {
+    return this.trackByFileWithRefresh(index, file);
+  }
+
+  override getMediaFiles(files: any[]): any[] {
+    return this.getMediaFiles(files);
+  }
+  
+  override getOriginalFileIndex(allFiles: any[], targetFile: any): number {
+    return this.getOriginalFileIndex(allFiles, targetFile);
+  }
+
+  parseContent(msg: GroupMessage): { text: string; files: any[] } {
+    const currentContent = msg.content;
+    const messageId = this.getMessageIdFromMessage(msg);
+    const cachedContent = this.messageContentCache.get(messageId);
+    const hasCachedResult = !!(msg as any).parsedContent;
+
+    if (cachedContent !== currentContent || !hasCachedResult) {
+      delete (msg as any).parsedContent;
+      this.messageContentCache.delete(messageId);
+      this.messageContentCache.set(messageId, currentContent);
+
+      try {
+        const parsed = JSON.parse(currentContent);
+        if (parsed.files) {
+          parsed.files = parsed.files.map((file: any, index: number) => ({
+            ...file,
+            type: file.type || this.detectFileType(file.fileName),
+            uniqueId: file.uniqueFileName || file.url || `${file.fileName}_${Date.now()}_${index}`,
+            _refreshKey: `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+          }));
+          (msg as any).parsedContent = { text: parsed.text || '', files: parsed.files };
+          return (msg as any).parsedContent;
+        }
+      } catch (e) {
+        return { text: currentContent, files: [] };
+      }
+    }
+    return (msg as any).parsedContent;
+  }
+
+  openFileViewer(fileIndex: number, messageId: string) {
+    const sourceMessage = this.messages.find(msg => this.getMessageIdFromMessage(msg) === messageId);
+    if (!sourceMessage) return;
+    const sourceContent = this.parseContent(sourceMessage);
+    const allFiles = sourceContent.files;
+    if (!allFiles[fileIndex]) return;
+
+    const mediaFiles = this.getMediaFiles(allFiles);
+    const mediaIndex = this.getOriginalFileIndex(mediaFiles, allFiles[fileIndex]);
+    if (mediaIndex === -1) return;
+
+    this.imageViewerImages = mediaFiles.map(file => ({
+      url: file.url,
+      fileName: file.fileName,
+      type: file.type,
+      messageId: messageId,
+      sender: sourceMessage.sender
+    }));
+    this.imageViewerInitialIndex = mediaIndex;
+    this.imageViewerKey++;
+    this.showImageViewer = true;
+  }
+
+  onImageViewerClosed() {
+    this.showImageViewer = false;
+    this.imageViewerImages = [];
+    this.imageViewerInitialIndex = 0;
+    this.imageViewerKey = 0;
+  }
+
+  onScrollToReplyMessage(messageId: string) {
+    this.scrollToMessage(messageId);
+  }
+
+  private async loadFilesForMessages(messages: GroupMessage[]) {
+    const fileNames: string[] = [];
+    const messageFileMap = new Map<string, { messageIndex: number; fileIndex: number; originalName: string }>();
+
+    messages.forEach((msg, messageIndex) => {
+      try {
+        const parsed = JSON.parse(msg.content);
+        if (parsed.files) {
+          parsed.files.forEach((file: any, fileIndex: number) => {
+            if (file.fileName) {
+              fileNames.push(file.fileName);
+              messageFileMap.set(`${file.fileName}_${messageIndex}_${fileIndex}`, {
+                messageIndex,
+                fileIndex,
+                originalName: file.fileName
+              });
+            }
+          });
+        }
+      } catch {}
+    });
+
+    if (fileNames.length === 0) return;
+    const fileUrls = await this.fileUploadApi.getDownloadUrls(fileNames);
+    const filesByOriginalName = new Map<string, FileUrl[]>();
+    fileUrls.forEach(fileUrl => {
+      if (!filesByOriginalName.has(fileUrl.originalName)) filesByOriginalName.set(fileUrl.originalName, []);
+      filesByOriginalName.get(fileUrl.originalName)!.push(fileUrl);
+    });
+
+    messageFileMap.forEach((mapping, uniqueKey) => {
+      const message = messages[mapping.messageIndex];
+      const parsed = JSON.parse(message.content);
+      const urls = filesByOriginalName.get(mapping.originalName);
+      if (urls && urls[0]) {
+        parsed.files[mapping.fileIndex].url = urls[0].url;
+        parsed.files[mapping.fileIndex].uniqueFileName = urls[0].uniqueFileName;
+        message.content = JSON.stringify(parsed);
+      }
+    });
+
+    messages.forEach(msg => {
+      delete (msg as any).parsedContent;
+      this.messageContentCache.set(this.getMessageIdFromMessage(msg), msg.content);
+    });
+
+    this.cdr.detectChanges();
   }
 
   ngAfterViewInit() {
@@ -148,8 +301,8 @@ export class GroupMessagesWidget extends BaseChatMessagesWidget<GroupMessage> im
     this.scrollToBottomBase(this.scrollContainer);
   }
 
-  getRepliedMessage(messageId: string): GroupMessage | null {
-    return this.messages.find(m => m.id === messageId) || null;
+  getRepliedMessage(messageId: string): GroupMessage | undefined {
+    return this.messages.find(m => m.id === messageId) || undefined;
   }
 
   onMessageRightClick(event: MouseEvent, msg: GroupMessage) {
@@ -203,7 +356,6 @@ export class GroupMessagesWidget extends BaseChatMessagesWidget<GroupMessage> im
     this.messages$
       .pipe(takeUntil(this.destroy$))
       .subscribe(newMsgs => {
-        
         const filtered = newMsgs.filter(m => !m.isDeleted || this.isMyMessage(m));
         const newMap = new Map(filtered.map(m => [m.id, m]));
         const oldMap = new Map(this.messages.map(m => [m.id, m]));
@@ -221,7 +373,12 @@ export class GroupMessagesWidget extends BaseChatMessagesWidget<GroupMessage> im
 
         if (prevLength === 0 && this.messages.length > 0) {
           this.skip = this.messages.length;
+          this.loadFilesForMessages(this.messages);
         } else if (hasNewMessages) {
+          const newMessages = this.messages.filter(m => !oldMap.has(m.id));
+          if (newMessages.length > 0) {
+            this.loadFilesForMessages(newMessages);
+          }
         }
         
         if (hasNewMessages && (this.isScrolledToBottom() || this.shouldScrollToBottom)) {
@@ -266,6 +423,8 @@ export class GroupMessagesWidget extends BaseChatMessagesWidget<GroupMessage> im
             this.cdr.markForCheck();
             return;
           }
+          
+          this.loadFilesForMessages(unique);
           
           const prevHeight = this.scrollContainer?.nativeElement.scrollHeight || 0;
           this.messages = [...unique, ...this.messages];
