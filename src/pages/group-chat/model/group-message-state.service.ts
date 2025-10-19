@@ -32,6 +32,7 @@ export class GroupMessageStateService {
   getReplyingToMessage(): GroupMessage | undefined { return this.state.replyingToMessage; }
   getIsDeleteModalOpen(): boolean { return this.state.isDeleteModalOpen; }
   getDeleteForBoth(): boolean { return this.state.deleteForBoth; }
+  getMessageToDelete(): GroupMessage | undefined { return this.state.messageToDelete; }
 
   private update(updates: Partial<GroupMessageState>): void {
     this.stateSubject.next({ ...this.state, ...updates });
@@ -62,6 +63,3 @@ export class GroupMessageStateService {
   forceMessageComponentReload(): void { this.update({ forceMessageComponentReload: true }); setTimeout(() => this.update({ forceMessageComponentReload: false }), 0); }
   resetAll(): void { this.stateSubject.next({ isDeleteModalOpen: false, deleteForBoth: false, forceMessageComponentReload: false }); }
 }
-
-
-
