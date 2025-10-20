@@ -3,6 +3,7 @@ import { Router } from '@angular/router';
 import { Component, Input, ViewChild, OnInit, ChangeDetectorRef, OnDestroy, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { TranslateModule } from '@ngx-translate/core';
 import { OtoChat } from '../../model/oto.chat';
 import { OtoMessage } from '../../../../entities/oto-message';
 import { AuthService } from '../../../../entities/session';
@@ -17,7 +18,6 @@ import { ChatLayoutComponent } from '../../../../widgets/chat-layout';
 import { BaseChatPageComponent} from '../../../../shared/chat';
 import { ToastService, ToastComponent } from '../../../../shared/ui-elements';
 import { SendAreaComponent, FileDropDirective, FileDropOverlayComponent } from '../../../../shared/send-message-area';
-import { TranslateModule } from '@ngx-translate/core';
 
 @Component({
   selector: 'app-oto-chat-page',
@@ -254,12 +254,13 @@ export class OtoChatPageComponent extends BaseChatPageComponent implements OnIni
     if (this.messagesComponent) {
       this.selectedOtoChat = { ...chat };
       this.cdr.detectChanges();
-
+  
       setTimeout(() => {
         if (this.messagesComponent) {
           this.cdr.detectChanges();
+          this.messagesComponent.scrollToBottomAfterNewMessage();
         }
-      }, 100);
+      }, 300);
     }
   }
 
@@ -307,12 +308,24 @@ export class OtoChatPageComponent extends BaseChatPageComponent implements OnIni
           this.selectedChat
         ).then(() => {
           this.replyingToMessage = undefined;
+          
+          setTimeout(() => {
+            if (this.messagesComponent) {
+              this.messagesComponent.scrollToBottomAfterNewMessage();
+            }
+          }, 150);
         }).catch(error => {
         });
       } else {
         this.messageService.sendMessage(this.selectedChat, content).catch(error => {
         });
         this.draftText = '';
+        
+        setTimeout(() => {
+          if (this.messagesComponent) {
+            this.messagesComponent.scrollToBottomAfterNewMessage();
+          }
+        }, 150);
       }
     }
   }
@@ -648,9 +661,22 @@ export class OtoChatPageComponent extends BaseChatPageComponent implements OnIni
           const content = JSON.stringify({ text: this.uploadCaption || '', files: updatedFiles });
           await this.messageService.sendMessage(this.selectedChat, content);
           this.draftText = '';
+
+          setTimeout(() => {
+            if (this.messagesComponent) {
+              this.messagesComponent.scrollToBottomAfterNewMessage();
+            }
+          }, 50);
+
         } catch (error) {
           const content = JSON.stringify({ text: this.uploadCaption || '', files: uploadedFiles });
           await this.messageService.sendMessage(this.selectedChat, content);
+
+          setTimeout(() => {
+            if (this.messagesComponent) {
+              this.messagesComponent.scrollToBottomAfterNewMessage();
+            }
+          }, 50);
         }
       }
       this.closeUploadModal();
@@ -790,8 +816,6 @@ export class OtoChatPageComponent extends BaseChatPageComponent implements OnIni
           
           (message as any)._savedSuccessfully = Date.now();
         }
-        
-        this.messagesComponent.cdr.detectChanges();
       }
 
       this.editingMessage = undefined;
@@ -799,6 +823,12 @@ export class OtoChatPageComponent extends BaseChatPageComponent implements OnIni
       this.cdr.detectChanges();
       
       this.forceCompleteMessageUpdate(editData.messageId);
+
+      setTimeout(() => {
+        if (this.messagesComponent) {
+          this.messagesComponent.scrollToBottomAfterNewMessage();
+        }
+      }, 150);
       
     } catch (error) {
     }
@@ -917,7 +947,7 @@ export class OtoChatPageComponent extends BaseChatPageComponent implements OnIni
   
         if (this.messagesComponent) {
           try {
-            this.messagesComponent.clearMessageCache(messageId);
+            this.messagesComponent.clearMessageCacheBase(messageId);
             setTimeout(() => this.messagesComponent?.forceFileRefresh(messageId, oldFile?.uniqueId), 50);
             setTimeout(() => this.messagesComponent?.fullMessageRerender(messageId), 100);
           } catch (e) {
@@ -984,7 +1014,7 @@ export class OtoChatPageComponent extends BaseChatPageComponent implements OnIni
     (this.editingMessage as any).parsedFiles = parsed.files;
     
     if (this.messagesComponent) {
-      this.messagesComponent.clearMessageCache(this.editingMessage.messageId);
+      this.messagesComponent.clearMessageCacheBase(this.editingMessage.messageId);
       
       setTimeout(() => {
         if (this.messagesComponent) {
@@ -1113,11 +1143,6 @@ export class OtoChatPageComponent extends BaseChatPageComponent implements OnIni
       
       this.messagesComponent.fullMessageRerender(messageId);
 
-      setTimeout(() => {
-        if (this.messagesComponent) {
-          this.messagesComponent.cdr.detectChanges();
-        }
-      }, 10);
       
       setTimeout(() => {
         if (this.messagesComponent) {

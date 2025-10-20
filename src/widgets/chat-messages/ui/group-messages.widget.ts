@@ -1,14 +1,16 @@
-import { Component, Input, Output, EventEmitter, OnChanges, SimpleChanges, AfterViewInit, OnDestroy, ChangeDetectorRef, ChangeDetectionStrategy } from '@angular/core';
+import { Component, Input, Output, EventEmitter, OnChanges,
+  SimpleChanges, AfterViewInit, OnDestroy, ChangeDetectorRef,
+  ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { TranslateModule } from '@ngx-translate/core';
 import { Observable } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
+import { BaseChatMessagesWidget } from '../shared/widget';
 import { GroupMessage } from '../../../entities/group-message';
+import { FileUploadApiService } from '../../../features/file-sender';
 import { isToday, truncateText, computeContextMenuPosition } from '../../../shared/realtime';
-import { BaseChatMessagesWidget } from '../../../shared/chat-widget';
-import { ImageViewerItem, ImageViewerComponent } from '../../../shared/image-viewer';
-import { FileUploadApiService, FileUrl } from '../../../features/file-sender';
-import { CustomAudioPlayerComponent } from "../../../shared/custom-player/component/custom-audio-player.component";
+import { ImageViewerComponent } from '../../../shared/image-viewer';
+import { CustomAudioPlayerComponent } from "../../../shared/custom-player";
 
 @Component({
   selector: 'widgets-group-messages',
@@ -17,72 +19,167 @@ import { CustomAudioPlayerComponent } from "../../../shared/custom-player/compon
   templateUrl: './group-messages.widget.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class GroupMessagesWidget extends BaseChatMessagesWidget<GroupMessage> implements OnChanges, AfterViewInit, OnDestroy {
+export class GroupMessagesWidget extends BaseChatMessagesWidget<GroupMessage> 
+  implements OnChanges, AfterViewInit, OnDestroy {
+
   @Input() groupId!: string;
   @Input() members: { nickName: string; image: string }[] = [];
   @Input() messages$!: Observable<GroupMessage[]>;
   @Input() userInfoChanged$!: Observable<{ userName: string; image?: string; updatedAt: string; oldNickName: string }>;
   @Input() loadHistory!: (groupId: string, take: number, skip: number) => Observable<GroupMessage[]>;
+
   @Output() editMessage = new EventEmitter<GroupMessage>();
   @Output() deleteMessage = new EventEmitter<GroupMessage>();
   @Output() replyToMessage = new EventEmitter<GroupMessage>();
 
   messages: GroupMessage[] = [];
   private localMembers: { nickName: string; image: string }[] = [];
-  take = 20;
-  skip = 0;
-  showImageViewer = false;
-  imageViewerImages: ImageViewerItem[] = [];
-  imageViewerInitialIndex = 0;
-  imageViewerKey = 0;
   private avatarCache = new Map<string, string | undefined>();
-  
-  private urlCache = new Map<string, { url: string; timestamp: number }>();
-  private readonly URL_EXPIRATION_TIME = 55 * 60 * 1000; 
-  private refreshingUrls = new Set<string>();
+
+  private urlCheckInterval?: any;
 
   constructor(
-    private cdr: ChangeDetectorRef,
-    private fileUploadApi: FileUploadApiService
+    protected override cdr: ChangeDetectorRef,
+    protected override fileUploadApi: FileUploadApiService
   ) {
-    super();
+    super(cdr, fileUploadApi);
   }
 
   override getMessageIdFromMessage(msg: GroupMessage): string {
     return msg.id || '';
   }
 
-  private isUrlExpired(timestamp: number): boolean {
-    return Date.now() - timestamp > this.URL_EXPIRATION_TIME;
+  ngAfterViewInit() {
+    setTimeout(() => {
+      this.scrollToBottomBase(this.scrollContainer);
+    }, 200);
+    
+    this.setupContextMenuListener();
+    this.subscribeToUserInfoUpdates();
+    this.startUrlExpirationCheck();
+
+    setTimeout(() => {
+      if (this.messages && this.messages.length > 0) {
+        const messagesWithFiles = this.messages.filter(msg => {
+          try {
+            const parsed = JSON.parse(msg.content);
+            if (!parsed.files || parsed.files.length === 0) return false;
+            
+            return parsed.files.some((file: any) => {
+              if (!file.url) return true;
+              const cacheKey = file.uniqueFileName || file.fileName;
+              const cachedUrl = this.urlCache.get(cacheKey);
+              return !cachedUrl;
+            });
+          } catch {
+            return false;
+          }
+        });
+        
+        if (messagesWithFiles.length > 0) {
+          this.loadFilesForMessages(messagesWithFiles);
+        }
+      }
+    }, 2000);
   }
 
-  private async refreshFileUrl(fileName: string, uniqueFileName: string): Promise<string | null> {
-    const cacheKey = uniqueFileName || fileName;
-
-    if (this.refreshingUrls.has(cacheKey)) {
-      return null;
+  ngOnChanges(changes: SimpleChanges) {
+    if (changes['groupId'] && this.groupId) {
+      this.initChat();
     }
 
-    this.refreshingUrls.add(cacheKey);
+    if (changes['members'] && this.members) {
+      this.localMembers = [...this.members];
+      this.clearAvatarCache();
+      this.cdr.markForCheck();
+    }
+  }
 
-    try {
-      const urls = await this.fileUploadApi.getDownloadUrls([fileName]);
+  ngOnDestroy() {
+    this.baseDestroy();
+    
+    if (this.urlCheckInterval) {
+      clearInterval(this.urlCheckInterval);
+    }
+  }
+
+  private startUrlExpirationCheck() {
+    this.urlCheckInterval = setInterval(() => {
+      this.checkAndRefreshExpiredUrls();
+    }, 5 * 60 * 1000);
+  }
+
+  private checkAndRefreshExpiredUrls() {
+    if (!this.messages || this.messages.length === 0) return;
+  
+    let foundExpired = false;
+    const filesToRefresh: { fileName: string; uniqueFileName: string; messageId: string; fileIndex: number }[] = [];
+  
+    this.messages.forEach(msg => {
+      try {
+        const parsed = JSON.parse(msg.content);
+        if (parsed.files && parsed.files.length > 0) {
+          parsed.files.forEach((file: any, fileIndex: number) => {
+            if (file.url) {
+              const cacheKey = file.uniqueFileName || file.fileName;
+              const cachedUrl = this.urlCache.get(cacheKey);
+              
+              if (cachedUrl && this.isUrlExpired(cachedUrl.timestamp)) {
+                foundExpired = true;
+                filesToRefresh.push({
+                  fileName: file.fileName,
+                  uniqueFileName: file.uniqueFileName,
+                  messageId: this.getMessageIdFromMessage(msg),
+                  fileIndex: fileIndex
+                });
+              }
+            }
+          });
+        }
+      } catch (e) {}
+    });
+  
+    if (foundExpired) {
+      const uniqueFileNames = [...new Set(filesToRefresh.map(f => f.fileName))];
       
-      if (urls && urls.length > 0 && urls[0].url) {
-        const newUrl = urls[0].url;
-        this.urlCache.set(cacheKey, {
-          url: newUrl,
-          timestamp: Date.now()
+      this.fileUploadApi.getDownloadUrls(uniqueFileNames).then(fileUrls => {
+        const urlMap = new Map<string, string>();
+        fileUrls.forEach(fu => {
+          urlMap.set(fu.originalName, fu.url);
+          
+          const cacheKey = fu.uniqueFileName || fu.originalName;
+          this.urlCache.set(cacheKey, {
+            url: fu.url,
+            timestamp: Date.now()
+          });
         });
-        return newUrl;
-      }
-    } catch (error) {
-      console.error('❌ Failed to refresh URL:', fileName, error);
-    } finally {
-      this.refreshingUrls.delete(cacheKey);
-    }
 
-    return null;
+        filesToRefresh.forEach(item => {
+          const newUrl = urlMap.get(item.fileName);
+          if (newUrl) {
+            const message = this.messages.find(m => this.getMessageIdFromMessage(m) === item.messageId);
+            if (message) {
+              try {
+                const parsed = JSON.parse(message.content);
+                if (parsed.files && parsed.files[item.fileIndex]) {
+                  parsed.files[item.fileIndex].url = newUrl;
+                  parsed.files[item.fileIndex]._refreshKey = `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+                  message.content = JSON.stringify(parsed);
+                  delete (message as any).parsedContent;
+                  this.messageContentCache.delete(item.messageId);
+                }
+              } catch (e) {
+              }
+            }
+          }
+        });
+  
+        this.cdr.markForCheck();
+        
+      }).catch(error => {
+      });
+    } else {
+    }
   }
 
   parseContent(msg: GroupMessage): { text: string; files: any[] } {
@@ -90,36 +187,110 @@ export class GroupMessagesWidget extends BaseChatMessagesWidget<GroupMessage> im
     const messageId = this.getMessageIdFromMessage(msg);
     const cachedContent = this.messageContentCache.get(messageId);
     const hasCachedResult = !!(msg as any).parsedContent;
-
+  
     if (cachedContent !== currentContent || !hasCachedResult) {
       delete (msg as any).parsedContent;
       this.messageContentCache.delete(messageId);
       this.messageContentCache.set(messageId, currentContent);
-
+  
       try {
         const parsed = JSON.parse(currentContent);
+  
         if (parsed.files && Array.isArray(parsed.files)) {
           parsed.files = parsed.files.map((file: any, index: number) => {
             const cacheKey = file.uniqueFileName || file.fileName;
             const cachedUrl = this.urlCache.get(cacheKey);
 
-            if (cachedUrl && this.isUrlExpired(cachedUrl.timestamp)) {
+            if (file.url && !cachedUrl) {
+              file.needsLoading = true;
+              file.isRefreshing = true;
+              
               this.refreshFileUrl(file.fileName, file.uniqueFileName).then(newUrl => {
                 if (newUrl) {
                   file.url = newUrl;
+                  file.isRefreshing = false;
                   file._refreshKey = `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+                  
+                  const message = this.messages.find(m => this.getMessageIdFromMessage(m) === messageId);
+                  if (message) {
+                    try {
+                      const updatedParsed = JSON.parse(message.content);
+                      const fileIndex = updatedParsed.files.findIndex((f: any) =>
+                        (f.fileName === file.fileName && f.uniqueFileName === file.uniqueFileName) ||
+                        f.uniqueId === file.uniqueId
+                      );
+                      
+                      if (fileIndex !== -1) {
+                        updatedParsed.files[fileIndex].url = newUrl;
+                        updatedParsed.files[fileIndex]._refreshKey = file._refreshKey;
+                        updatedParsed.files[fileIndex].isRefreshing = false;
+                        message.content = JSON.stringify(updatedParsed);
+                        delete (message as any).parsedContent;
+                        this.messageContentCache.delete(messageId);
+                        this.cdr.markForCheck();
+                      }
+                    } catch (e) {
+                    }
+                  }
+                  
+                  this.cdr.markForCheck();
+                } else {
+                  file.isRefreshing = false;
                   this.cdr.markForCheck();
                 }
               });
             } else if (cachedUrl) {
-              file.url = cachedUrl.url;
-            } else if (file.url) {
-              this.urlCache.set(cacheKey, {
-                url: file.url,
-                timestamp: Date.now()
-              });
+              const urlExpired = this.isUrlExpired(cachedUrl.timestamp);
+              const urlAboutToExpire = this.isUrlAboutToExpire(cachedUrl.timestamp);
+  
+              if (urlExpired || urlAboutToExpire) {                
+                file.isRefreshing = true;
+                
+                this.refreshFileUrl(file.fileName, file.uniqueFileName).then(newUrl => {
+                  if (newUrl) {
+                    file.url = newUrl;
+                    file.isRefreshing = false;
+                    file._refreshKey = `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+                    
+                    const message = this.messages.find(m => this.getMessageIdFromMessage(m) === messageId);
+                    if (message) {
+                      try {
+                        const updatedParsed = JSON.parse(message.content);
+                        const fileIndex = updatedParsed.files.findIndex((f: any) =>
+                          (f.fileName === file.fileName && f.uniqueFileName === file.uniqueFileName) ||
+                          f.uniqueId === file.uniqueId
+                        );
+                        
+                        if (fileIndex !== -1) {
+                          updatedParsed.files[fileIndex].url = newUrl;
+                          updatedParsed.files[fileIndex]._refreshKey = file._refreshKey;
+                          updatedParsed.files[fileIndex].isRefreshing = false;
+                          message.content = JSON.stringify(updatedParsed);
+                          delete (message as any).parsedContent;
+                          this.messageContentCache.delete(messageId);
+                          this.cdr.markForCheck();
+                        }
+                      } catch (e) {
+                      }
+                    }
+                    
+                    this.cdr.markForCheck();
+                  } else {
+                    file.isRefreshing = false;
+                    this.cdr.markForCheck();
+                  }
+                }).catch(error => {
+                  file.isRefreshing = false;
+                  this.cdr.markForCheck();
+                });
+                
+              } else {
+                file.url = cachedUrl.url;
+              }
+            } else if (!file.url) {
+              file.needsLoading = true;
             }
-
+  
             return {
               ...file,
               type: file.type || this.detectFileType(file.fileName),
@@ -127,27 +298,93 @@ export class GroupMessagesWidget extends BaseChatMessagesWidget<GroupMessage> im
               _refreshKey: `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
             };
           });
-
-          (msg as any).parsedContent = { text: parsed.text || '', files: parsed.files };
+  
+          (msg as any).parsedContent = { 
+            text: parsed.text || '', 
+            files: parsed.files 
+          };
+          
         } else {
-          (msg as any).parsedContent = { text: parsed.text || currentContent, files: [] };
+          (msg as any).parsedContent = { 
+            text: parsed.text || currentContent, 
+            files: [] 
+          };
         }
+  
         return (msg as any).parsedContent;
-      } catch (e) {
-        (msg as any).parsedContent = { text: currentContent, files: [] };
+        
+      } catch (e) {        
+        (msg as any).parsedContent = { 
+          text: currentContent, 
+          files: [] 
+        };
         return (msg as any).parsedContent;
       }
     }
-
+  
+    const cachedParsed = (msg as any).parsedContent;
+    if (cachedParsed && cachedParsed.files && cachedParsed.files.length > 0) {
+      let needsRefresh = false;
+      
+      cachedParsed.files.forEach((file: any) => {
+        const cacheKey = file.uniqueFileName || file.fileName;
+        const cachedUrl = this.urlCache.get(cacheKey);
+        
+        const urlExpired = cachedUrl && this.isUrlExpired(cachedUrl.timestamp);
+        const urlAboutToExpire = cachedUrl && this.isUrlAboutToExpire(cachedUrl.timestamp);
+        
+        if (file.url && (urlExpired || urlAboutToExpire) && !file.isRefreshing) {
+          needsRefresh = true;
+          file.isRefreshing = true;
+          
+          this.refreshFileUrl(file.fileName, file.uniqueFileName).then(newUrl => {
+            if (newUrl) {
+              file.url = newUrl;
+              file.isRefreshing = false;
+              file._refreshKey = `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+              
+              const message = this.messages.find(m => this.getMessageIdFromMessage(m) === messageId);
+              if (message) {
+                try {
+                  const parsed = JSON.parse(message.content);
+                  const fileIndex = parsed.files.findIndex((f: any) =>
+                    (f.fileName === file.fileName && f.uniqueFileName === file.uniqueFileName)
+                  );
+                  if (fileIndex !== -1) {
+                    parsed.files[fileIndex].url = newUrl;
+                    message.content = JSON.stringify(parsed);
+                    delete (message as any).parsedContent;
+                    this.messageContentCache.delete(messageId);
+                  }
+                } catch (e) {}
+              }
+              
+              this.cdr.markForCheck();
+            } else {
+              file.isRefreshing = false;
+              this.cdr.markForCheck();
+            }
+          }).catch(() => {
+            file.isRefreshing = false;
+            this.cdr.markForCheck();
+          });
+        }
+      });
+      
+      if (needsRefresh) {
+        this.cdr.markForCheck();
+      }
+    }
+  
     return (msg as any).parsedContent;
   }
 
   onImageError(event: Event, file: any, messageId: string) {
     const img = event.target as HTMLImageElement;
+
     if (img.dataset['retryCount']) {
       const retryCount = parseInt(img.dataset['retryCount']);
       if (retryCount >= 3) {
-        console.error('❌ Max retries reached for:', file.fileName);
         file.isRefreshing = false;
         this.cdr.markForCheck();
         return;
@@ -162,21 +399,24 @@ export class GroupMessagesWidget extends BaseChatMessagesWidget<GroupMessage> im
 
     this.refreshFileUrl(file.fileName, file.uniqueFileName).then(newUrl => {
       file.isRefreshing = false;
-      
+
       if (newUrl) {
         const message = this.messages.find(m => this.getMessageIdFromMessage(m) === messageId);
         if (message) {
           const parsed = this.parseContent(message);
-          const fileIndex = parsed.files.findIndex(f => 
+          const fileIndex = parsed.files.findIndex(f =>
             f.fileName === file.fileName || f.uniqueFileName === file.uniqueFileName
           );
+
           if (fileIndex !== -1) {
             parsed.files[fileIndex].url = newUrl;
             parsed.files[fileIndex]._refreshKey = `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
             parsed.files[fileIndex].isRefreshing = false;
+
             message.content = JSON.stringify(parsed);
             delete (message as any).parsedContent;
             this.messageContentCache.delete(messageId);
+
             this.cdr.markForCheck();
           }
         }
@@ -184,42 +424,23 @@ export class GroupMessagesWidget extends BaseChatMessagesWidget<GroupMessage> im
         this.cdr.markForCheck();
       }
     }).catch(error => {
-      console.error('❌ Error refreshing URL:', error);
       file.isRefreshing = false;
       this.cdr.markForCheck();
     });
   }
 
   openFileViewer(fileIndex: number, messageId: string) {
-    const sourceMessage = this.messages.find(msg => this.getMessageIdFromMessage(msg) === messageId);
-    if (!sourceMessage) return;
-
-    const sourceContent = this.parseContent(sourceMessage);
-    const allFiles = sourceContent.files;
-    if (!allFiles[fileIndex]) return;
-
-    const mediaFiles = this.getMediaFiles(allFiles);
-    const mediaIndex = this.getOriginalFileIndex(mediaFiles, allFiles[fileIndex]);
-    if (mediaIndex === -1) return;
-
-    this.imageViewerImages = mediaFiles.map(file => ({
-      url: file.url,
-      fileName: file.fileName,
-      type: file.type,
-      messageId: messageId,
-      sender: sourceMessage.sender
-    }));
-
-    this.imageViewerInitialIndex = mediaIndex;
-    this.imageViewerKey++;
-    this.showImageViewer = true;
+    this.openFileViewerBase(
+      fileIndex,
+      messageId,
+      this.messages,
+      (msg) => this.parseContent(msg),
+      (msg) => msg.sender
+    );
   }
 
   onImageViewerClosed() {
-    this.showImageViewer = false;
-    this.imageViewerImages = [];
-    this.imageViewerInitialIndex = 0;
-    this.imageViewerKey = 0;
+    this.onImageViewerClosedBase();
   }
 
   onScrollToReplyMessage(messageId: string) {
@@ -227,91 +448,7 @@ export class GroupMessagesWidget extends BaseChatMessagesWidget<GroupMessage> im
   }
 
   private async loadFilesForMessages(messages: GroupMessage[]) {
-    const fileNames: string[] = [];
-    const messageFileMap = new Map<string, { messageIndex: number; fileIndex: number; originalName: string; uniqueFileName?: string }>();
-
-    messages.forEach((msg, messageIndex) => {
-      try {
-        const parsed = JSON.parse(msg.content);
-        if (parsed.files) {
-          parsed.files.forEach((file: any, fileIndex: number) => {
-            if (file.fileName) {
-              fileNames.push(file.fileName);
-              messageFileMap.set(`${file.fileName}_${messageIndex}_${fileIndex}`, {
-                messageIndex,
-                fileIndex,
-                originalName: file.fileName,
-                uniqueFileName: file.uniqueFileName
-              });
-            }
-          });
-        }
-      } catch {}
-    });
-
-    if (fileNames.length === 0) return;
-
-    try {
-      const fileUrls = await this.fileUploadApi.getDownloadUrls(fileNames);
-      const filesByOriginalName = new Map<string, FileUrl[]>();
-
-      fileUrls.forEach(fileUrl => {
-        if (!filesByOriginalName.has(fileUrl.originalName)) 
-          filesByOriginalName.set(fileUrl.originalName, []);
-        filesByOriginalName.get(fileUrl.originalName)!.push(fileUrl);
-      });
-
-      messageFileMap.forEach((mapping, uniqueKey) => {
-        const message = messages[mapping.messageIndex];
-        const parsed = JSON.parse(message.content);
-        const urls = filesByOriginalName.get(mapping.originalName);
-
-        if (urls && urls[0]) {
-          const newUrl = urls[0].url;
-          parsed.files[mapping.fileIndex].url = newUrl;
-          parsed.files[mapping.fileIndex].uniqueFileName = urls[0].uniqueFileName;
-          message.content = JSON.stringify(parsed);
-
-          const cacheKey = urls[0].uniqueFileName || mapping.originalName;
-          this.urlCache.set(cacheKey, {
-            url: newUrl,
-            timestamp: Date.now()
-          });
-        }
-      });
-
-      messages.forEach(msg => {
-        delete (msg as any).parsedContent;
-        this.messageContentCache.set(this.getMessageIdFromMessage(msg), msg.content);
-      });
-
-      this.cdr.detectChanges();
-    } catch (error) {
-      console.error('❌ Failed to load files:', error);
-    }
-  }
-
-  ngAfterViewInit() {
-    setTimeout(() => this.scrollToBottom(), 0);
-    this.setupContextMenuListener();
-    this.subscribeToUserInfoUpdates();
-  }
-
-  ngOnChanges(changes: SimpleChanges) {
-    if (changes['groupId'] && this.groupId) {
-      this.initChat();
-    }
-    if (changes['members'] && this.members) {
-      this.localMembers = [...this.members];
-      this.clearAvatarCache();
-      this.cdr.markForCheck();
-    }
-  }
-
-  ngOnDestroy() {
-    this.baseDestroy();
-    this.urlCache.clear();
-    this.refreshingUrls.clear();
+    await this.loadFilesForMessagesBase(messages);
   }
 
   private subscribeToUserInfoUpdates() {
@@ -350,10 +487,12 @@ export class GroupMessagesWidget extends BaseChatMessagesWidget<GroupMessage> im
   private updateLocalMembers(userInfo: { userName: string; image?: string; updatedAt: string; oldNickName: string }) {
     const cleanOld = userInfo.oldNickName.trim().toLowerCase();
     const cleanNew = userInfo.userName.trim().toLowerCase();
+
     let index = this.localMembers.findIndex(m =>
       m.nickName.toLowerCase().trim() === cleanOld ||
       m.nickName.toLowerCase().trim() === cleanNew
     );
+
     const image = userInfo.image?.trim() || '';
 
     if (index !== -1) {
@@ -398,10 +537,14 @@ export class GroupMessagesWidget extends BaseChatMessagesWidget<GroupMessage> im
 
   private isScrolledToBottom(): boolean {
     return this.isScrolledToBottomBase(this.scrollContainer);
-  }
+  }  
 
-  private scrollToBottom() {
-    this.scrollToBottomBase(this.scrollContainer);
+  public scrollToBottomAfterNewMessage() {
+    requestAnimationFrame(() => {
+      setTimeout(() => {
+        this.scrollToBottomBase(this.scrollContainer);
+      }, 150);
+    });
   }
 
   getRepliedMessage(messageId: string): GroupMessage | undefined {
@@ -411,8 +554,10 @@ export class GroupMessagesWidget extends BaseChatMessagesWidget<GroupMessage> im
   onMessageRightClick(event: MouseEvent, msg: GroupMessage) {
     event.preventDefault();
     event.stopPropagation();
+
     const target = event.target as HTMLElement;
     const messageContainer = target.closest('.message-container') as HTMLElement;
+
     if (!messageContainer || !this.scrollContainer) return;
 
     const messageBlock = messageContainer.querySelector('[class*="px-3 py-2 rounded-2xl"]') as HTMLElement;
@@ -454,90 +599,133 @@ export class GroupMessagesWidget extends BaseChatMessagesWidget<GroupMessage> im
     this.skip = 0;
     this.allLoaded = false;
     this.shouldScrollToBottom = true;
-
+  
     this.messages$
       .pipe(takeUntil(this.destroy$))
       .subscribe(newMsgs => {
         const filtered = newMsgs.filter(m => !m.isDeleted || this.isMyMessage(m));
-        const newMap = new Map(filtered.map(m => [m.id, m]));
         const oldMap = new Map(this.messages.map(m => [m.id, m]));
-        const hasNewMessages = filtered.some(m => !oldMap.has(m.id));
-
-        for (const m of filtered) oldMap.set(m.id!, m);
+        const isInitialLoad = this.messages.length === 0;
+        const oldMessagesCount = this.messages.length;
+        const actuallyNewMessages = filtered.filter(m => !oldMap.has(m.id));
+        const hasNewMessages = actuallyNewMessages.length > 0;
+        const newMap = new Map(filtered.map(m => [m.id, m]));
+        
+        for (const m of filtered) {
+          oldMap.set(m.id!, m);
+        }
+        
         for (const id of Array.from(oldMap.keys())) {
           if (!newMap.has(id)) oldMap.delete(id);
         }
-
-        const prevLength = this.messages.length;
+  
         this.messages = Array.from(oldMap.values())
           .sort((a, b) => new Date(a.sendTime).getTime() - new Date(b.sendTime).getTime());
-
-        if (prevLength === 0 && this.messages.length > 0) {
-          this.skip = this.messages.length;
-          this.loadFilesForMessages(this.messages);
-        } else if (hasNewMessages) {
-          const newMessages = this.messages.filter(m => !oldMap.has(m.id));
-          if (newMessages.length > 0) {
-            this.loadFilesForMessages(newMessages);
+  
+        if (isInitialLoad && this.messages.length > 0) {
+          this.skip = 0;
+          const messagesWithFiles = this.messages.filter(msg => {
+            try {
+              const parsed = JSON.parse(msg.content);
+              return parsed.files && parsed.files.length > 0;
+            } catch {
+              return false;
+            }
+          });
+  
+          if (messagesWithFiles.length > 0) {
+            this.loadFilesForMessages(messagesWithFiles);
           }
+  
+          setTimeout(() => {
+            this.scrollToBottomBase(this.scrollContainer);
+          }, 100);
+          
+        } else if (hasNewMessages && actuallyNewMessages.length > 0) {
+          const messagesNeedingFiles = actuallyNewMessages.filter(msg => {
+            try {
+              const parsed = JSON.parse(msg.content);
+              return parsed.files && parsed.files.length > 0;
+            } catch {
+              return false;
+            }
+          });
+  
+          if (messagesNeedingFiles.length > 0) {
+            this.loadFilesForMessages(messagesNeedingFiles);
+          }
+  
+          const wasAtBottom = this.isScrolledToBottom();
+          setTimeout(() => {
+            if (wasAtBottom) {
+              this.scrollToBottomBase(this.scrollContainer);
+            }
+          }, 100);
+        } else if (!isInitialLoad && !hasNewMessages) {
         }
-
-        if (hasNewMessages && (this.isScrolledToBottom() || this.shouldScrollToBottom)) {
-          setTimeout(() => this.scrollToBottom(), 0);
-          this.shouldScrollToBottom = false;
-        }
-
+  
         this.cdr.markForCheck();
       });
   }
 
   protected loadMore() {
     if (this.loading || this.allLoaded) return;
+  
     this.loading = true;
-    const currentSkip = this.skip;
-
+    const currentSkip = this.messages.length;
+    const scrollContainer = this.scrollContainer?.nativeElement;
+    const prevScrollHeight = scrollContainer ? scrollContainer.scrollHeight : 0;
+    const prevScrollTop = scrollContainer ? scrollContainer.scrollTop : 0;
+  
     this.loadHistory(this.groupId, this.take, currentSkip)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
-        next: (newMsgs) => {
+        next: (newMsgs) => {          
           if (newMsgs.length === 0) {
             this.allLoaded = true;
             this.loading = false;
             this.cdr.markForCheck();
             return;
           }
-
+  
           const filtered = newMsgs.filter(m => !m.isDeleted || this.isMyMessage(m));
+  
           if (filtered.length === 0) {
-            this.skip += newMsgs.length;
             this.loading = false;
+            if (newMsgs.length < this.take) {
+              this.allLoaded = true;
+            } else {
+              setTimeout(() => this.loadMore(), 100);
+            }
             this.cdr.markForCheck();
             return;
           }
-
+  
           const existingIds = new Set(this.messages.map(m => m.id));
           const unique = filtered.filter(m => !existingIds.has(m.id));
-
+  
           if (unique.length === 0) {
-            this.skip += filtered.length;
+            if (filtered.length < this.take) {
+              this.allLoaded = true;
+            } else {
+              setTimeout(() => this.loadMore(), 100);
+            }
             this.loading = false;
             this.cdr.markForCheck();
             return;
           }
-
+  
           this.loadFilesForMessages(unique);
-          const prevHeight = this.scrollContainer?.nativeElement.scrollHeight || 0;
           this.messages = [...unique, ...this.messages];
-          this.skip += unique.length;
-
-          setTimeout(() => {
-            if (this.scrollContainer) {
-              const el = this.scrollContainer.nativeElement;
-              const newHeight = el.scrollHeight;
-              el.scrollTop = newHeight - prevHeight;
-            }
-          }, 0);
-
+          if (unique.length < this.take) {
+            this.allLoaded = true;
+          }
+  
+          setTimeout(() => this.restoreScrollPosition(prevScrollHeight, prevScrollTop), 0);
+          setTimeout(() => this.restoreScrollPosition(prevScrollHeight, prevScrollTop), 50);
+          setTimeout(() => this.restoreScrollPosition(prevScrollHeight, prevScrollTop), 100);
+          setTimeout(() => this.restoreScrollPosition(prevScrollHeight, prevScrollTop), 200);
+  
           this.loading = false;
           this.cdr.markForCheck();
         },
@@ -546,6 +734,18 @@ export class GroupMessagesWidget extends BaseChatMessagesWidget<GroupMessage> im
           this.cdr.markForCheck();
         }
       });
+  }
+    
+  private restoreScrollPosition(prevScrollHeight: number, prevScrollTop: number): void {
+    if (!this.scrollContainer) return;
+  
+    const el = this.scrollContainer.nativeElement;
+    const newScrollHeight = el.scrollHeight;
+    const heightDiff = newScrollHeight - prevScrollHeight;
+  
+    if (heightDiff > 0) {
+      el.scrollTop = prevScrollTop + heightDiff;
+    }
   }
 
   isMyMessage(msg: GroupMessage): boolean {
@@ -574,6 +774,7 @@ export class GroupMessagesWidget extends BaseChatMessagesWidget<GroupMessage> im
 
   getMemberAvatar(nick: string, oldNick?: string, forceRefresh = false): string | undefined {
     if (!nick) return undefined;
+
     const cleanNick = nick.trim().toLowerCase();
     const cleanOld = oldNick?.trim().toLowerCase();
 

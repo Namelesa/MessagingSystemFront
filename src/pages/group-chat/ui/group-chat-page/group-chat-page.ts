@@ -107,8 +107,16 @@ export class GroupChatPageComponent extends BaseChatPageComponent {
     this.selectedChat$.next(nickname);
     this.selectedChat = nickname;
     this.selectedChatImage = image;
+    
     if (groupId) {
       this.groupNavigation.selectGroupByIds(groupId, nickname, image);
+      
+      // ✅ КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Автоскролл после выбора чата
+      setTimeout(() => {
+        if (this.messagesComponent) {
+          this.messagesComponent.scrollToBottomAfterNewMessage();
+        }
+      }, 300);
     }
   }
 
@@ -188,6 +196,12 @@ export class GroupChatPageComponent extends BaseChatPageComponent {
 
   sendMessage(message: string) {
     this.groupMessageState.sendMessage(message);
+  
+  setTimeout(() => {
+    if (this.messagesComponent) {
+      this.messagesComponent.scrollToBottomAfterNewMessage();
+    }
+  }, 150);
   }
 
   onFileUpload(fileUploadEvent: { files: File[]; message?: string }) {
@@ -318,6 +332,14 @@ export class GroupChatPageComponent extends BaseChatPageComponent {
       } else {
         await this.groupMessageState.completeEdit(editData.messageId, editData.content);
       }
+      
+      // ✅ КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Скролл после завершения редактирования
+      setTimeout(() => {
+        if (this.messagesComponent) {
+          this.messagesComponent.scrollToBottomAfterNewMessage();
+        }
+      }, 150);
+      
     } catch (error) {
       console.error('❌ [EDIT COMPLETE] Error:', error);
     }
@@ -626,7 +648,7 @@ export class GroupChatPageComponent extends BaseChatPageComponent {
               const d = downloadUrls.find(x => x.originalName === file.fileName);
               return { ...file, url: d?.url || file.url };
             });
-
+  
             let existingFiles: any[] = [];
             try {
               const parsed = JSON.parse(this.editingMessage.content);
@@ -649,6 +671,14 @@ export class GroupChatPageComponent extends BaseChatPageComponent {
         
         this.closeUploadModal();
         this.isEditingWithFiles = false;
+        
+        // ✅ ИСПРАВЛЕНИЕ: Скролл после редактирования с файлами
+        setTimeout(() => {
+          if (this.messagesComponent) {
+            this.messagesComponent.scrollToBottomAfterNewMessage();
+          }
+        }, 200);
+        
       } catch (error) {
         console.error('❌ [UPLOAD] Upload failed:', error);
         this.isUploading = false;
@@ -695,9 +725,24 @@ export class GroupChatPageComponent extends BaseChatPageComponent {
           const content = JSON.stringify({ text: this.uploadCaption || '', files: updatedFiles });
           await this.groupMessageState.sendMessage(content);
           this.draftText = '';
+          
+          // ✅ КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Скролл после отправки файлов
+          setTimeout(() => {
+            if (this.messagesComponent) {
+              this.messagesComponent.scrollToBottomAfterNewMessage();
+            }
+          }, 200);
+          
         } catch {
           const fallback = JSON.stringify({ text: this.uploadCaption || '', files: uploadedFiles });
           await this.groupMessageState.sendMessage(fallback);
+          
+          // ✅ Скролл в fallback тоже
+          setTimeout(() => {
+            if (this.messagesComponent) {
+              this.messagesComponent.scrollToBottomAfterNewMessage();
+            }
+          }, 200);
         }
       }
       this.closeUploadModal();

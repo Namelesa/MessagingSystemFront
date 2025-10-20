@@ -1,12 +1,15 @@
-import { Component, Input, Output, EventEmitter, ViewChild, ElementRef, OnChanges, SimpleChanges, AfterViewInit, OnDestroy, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
+import { Component, Input, Output, EventEmitter, OnChanges, 
+  SimpleChanges, AfterViewInit, OnDestroy, ChangeDetectionStrategy, 
+  ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { TranslateModule } from '@ngx-translate/core';
-import { Observable, Subject } from 'rxjs';
+import { Observable } from 'rxjs';
 import { takeUntil, filter } from 'rxjs/operators';
+import { BaseChatMessagesWidget } from '../shared/widget';
 import { OtoMessage } from '../../../entities/oto-message';
-import { isToday, truncateText, computeContextMenuPosition } from '../../../shared/chat';
 import { FileUploadApiService, FileUrl } from '../../../features/file-sender';
-import { ImageViewerComponent, ImageViewerItem } from '../../../shared/image-viewer';
+import { ImageViewerComponent } from '../../../shared/image-viewer';
+import { isToday, truncateText, computeContextMenuPosition } from '../../../shared/chat';
 import { CustomAudioPlayerComponent } from '../../../shared/custom-player';
 
 @Component({
@@ -16,10 +19,10 @@ import { CustomAudioPlayerComponent } from '../../../shared/custom-player';
   templateUrl: './oto-chat-messages.widget.html',
   changeDetection: ChangeDetectionStrategy.OnPush
 })
+export class OtoChatMessagesWidget extends BaseChatMessagesWidget<OtoMessage>
+  implements OnChanges, AfterViewInit, OnDestroy {
 
-export class OtoChatMessagesWidget implements OnChanges, AfterViewInit, OnDestroy {
   @Input() chatNickName!: string;
-  @Input() currentUserNickName!: string;
   @Input() messages$?: Observable<OtoMessage[]>;
   @Input() userInfoDeleted$?: Observable<{ userName: string }>;
   @Input() loadHistory?: (nick: string, take: number, skip: number) => Observable<OtoMessage[]>;
@@ -29,108 +32,307 @@ export class OtoChatMessagesWidget implements OnChanges, AfterViewInit, OnDestro
   @Output() replyToMessage = new EventEmitter<OtoMessage>();
   @Output() chatUserDeleted = new EventEmitter<void>();
 
-  @ViewChild('scrollContainer') scrollContainer!: ElementRef<HTMLDivElement>;
+  messages: OtoMessage[] = [];
 
-  showImageViewer = false;
-  imageViewerImages: ImageViewerItem[] = [];
-  imageViewerInitialIndex = 0;
-  imageViewerKey = 0;
-  f: any;
+  private historyLoadedCount = 0; 
+  private latestMessageTime: number = 0; 
 
   constructor(
-    private fileUploadApi: FileUploadApiService,
-    public cdr: ChangeDetectorRef
-  ) {}
-
-  public messages: OtoMessage[] = [];
-  take = 20;
-  skip = 0;
-  allLoaded = false;
-  loading = false;
-  private prevScrollHeight = 0;
-  contextMenuMessageId: string | null = null;
-  contextMenuPosition = { x: 0, y: 0 };
-  showContextMenu = false;
-  highlightedMessageId: string | null = null;
-  
-  private messageContentCache = new Map<string, string>();
-
-  // Can be shared
-  isMessageHighlighted(id: string): boolean {
-    return this.highlightedMessageId === id;
+    protected override cdr: ChangeDetectorRef,
+    protected override fileUploadApi: FileUploadApiService
+  ) {
+    super(cdr, fileUploadApi);
   }
 
-  // Can be shared
-  private highlightMessage(messageId: string) {
-    this.highlightedMessageId = null;
-    this.highlightedMessageId = messageId;
+  override getMessageIdFromMessage(msg: OtoMessage): string {
+    return msg.messageId || '';
+  }
+
+  ngAfterViewInit() {
+    this.setupContextMenuListener();
+    this.subscribeToUserDeletion();
+    this.startUrlExpirationCheck();
+  
     setTimeout(() => {
-      if (this.highlightedMessageId === messageId) this.highlightedMessageId = null;
-    }, 1500);
+      if (this.messages.length > 0) {
+        this.scrollToBottomBase(this.scrollContainer);
+      }
+    }, 200);
+
+    setTimeout(() => {
+      if (this.messages && this.messages.length > 0) {
+        const messagesWithFiles = this.messages.filter(msg => {
+          try {
+            const parsed = JSON.parse(msg.content);
+            if (!parsed.files || parsed.files.length === 0) return false;
+            
+            return parsed.files.some((file: any) => {
+              if (!file.url) return true;
+              const cacheKey = file.uniqueFileName || file.fileName;
+              const cachedUrl = this.urlCache.get(cacheKey);
+              return !cachedUrl;
+            });
+          } catch {
+            return false;
+          }
+        });
+  
+        if (messagesWithFiles.length > 0) {
+          this.loadFilesForMessages(messagesWithFiles);
+        }
+      }
+    }, 2000);
+  }
+
+  ngOnDestroy() {
+    this.baseDestroy();
+    if (this.urlCheckInterval) {
+      clearInterval(this.urlCheckInterval);
+    }
   }
   
-  // Can be abstracted
+  private urlCheckInterval?: any;
+  
+  private startUrlExpirationCheck() {
+    this.urlCheckInterval = setInterval(() => {
+      this.checkAndRefreshExpiredUrls();
+    }, 5 * 60 * 1000);
+  }
+  
+  private checkAndRefreshExpiredUrls() {
+    if (!this.messages || this.messages.length === 0) return;
+  
+    let foundExpired = false;
+    const filesToRefresh: { 
+      fileName: string; 
+      uniqueFileName: string; 
+      messageId: string; 
+      fileIndex: number 
+    }[] = [];
+  
+    this.messages.forEach(msg => {
+      try {
+        const parsed = JSON.parse(msg.content);
+        if (parsed.files && parsed.files.length > 0) {
+          parsed.files.forEach((file: any, fileIndex: number) => {
+            if (file.url) {
+              const cacheKey = file.uniqueFileName || file.fileName;
+              const cachedUrl = this.urlCache.get(cacheKey);
+              
+              if (cachedUrl && this.isUrlExpired(cachedUrl.timestamp)) {
+                foundExpired = true;
+                filesToRefresh.push({
+                  fileName: file.fileName,
+                  uniqueFileName: file.uniqueFileName,
+                  messageId: this.getMessageIdFromMessage(msg),
+                  fileIndex: fileIndex
+                });
+              }
+            }
+          });
+        }
+      } catch (e) {}
+    });
+  
+    if (foundExpired) {
+      const uniqueFileNames = [...new Set(filesToRefresh.map(f => f.fileName))];
+      this.fileUploadApi.getDownloadUrls(uniqueFileNames).then(fileUrls => {
+        const urlMap = new Map<string, string>();
+        fileUrls.forEach(fu => {
+          urlMap.set(fu.originalName, fu.url);
+          const cacheKey = fu.uniqueFileName || fu.originalName;
+          this.urlCache.set(cacheKey, {
+            url: fu.url,
+            timestamp: Date.now()
+          });
+        });
+  
+        filesToRefresh.forEach(item => {
+          const newUrl = urlMap.get(item.fileName);
+          if (newUrl) {
+            const message = this.messages.find(m => this.getMessageIdFromMessage(m) === item.messageId);
+            if (message) {
+              try {
+                const parsed = JSON.parse(message.content);
+                if (parsed.files && parsed.files[item.fileIndex]) {
+                  parsed.files[item.fileIndex].url = newUrl;
+                  parsed.files[item.fileIndex]._refreshKey = `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+                  message.content = JSON.stringify(parsed);
+                  delete (message as any).parsedContent;
+                  this.messageContentCache.delete(item.messageId);
+                }
+              } catch (e) {
+                console.error('Error updating message:', e);
+              }
+            }
+          }
+        });
+  
+        this.cdr.markForCheck();
+      }).catch(error => {
+        console.error('❌ Failed to refresh expired URLs:', error);
+      });
+    } else {
+    }
+  }
+
+  ngOnChanges(changes: SimpleChanges) {
+    if (changes['chatNickName'] && this.chatNickName) {
+      this.initChat();
+    }
+  }
+
   parseContent(msg: OtoMessage): { text: string; files: any[] } {
     const currentContent = msg.content;
     const messageId = msg.messageId;
-    
     const lastUpdated = (msg as any).lastUpdated;
     const cachedContent = this.messageContentCache.get(messageId);
     const hasCachedResult = !!(msg as any).parsedContent;
-  
     const hasTemporaryChanges = (msg as any)._hasTemporaryChanges;
     const forceRerender = (msg as any)._forceRerender;
     const contentUpdated = (msg as any)._contentUpdated;
-    
-    const shouldReparse = lastUpdated || 
-                         cachedContent !== currentContent || 
-                         !hasCachedResult ||
-                         hasTemporaryChanges ||
-                         forceRerender ||
-                         contentUpdated ||
-                         (msg as any).forceRefresh;
-    
-    if (shouldReparse) {      
+  
+    const shouldReparse = lastUpdated ||
+      cachedContent !== currentContent ||
+      !hasCachedResult ||
+      hasTemporaryChanges ||
+      forceRerender ||
+      contentUpdated ||
+      (msg as any).forceRefresh;
+  
+    if (shouldReparse) {
       delete (msg as any).parsedContent;
       delete (msg as any).forceRefresh;
       delete (msg as any)._forceRerender;
       delete (msg as any)._contentUpdated;
       this.messageContentCache.delete(messageId);
       this.messageContentCache.set(messageId, currentContent);
-      
+  
       let result: { text: string; files: any[] };
   
       try {
         const parsed = JSON.parse(currentContent);
-        
-        if (typeof parsed === 'object' && parsed !== null && (parsed.hasOwnProperty('text') || parsed.hasOwnProperty('files'))) {
+  
+        if (typeof parsed === 'object' && parsed !== null &&
+          (parsed.hasOwnProperty('text') || parsed.hasOwnProperty('files'))) {
+          
           const filesWithType = (parsed.files || []).map((file: any, index: number) => {
+            const cacheKey = file.uniqueFileName || file.fileName;
+            const cachedUrl = this.urlCache.get(cacheKey);
+  
+            if (file.url && !cachedUrl) {
+              file.needsLoading = true;
+              file.isRefreshing = true;
+              
+              this.refreshFileUrl(file.fileName, file.uniqueFileName).then(newUrl => {
+                if (newUrl) {
+                  file.url = newUrl;
+                  file.isRefreshing = false;
+                  file._refreshKey = `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+                  
+                  const message = this.messages.find(m => this.getMessageIdFromMessage(m) === messageId);
+                  if (message) {
+                    try {
+                      const updatedParsed = JSON.parse(message.content);
+                      const fileIndex = updatedParsed.files.findIndex((f: any) =>
+                        (f.fileName === file.fileName && f.uniqueFileName === file.uniqueFileName) ||
+                        f.uniqueId === file.uniqueId
+                      );
+                      
+                      if (fileIndex !== -1) {
+                        updatedParsed.files[fileIndex].url = newUrl;
+                        updatedParsed.files[fileIndex]._refreshKey = file._refreshKey;
+                        updatedParsed.files[fileIndex].isRefreshing = false;
+                        message.content = JSON.stringify(updatedParsed);
+                        delete (message as any).parsedContent;
+                        this.messageContentCache.delete(messageId);
+                        this.cdr.markForCheck();
+                      }
+                    } catch (e) {
+                    }
+                  }
+                  this.cdr.markForCheck();
+                } else {
+                  file.isRefreshing = false;
+                  this.cdr.markForCheck();
+                }
+              });
+            } else if (cachedUrl) {
+              const urlExpired = this.isUrlExpired(cachedUrl.timestamp);
+              const urlAboutToExpire = this.isUrlAboutToExpire(cachedUrl.timestamp);
+  
+              if (urlExpired || urlAboutToExpire) {
+                file.isRefreshing = true;
+                this.refreshFileUrl(file.fileName, file.uniqueFileName).then(newUrl => {
+                  if (newUrl) {
+                    file.url = newUrl;
+                    file.isRefreshing = false;
+                    file._refreshKey = `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+                    
+                    const message = this.messages.find(m => this.getMessageIdFromMessage(m) === messageId);
+                    if (message) {
+                      try {
+                        const updatedParsed = JSON.parse(message.content);
+                        const fileIndex = updatedParsed.files.findIndex((f: any) =>
+                          (f.fileName === file.fileName && f.uniqueFileName === file.uniqueFileName) ||
+                          f.uniqueId === file.uniqueId
+                        );
+                        
+                        if (fileIndex !== -1) {
+                          updatedParsed.files[fileIndex].url = newUrl;
+                          updatedParsed.files[fileIndex]._refreshKey = file._refreshKey;
+                          updatedParsed.files[fileIndex].isRefreshing = false;
+                          message.content = JSON.stringify(updatedParsed);
+                          delete (message as any).parsedContent;
+                          this.messageContentCache.delete(messageId);
+                          this.cdr.markForCheck();
+                        }
+                      } catch (e) {
+                      }
+                    }
+                    this.cdr.markForCheck();
+                  } else {
+                    file.isRefreshing = false;
+                    this.cdr.markForCheck();
+                  }
+                }).catch(error => {
+                  file.isRefreshing = false;
+                  this.cdr.markForCheck();
+                });
+              } else {
+                file.url = cachedUrl.url;
+              }
+            } else if (!file.url) {
+              file.needsLoading = true;
+            }
+  
             if (!file.type && file.fileName) {
               file.type = this.detectFileType(file.fileName);
             }
+  
             if (!file.uniqueId) {
               file.uniqueId = file.uniqueFileName || file.url || `${file.fileName}_${Date.now()}_${index}`;
             }
-            
+  
             if (file._isTemporary || file._isNew) {
               file._refreshKey = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 15)}`;
               file._tempKey = `temporary_${index}_${Date.now()}`;
             } else {
               file._refreshKey = `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
             }
-            
+  
             if (file._forceUpdate) {
               file._refreshKey = `force_${file._forceUpdate}_${Math.random().toString(36).substr(2, 9)}`;
             }
-            
+  
             if (file._typeChanged) {
               file._typeKey = `type_changed_${Date.now()}`;
             }
-
+  
             if (file.type?.startsWith('video/') && file._videoRefreshKey) {
               file._refreshKey = `video_${file._videoRefreshKey}_${Math.random().toString(36).substr(2, 9)}`;
             }
-            
+  
             return file;
           });
   
@@ -139,13 +341,12 @@ export class OtoChatMessagesWidget implements OnChanges, AfterViewInit, OnDestro
             files: filesWithType
           };
         } else {
-          result = { 
-            text: currentContent, 
-            files: [] 
+          result = {
+            text: currentContent,
+            files: []
           };
         }
       } catch (error) {
-
         if (currentContent && typeof currentContent === 'string') {
           const detectedType = this.detectFileType(currentContent);
           if (detectedType) {
@@ -160,78 +361,28 @@ export class OtoChatMessagesWidget implements OnChanges, AfterViewInit, OnDestro
               }]
             };
           } else {
-            result = { 
-              text: currentContent, 
-              files: [] 
+            result = {
+              text: currentContent,
+              files: []
             };
           }
         } else {
-          result = { 
-            text: currentContent || '', 
-            files: [] 
+          result = {
+            text: currentContent || '',
+            files: []
           };
         }
       }
   
       (msg as any).parsedContent = result;
-      
       delete (msg as any).lastUpdated;
       delete (msg as any)._hasTemporaryChanges;
-      
       return result;
     }
   
     return (msg as any).parsedContent;
-  }  
-
-  // Can be shared
-  getFileSize(file: any): string {
-    return file.size ? this.formatFileSize(file.size) : 'Unknown size';
   }
 
-  // Can be shared
-  getFileExtension(fileName: string): string {
-    if (!fileName) return 'File';
-    const extension = fileName.split('.').pop()?.toUpperCase();
-    return extension || 'File';
-  }
-
-  // Can be shared
-  formatFileSize(bytes: number): string {
-    if (bytes === 0) return '0 Bytes';
-    const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
-  }
-
-  // Can be shared
-  private detectFileType(fileNameOrUrl: string): string | null {
-    const lower = fileNameOrUrl.toLowerCase();
-    if (lower.match(/\.(jpg|jpeg|png|gif|webp|bmp|svg|ico)$/)) {
-      return 'image/' + lower.split('.').pop();
-    }
-
-    if (lower.match(/\.(mp4|avi|mov|wmv|flv|webm|mkv|m4v|3gp)$/)) {
-      return 'video/' + lower.split('.').pop();
-    }
-
-    if (lower.match(/\.(mp3|wav|ogg|aac|flac|wma|m4a)$/)) {
-      return 'audio/' + lower.split('.').pop();
-    }
-
-    if (lower.match(/\.(pdf|doc|docx|xls|xlsx|ppt|pptx|txt|rtf)$/)) {
-      return 'application/' + lower.split('.').pop();
-    }
-
-    if (lower.match(/\.(zip|rar|7z|tar|gz|bz2)$/)) {
-      return 'application/' + lower.split('.').pop();
-    }
-
-    return null;
-  }
-
-  // Can be shared
   openFileViewer(fileIndex: number, messageId: string) {
     const sourceMessage = this.messages.find(msg => msg.messageId === messageId);
     if (!sourceMessage) return;
@@ -242,28 +393,27 @@ export class OtoChatMessagesWidget implements OnChanges, AfterViewInit, OnDestro
     if (fileIndex < 0 || fileIndex >= allFiles.length) return;
 
     const clickedFile = allFiles[fileIndex];
-
-    if (!clickedFile.type?.startsWith('image/') && 
-        !clickedFile.type?.startsWith('video/') && 
-        !clickedFile.type?.startsWith('audio/')) {
+    if (!clickedFile.type?.startsWith('image/') &&
+      !clickedFile.type?.startsWith('video/') &&
+      !clickedFile.type?.startsWith('audio/')) {
       return;
     }
 
-    const mediaFiles = allFiles.filter(file => 
-      file.type?.startsWith('image/') || 
-      file.type?.startsWith('video/') || 
+    const mediaFiles = allFiles.filter(file =>
+      file.type?.startsWith('image/') ||
+      file.type?.startsWith('video/') ||
       file.type?.startsWith('audio/')
     );
 
-    const mediaIndex = mediaFiles.findIndex(file => 
-      file.url === clickedFile.url && 
-      file.fileName === clickedFile.fileName && 
+    const mediaIndex = mediaFiles.findIndex(file =>
+      file.url === clickedFile.url &&
+      file.fileName === clickedFile.fileName &&
       file.type === clickedFile.type
     );
 
-    if (mediaIndex === -1) return;    
+    if (mediaIndex === -1) return;
 
-    const viewerFiles: ImageViewerItem[] = mediaFiles.map(file => ({
+    this.imageViewerImages = mediaFiles.map(file => ({
       url: file.url,
       fileName: file.fileName,
       type: file.type,
@@ -271,31 +421,28 @@ export class OtoChatMessagesWidget implements OnChanges, AfterViewInit, OnDestro
       sender: sourceMessage.sender
     }));
 
-    this.imageViewerImages = viewerFiles;
     this.imageViewerInitialIndex = mediaIndex;
-    this.imageViewerKey++; 
+    this.imageViewerKey++;
     this.showImageViewer = true;
 
     if (clickedFile.type?.startsWith('video/')) {
       setTimeout(() => {
         const videoElement = document.querySelector('video') as HTMLVideoElement;
         if (videoElement) {
-          videoElement.play().catch(() => {
-          });
+          videoElement.play().catch(() => {});
         }
       }, 100);
     }
   }
 
-  // Can be shared
   openImageViewer(clickedImageUrl: string, messageId: string) {
     const sourceMessage = this.messages.find(msg => msg.messageId === messageId);
     if (!sourceMessage) return;
 
     const sourceContent = this.parseContent(sourceMessage);
-    const sourceFiles = sourceContent.files.filter(file => 
-      file.type?.startsWith('image/') || 
-      file.type?.startsWith('video/') || 
+    const sourceFiles = sourceContent.files.filter(file =>
+      file.type?.startsWith('image/') ||
+      file.type?.startsWith('video/') ||
       file.type?.startsWith('audio/')
     );
 
@@ -305,265 +452,358 @@ export class OtoChatMessagesWidget implements OnChanges, AfterViewInit, OnDestro
     }
   }
 
-  // Can be shared
   onImageViewerClosed() {
-    this.showImageViewer = false;
-    this.imageViewerImages = [];
-    this.imageViewerInitialIndex = 0;
-    this.imageViewerKey = 0; 
+    this.onImageViewerClosedBase();
   }
 
-  // Can be shared
   onScrollToReplyMessage(messageId: string) {
     this.scrollToMessage(messageId);
   }
 
-  private destroy$ = new Subject<void>();
-  private shouldScrollToBottom = false;
-  private hideContextMenuHandler?: () => void;
+  private async loadFilesForMessages(messages: OtoMessage[]) {
+    if (!messages || messages.length === 0) return;
 
-  // Can be abstracted
-  ngAfterViewInit() {
-    const hideContextMenu = () => (this.showContextMenu = false);
-    document.addEventListener('click', hideContextMenu);
-    this.hideContextMenuHandler = hideContextMenu;
-    this.subscribeToUserDeletion();
-  }
-
-  ngAfterViewChecked() {
-    if (this.shouldScrollToBottom) {
-      this.scrollToBottom();
-      this.shouldScrollToBottom = false;
-    }
-  }
+    try {
+      const fileNames: string[] = [];
+      const messageFileMap = new Map<string, {
+        messageIndex: number;
+        fileIndex: number;
+        originalName: string;
+        uniqueFileName?: string;
+        needsRefresh?: boolean;
+      }>();
   
-  // Can be abstracted or shared
-  ngOnChanges(changes: SimpleChanges) {
-    if (changes['chatNickName'] && this.chatNickName) {
-      this.initChat();
-    }
-    
-    if (changes['messages$'] && this.messages$) {
-      this.messages$.pipe(takeUntil(this.destroy$)).subscribe(messages => {
-        const previousMessages = this.messages;
-        
-        this.messages = messages;
-        
-        this.clearCacheForUpdatedMessages(previousMessages, messages);
-        
-        if (!previousMessages || previousMessages.length === 0) {
-          this.initChat();
-        } else {
-          const newMessages = messages.filter(msg => 
-            !previousMessages.some(prevMsg => prevMsg.messageId === msg.messageId)
-          );
+      messages.forEach((msg, messageIndex) => {
+        try {
+          const parsed = JSON.parse(msg.content);
           
-          const updatedMessages = messages.filter(msg => {
-            const prevMsg = previousMessages.find(prevMsg => prevMsg.messageId === msg.messageId);
-            return prevMsg && prevMsg.content !== msg.content;
+          if (parsed.files && Array.isArray(parsed.files)) {
+            parsed.files.forEach((file: any, fileIndex: number) => {
+              const cacheKey = file.uniqueFileName || file.fileName;
+              const cachedUrl = this.urlCache.get(cacheKey);
+
+              const urlExpired = cachedUrl && this.isUrlExpired(cachedUrl.timestamp);
+              const urlAboutToExpire = cachedUrl && this.isUrlAboutToExpire(cachedUrl.timestamp);
+              const notCached = file.url && !cachedUrl;
+  
+              if (file.fileName && (!file.url || urlExpired || urlAboutToExpire || notCached)) {
+                fileNames.push(file.fileName);
+                messageFileMap.set(`${file.fileName}_${messageIndex}_${fileIndex}`, {
+                  messageIndex,
+                  fileIndex,
+                  originalName: file.fileName,
+                  uniqueFileName: file.uniqueFileName,
+                  needsRefresh: urlExpired || urlAboutToExpire || notCached
+                });
+              } else if (file.url && cachedUrl) {
+              }
+            });
+          }
+        } catch (e) {
+        }
+      });
+  
+      if (fileNames.length === 0) {
+        this.cdr.detectChanges();
+        return;
+      }
+  
+      const fileUrls = await this.fileUploadApi.getDownloadUrls(fileNames);  
+      const filesByOriginalName = new Map<string, FileUrl[]>();
+      fileUrls.forEach(fileUrl => {
+        if (!filesByOriginalName.has(fileUrl.originalName)) {
+          filesByOriginalName.set(fileUrl.originalName, []);
+        }
+        filesByOriginalName.get(fileUrl.originalName)!.push(fileUrl);
+      });
+  
+      let updatedCount = 0;
+  
+      messageFileMap.forEach((mapping) => {
+        const message = messages[mapping.messageIndex];
+        const parsed = JSON.parse(message.content);
+        const urls = filesByOriginalName.get(mapping.originalName);
+  
+        if (urls && urls[0]) {
+          const newUrl = urls[0].url;
+          parsed.files[mapping.fileIndex].url = newUrl;
+          parsed.files[mapping.fileIndex].uniqueFileName = urls[0].uniqueFileName;
+          message.content = JSON.stringify(parsed);
+  
+          const cacheKey = urls[0].uniqueFileName || mapping.originalName;
+          this.urlCache.set(cacheKey, {
+            url: newUrl,
+            timestamp: Date.now()
           });
+  
+          updatedCount++;
+        } else {
+        }
+      });
+  
+      messages.forEach(msg => {
+        delete (msg as any).parsedContent;
+        this.messageContentCache.set(this.getMessageIdFromMessage(msg), msg.content);
+      });
+      this.cdr.detectChanges();
+    } catch (error) {
+    }
+  }
+
+  private subscribeToUserDeletion() {
+    const global$ = this.userInfoDeleted$;
+    if (global$) {
+      global$
+        .pipe(takeUntil(this.destroy$), filter((info: any) => info?.userName === this.chatNickName))
+        .subscribe(() => this.handleChatUserDeleted());
+    }
+  }
+
+  private handleChatUserDeleted() {
+    this.messages = [];
+    this.messageContentCache.clear();
+    this.chatUserDeleted.emit();
+  }
+
+  clearMessagesForDeletedUser(): void {
+    this.messages = [];
+    this.skip = 0;
+    this.allLoaded = false;
+    this.messageContentCache.clear();
+  }
+
+  protected initChat() {
+    this.messages = [];
+    this.skip = 0;
+    this.allLoaded = false;
+    this.shouldScrollToBottom = true;
+    this.messageContentCache.clear();
+    this.historyLoadedCount = 0;
+    this.latestMessageTime = 0;
+  
+    if (this.messages$) {
+      this.messages$
+        .pipe(takeUntil(this.destroy$))
+        .subscribe((newMsgs: OtoMessage[]) => {
+          const filtered = newMsgs.filter(msg => !msg.isDeleted || !this.isMyMessage(msg));
+          const isInitialLoad = this.messages.length === 0;
+          const allMessagesMap = new Map(this.messages.map(m => [m.messageId, m]));
           
-          
-          if (newMessages.length > 0 || updatedMessages.length > 0) {
-            const messagesNeedingFiles = [...newMessages, ...updatedMessages].filter(msg => {
+          for (const msg of filtered) {
+            allMessagesMap.set(msg.messageId, msg);
+          }
+  
+          this.messages = Array.from(allMessagesMap.values()).sort((a, b) =>
+            new Date(a.sentAt).getTime() - new Date(b.sentAt).getTime()
+          );
+  
+          if (isInitialLoad && this.messages.length > 0) {
+  
+            if (this.messages.length > 0) {
+              const sortedMessages = [...this.messages].sort((a, b) => 
+                new Date(b.sentAt).getTime() - new Date(a.sentAt).getTime()
+              );
+              this.latestMessageTime = new Date(sortedMessages[0].sentAt).getTime();
+            }
+  
+            const messagesWithFiles = this.messages.filter(msg => {
               try {
                 const parsed = JSON.parse(msg.content);
-                return parsed.files && parsed.files.length > 0 && 
-                       parsed.files.some((file: any) => !file.url);
+                return parsed.files && parsed.files.length > 0;
               } catch {
                 return false;
               }
             });
+  
+            if (messagesWithFiles.length > 0) {
+              this.loadFilesForMessages(messagesWithFiles);
+            }
+  
+            setTimeout(() => {
+              this.scrollToBottomBase(this.scrollContainer);
+            }, 100);
             
-            if (messagesNeedingFiles.length > 0) {
-              this.loadFilesForMessages(messagesNeedingFiles);
+          } else if (!isInitialLoad) {
+            const oldMessages = [...this.messages];
+            const oldMessagesMap = new Map(oldMessages.map(m => [m.messageId, m]));
+            const newMsgIds = new Set(filtered.map(m => m.messageId));
+            const messagesToRemove = oldMessages.filter(msg => {
+              const msgTime = new Date(msg.sentAt).getTime();
+              const isRecent = msgTime > this.latestMessageTime || this.latestMessageTime === 0;
+              const notInNewList = !newMsgIds.has(msg.messageId);
+              return isRecent && notInNewList;
+            });
+            
+            if (messagesToRemove.length > 0) {
+              messagesToRemove.forEach(msg => {
+                allMessagesMap.delete(msg.messageId);
+              });
+              
+              this.messages = Array.from(allMessagesMap.values()).sort((a, b) =>
+                new Date(a.sentAt).getTime() - new Date(b.sentAt).getTime()
+              );
+            }
+            
+            const actuallyNewMessages = filtered.filter(msg => !oldMessagesMap.has(msg.messageId));
+                        
+            if (actuallyNewMessages.length > 0) {
+              const realtimeNewMessages = actuallyNewMessages.filter(msg => 
+                new Date(msg.sentAt).getTime() > this.latestMessageTime
+              );
+              
+              if (realtimeNewMessages.length > 0) {
+                const sortedNew = [...realtimeNewMessages].sort((a, b) => 
+                  new Date(b.sentAt).getTime() - new Date(a.sentAt).getTime()
+                );
+                const newestTime = new Date(sortedNew[0].sentAt).getTime();
+                if (newestTime > this.latestMessageTime) {
+                  this.latestMessageTime = newestTime;
+                }
+              }
+              
+              const messagesNeedingFiles = actuallyNewMessages.filter(msg => {
+                try {
+                  const parsed = JSON.parse(msg.content);
+                  return parsed.files && parsed.files.length > 0;
+                } catch {
+                  return false;
+                }
+              });
+              
+              if (messagesNeedingFiles.length > 0) {
+                this.loadFilesForMessages(messagesNeedingFiles);
+              }
+              
+              if (realtimeNewMessages.length > 0) {
+                const wasAtBottom = this.isScrolledToBottom();
+                setTimeout(() => {
+                  if (wasAtBottom) {
+                    this.scrollToBottomBase(this.scrollContainer);
+                  }
+                }, 100);
+              }
+            }
+          }
+  
+          this.cdr.markForCheck();
+        });
+    }
+  
+    setTimeout(() => {
+      this.loadMore();
+    }, 100);
+  }
+
+  protected loadMore() {
+    if (this.loading || this.allLoaded) return;  
+    this.loading = true;
+    const loadHistory = this.loadHistory;
+    if (!loadHistory) {
+      this.loading = false;
+      return;
+    }
+    const currentSkip = this.historyLoadedCount;
+    const scrollContainer = this.scrollContainer?.nativeElement;
+    const prevScrollHeight = scrollContainer ? scrollContainer.scrollHeight : 0;
+    const prevScrollTop = scrollContainer ? scrollContainer.scrollTop : 0;
+  
+    loadHistory(this.chatNickName, this.take, currentSkip)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (newMsgs: OtoMessage[]) => {
+          if (newMsgs.length === 0) {
+            this.allLoaded = true;
+            this.loading = false;
+          
+            if (this.shouldScrollToBottom && this.messages.length > 0) {
+              setTimeout(() => {
+                this.scrollToBottomBase(this.scrollContainer);
+                this.shouldScrollToBottom = false;
+              }, 150);
             }
             
             this.cdr.markForCheck();
-            setTimeout(() => this.cdr.detectChanges(), 0);
+            return;
           }
+  
+          const filtered = newMsgs.filter(m => !m.isDeleted || !this.isMyMessage(m));
+  
+          if (filtered.length === 0) {
+            this.historyLoadedCount += newMsgs.length;
+            this.loading = false;
+            
+            if (newMsgs.length < this.take) {
+              this.allLoaded = true;
+            } else {
+              setTimeout(() => this.loadMore(), 100);
+            }
+            
+            this.cdr.markForCheck();
+            return;
+          }
+  
+          const existingIds = new Set(this.messages.map(m => m.messageId));
+          const unique = filtered.filter(m => !existingIds.has(m.messageId));
+  
+          if (unique.length === 0) {
+            this.historyLoadedCount += filtered.length;
+            this.loading = false;
+            
+            if (filtered.length < this.take) {
+              this.allLoaded = true;
+            } else {
+              setTimeout(() => this.loadMore(), 100);
+            }
+            
+            this.cdr.markForCheck();
+            return;
+          }
+          this.historyLoadedCount += unique.length;
+          this.loadFilesForMessages(unique);
+          this.messages = [...unique, ...this.messages];
+
+          if (unique.length < this.take) {
+            this.allLoaded = true;
+          }
+  
+          if (!this.shouldScrollToBottom) {
+            setTimeout(() => this.restoreScrollPosition(prevScrollHeight, prevScrollTop), 0);
+            setTimeout(() => this.restoreScrollPosition(prevScrollHeight, prevScrollTop), 50);
+            setTimeout(() => this.restoreScrollPosition(prevScrollHeight, prevScrollTop), 100);
+            setTimeout(() => this.restoreScrollPosition(prevScrollHeight, prevScrollTop), 200);
+          } else {
+            setTimeout(() => {
+              this.scrollToBottomBase(this.scrollContainer);
+              this.shouldScrollToBottom = false;
+            }, 150);
+          }
+  
+          this.loading = false;
+          this.cdr.markForCheck();
+        },
+        error: (err) => {
+          this.loading = false;
+          this.cdr.markForCheck();
         }
       });
-    }
   }
-
-  // Can be abstracted
-  private clearCacheForUpdatedMessages(previousMessages: OtoMessage[], currentMessages: OtoMessage[]) {
-    if (!previousMessages) return;
     
-    const prevMap = new Map(previousMessages.map(msg => [msg.messageId, msg.content]));
-    
-    currentMessages.forEach(currentMsg => {
-      const prevContent = prevMap.get(currentMsg.messageId);
-      
-      if (!prevContent || prevContent !== currentMsg.content) {
-        delete (currentMsg as any).parsedContent;
-        (currentMsg as any).forceRefresh = true;
-        this.messageContentCache.delete(currentMsg.messageId);
-        this.messageContentCache.set(currentMsg.messageId, currentMsg.content);
-        
-      }
-    });
-    
-    this.cdr.markForCheck();
-    this.cdr.detectChanges();
-
-    setTimeout(() => {
-      this.cdr.detectChanges();
-    }, 50); 
-  }
-
-  // Can be abstracted
-  public clearMessageCache(messageId: string): void {    
-    this.messageContentCache.delete(messageId);
-    
-    const message = this.messages.find(m => m.messageId === messageId);
-    if (message) {
-      delete (message as any).parsedContent;
-      delete (message as any).parsedFiles;
-      (message as any)._cacheCleared = Date.now();
-    }
-    
-    this.cdr.detectChanges();
-  }
-
-  // Can be shared
-  ngOnDestroy() {
-    this.destroy$.next();
-    this.destroy$.complete();
-    if (this.hideContextMenuHandler) {
-      document.removeEventListener('click', this.hideContextMenuHandler);
-    }
-    this.messageContentCache.clear();
-  }
-
-  // Can be abstracted or shared
-  async addFileToMessage(messageId: string, fileData: { fileName: string; uniqueFileName: string; url: string; type?: string }) {
-    const message = this.messages.find(m => m.messageId === messageId);
-    if (!message) {
-      return;
-    }
-
-    try {
-      const parsed = JSON.parse(message.content);
-      if (!parsed.files) {
-        parsed.files = [];
-      }
-      
-      const newFile = {
-        fileName: fileData.fileName,
-        uniqueFileName: fileData.uniqueFileName,
-        url: fileData.url,
-        type: fileData.type || this.detectFileType(fileData.fileName),
-        uniqueId: fileData.uniqueFileName || `${fileData.fileName}_${Date.now()}`
-      };
-      
-      parsed.files.push(newFile);
-      
-      message.content = JSON.stringify(parsed);
-      delete (message as any).parsedContent;
-      this.messageContentCache.set(messageId, message.content);
-
-      this.cdr.detectChanges();
-      
-    } catch (error) {
-    }
-  }
-
-  // Can be abstracted or shared
-  async removeFileFromMessage(messageId: string, uniqueFileName: string) {
-    const message = this.messages.find(m => m.messageId === messageId);
-    if (!message) return;
-
-    try {
-      const parsed = JSON.parse(message.content);
-      if (parsed.files) {
-        const fileIndex = parsed.files.findIndex((file: any) => 
-          file.uniqueFileName === uniqueFileName || file.uniqueId === uniqueFileName
-        );
-        if (fileIndex !== -1) {
-          const removedFile = parsed.files.splice(fileIndex, 1)[0];
-          message.content = JSON.stringify(parsed);
-          delete (message as any).parsedContent;
-          this.messageContentCache.set(messageId, message.content);
-          
-          this.cdr.detectChanges();
-        }
-      }
-    } catch (error) {
-    }
-  }
-
-  // Can be abstracted or shared
-  trackByFileWithRefresh(index: number, file: any): string {
-    const baseKey = file.uniqueId || file.uniqueFileName || file.url || `file_${index}`;
-    const refreshKey = file._refreshKey || Date.now();
-    const typeKey = file.type || 'unknown';
-    const sizeKey = file.size || 0;
-    const nameKey = file.fileName || 'unknown';
-    const forceUpdateKey = file._forceUpdate || '';
-    const typeChangeKey = file._typeKey || '';
-    const tempKey = file._tempKey || '';
-    const videoRefreshKey = file._videoRefreshKey || '';
-    const isTemporary = file._isTemporary ? 'temp' : 'perm';
-    const isNew = file._isNew ? 'new' : 'existing';
-    const replacementKey = file._replacementKey || '';
-    
-    return `${baseKey}_${refreshKey}_${typeKey}_${sizeKey}_${nameKey}_${index}_${forceUpdateKey}_${typeChangeKey}_${tempKey}_${videoRefreshKey}_${isTemporary}_${isNew}_${replacementKey}`;
-  }
-
-  // Can be abstracted or shared
-  public fullMessageRerender(messageId: string): void {    
-    const message = this.messages.find(m => m.messageId === messageId);
-    if (!message) {
-      return;
-    }
-    
-    delete (message as any).parsedContent;
-    this.messageContentCache.delete(messageId);
-    
-    (message as any).forceRefresh = true;
-    (message as any).lastUpdated = Date.now();
-    (message as any).rerenderKey = Date.now();
-    (message as any)._forceRerender = Date.now();
-
-    try {
-      const parsed = JSON.parse(message.content);
-      if (parsed.files) {
-        parsed.files.forEach((file: any) => {
-          file._refreshKey = `rerender_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-          
-          if (file.type?.startsWith('video/')) {
-            file._videoRefreshKey = Date.now();
-          }
-          
-          if (file.type?.startsWith('image/')) {
-            file._imageRefreshKey = Date.now();
-          }
-        });
-        
-        message.content = JSON.stringify(parsed);
-      }
-    } catch (e) {
-    }
-
-    this.cdr.markForCheck();
-    this.cdr.detectChanges();
-    
-    setTimeout(() => this.cdr.detectChanges(), 0);
-    setTimeout(() => this.cdr.detectChanges(), 50);
-    setTimeout(() => this.cdr.detectChanges(), 100);
-  }  
+  private restoreScrollPosition(prevScrollHeight: number, prevScrollTop: number): void {
+    if (!this.scrollContainer) return;
   
-  // Can be abstracted or shared
-  trackByMessage(index: number, message: OtoMessage): string {
-    return message.messageId;
+    const el = this.scrollContainer.nativeElement;
+    const newScrollHeight = el.scrollHeight;
+    const heightDiff = newScrollHeight - prevScrollHeight;
+  
+    if (heightDiff > 0) {
+      el.scrollTop = prevScrollTop + heightDiff;
+    }
   }
 
-  // Can be abstracted or shared
   get groupedMessages() {
     const groups: { date: string; messages: OtoMessage[] }[] = [];
     let lastDate = '';
+
     const filtered = this.messages.filter(msg => !msg.isDeleted || !this.isMyMessage(msg));
     const sorted = [...filtered].sort((a, b) => new Date(a.sentAt).getTime() - new Date(b.sentAt).getTime());
 
@@ -576,545 +816,133 @@ export class OtoChatMessagesWidget implements OnChanges, AfterViewInit, OnDestro
         groups[groups.length - 1].messages.push(msg);
       }
     }
+
     return groups;
   }
 
-  // Can be abstracted or shared
   trackByGroup(index: number, group: { date: string; messages: OtoMessage[] }): string {
     return group.date;
   }
 
-  // Can be abstracted or shared
-  trackByMessageId(index: number, msg: OtoMessage): string {
-    return msg.messageId;
-  }
-
+  trackByMessageId = this.trackByMessageBase;
   isToday = isToday;
   truncateText = truncateText;
 
-  // Can be abstracted or shared
   onScroll() {
-    if (this.showContextMenu) this.showContextMenu = false;
-    if (!this.scrollContainer) return;
-    const el = this.scrollContainer.nativeElement;
-    if (el.scrollTop < 300 && !this.loading && !this.allLoaded) {
-      this.prevScrollHeight = el.scrollHeight;
-      this.loadMore();
-    }
+    this.onScrollBase(this.scrollContainer);
   }
 
-  // Can be abstracted or shared
   scrollToMessage(messageId: string): void {
-    if (!this.scrollContainer) return;
-
-    const el = this.scrollContainer.nativeElement.querySelector(`[data-message-id="${messageId}"]`) as HTMLElement;
-    if (!el) {
-      setTimeout(() => {
-        const retry = this.scrollContainer!.nativeElement.querySelector(`[data-message-id="${messageId}"]`) as HTMLElement;
-        if (retry) {
-          retry.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          this.highlightMessage(messageId);
-        }
-      }, 1000);
-      return;
-    }
-    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    setTimeout(() => this.highlightMessage(messageId), 300);
+    this.scrollToMessageBase(messageId, this.scrollContainer);
   }
 
-  // Can be abstracted or shared
+  private isScrolledToBottom(): boolean {
+    return this.isScrolledToBottomBase(this.scrollContainer);
+  }
+
+  public scrollToBottomAfterNewMessage() {
+    requestAnimationFrame(() => {
+      setTimeout(() => {
+        this.scrollToBottomBase(this.scrollContainer);
+      }, 150);
+    });
+  }
+
   getRepliedMessage(messageId: string): OtoMessage {
     return this.messages.find(m => m.messageId === messageId) || undefined as any;
   }
 
-  // Can be abstracted or shared
   onMessageRightClick(event: MouseEvent, msg: OtoMessage) {
     event.preventDefault();
     event.stopPropagation();
+
     const target = event.target as HTMLElement;
     const messageContainer = target.closest('.message-container') as HTMLElement;
     if (!messageContainer) return;
 
     const messageBlock = messageContainer.querySelector('[class*="px-3 py-2 rounded-2xl"]') as HTMLElement;
     if (!messageBlock || !this.scrollContainer) return;
-  
+
     const blockRect = messageBlock.getBoundingClientRect();
     const containerRect = this.scrollContainer.nativeElement.getBoundingClientRect();
     const pos = computeContextMenuPosition(blockRect, containerRect, this.isMyMessage(msg));
+
     this.contextMenuMessageId = msg.messageId;
     this.contextMenuPosition = pos;
     this.showContextMenu = true;
   }
 
-  // Can be abstracted or shared
   onEditMessage() {
     const msg = this.messages.find(m => m.messageId === this.contextMenuMessageId);
     if (msg) this.editMessage.emit(msg);
     this.showContextMenu = false;
   }
 
-  // Can be abstracted or shared
   onDeleteMessage() {
     const msg = this.messages.find(m => m.messageId === this.contextMenuMessageId);
     if (msg) this.deleteMessage.emit(msg);
     this.showContextMenu = false;
   }
 
-  // Can be abstracted or shared
   onReplyToMessage() {
     const msg = this.messages.find(m => m.messageId === this.contextMenuMessageId);
     if (msg) this.replyToMessage.emit(msg);
     this.showContextMenu = false;
   }
 
-  // Can be abstracted or shared
   canEditOrDelete(): boolean {
-    const msg = this.messages.find(m => m.messageId === this.contextMenuMessageId);
-    if (!msg) return false;
-
-    if (this.isMessageDeleted(msg)) return false;
-    return this.isMyMessage(msg);
+    return this.canEditOrDeleteBase(this.messages);
   }
 
-  // Can be abstracted or shared
-  private initChat() {
-    this.messages = [];
-    this.skip = 0;
-    this.allLoaded = false;
-    this.shouldScrollToBottom = true;
-    this.messageContentCache.clear();
-    this.loadMore();
-
-    if (!this.messages$) return;
-
-    this.messages$.pipe(takeUntil(this.destroy$)).subscribe((newMsgs: OtoMessage[]) => {
-      const filtered = newMsgs.filter(msg => !msg.isDeleted || !this.isMyMessage(msg));
-      const newMap = new Map(filtered.map(m => [m.messageId, m]));
-      const oldMap = new Map(this.messages.map(m => [m.messageId, m]));
-      for (const m of filtered) oldMap.set(m.messageId, m);
-      for (const id of Array.from(oldMap.keys())) if (!newMap.has(id)) oldMap.delete(id);
-      this.messages = Array.from(oldMap.values()).sort((a, b) => new Date(a.sentAt).getTime() - new Date(b.sentAt).getTime());
-      
-      if (this.messages.length > 0) {
-        this.loadFilesForMessages(this.messages);
-      }
-      
-      this.skip = this.messages.length;
-
-      if (this.isScrolledToBottom() || this.shouldScrollToBottom) {
-        this.shouldScrollToBottom = true;
-      }
-    });
-  }
-
-  // Can be abstracted or shared
-  private async loadFilesForMessages(messages: OtoMessage[]) {    
-    if (!messages || messages.length === 0) {
-      return;
-    }
-        
-    try {
-      const fileNames: string[] = [];
-      const messageFileMap = new Map<string, { messageIndex: number, fileIndex: number, originalName: string }>();
-
-      messages.forEach((msg, messageIndex) => {
-        try {
-          const parsed = JSON.parse(msg.content);
-          if (parsed.files && Array.isArray(parsed.files)) {
-            const uniqueFiles = parsed.files.filter((file: any, index: number, self: any[]) => 
-              index === self.findIndex((f: any) => 
-                f.fileName === file.fileName && f.uniqueFileName === file.uniqueFileName
-              )
-            );
-            
-            if (uniqueFiles.length !== parsed.files.length) {
-              parsed.files = uniqueFiles;
-              msg.content = JSON.stringify(parsed);
-            }
-            
-            uniqueFiles.forEach((file: any, fileIndex: number) => {
-              if (file.fileName) {
-                fileNames.push(file.fileName);
-                const uniqueKey = `${file.fileName}_${messageIndex}_${fileIndex}`;
-                messageFileMap.set(uniqueKey, { messageIndex, fileIndex, originalName: file.fileName });
-              }
-            });
-          }
-        } catch {
-          if (msg.content && typeof msg.content === 'string') {
-            const detectedType = this.detectFileType(msg.content);
-            if (detectedType) {
-              const fileName = msg.content.split('/').pop() || msg.content.split('\\').pop();
-              if (fileName && fileName !== msg.content) {
-                fileNames.push(fileName);
-                const uniqueKey = `${fileName}_${messageIndex}_0`;
-                messageFileMap.set(uniqueKey, { messageIndex, fileIndex: 0, originalName: fileName });
-              }
-            }
-          }
-        }
-      });
-
-      const fileUrls = await this.fileUploadApi.getDownloadUrls(fileNames);
-
-      const filesByOriginalName = new Map<string, FileUrl[]>();
-      fileUrls.forEach(fileUrl => {
-        if (!filesByOriginalName.has(fileUrl.originalName)) {
-          filesByOriginalName.set(fileUrl.originalName, []);
-        }
-        filesByOriginalName.get(fileUrl.originalName)!.push(fileUrl);
-      });
-
-      messageFileMap.forEach((mapping, uniqueKey) => {
-        const fileName = mapping.originalName;
-        const message = messages[mapping.messageIndex];
-        
-        let availableFiles = filesByOriginalName.get(fileName);
-        
-        if (!availableFiles || availableFiles.length === 0) {
-          for (const [originalName, files] of filesByOriginalName.entries()) {
-            if (originalName === fileName || 
-                originalName.toLowerCase() === fileName.toLowerCase() ||
-                this.normalizeFileName(originalName) === this.normalizeFileName(fileName)) {
-              availableFiles = files;
-              break;
-            }
-          }
-        }
-         
-        if (availableFiles && availableFiles.length > 0) {
-          let bestMatch: FileUrl;
-          
-          if (availableFiles.length === 1) {
-            bestMatch = availableFiles[0];
-          } else {
-            const messageTime = new Date(message.sentAt).getTime();
-            bestMatch = availableFiles.reduce((best, current) => {
-              const currentTime = this.extractTimestampFromFileName(current.uniqueFileName);
-              const bestTime = this.extractTimestampFromFileName(best.uniqueFileName);
-              
-              const currentDiff = Math.abs(currentTime - messageTime);
-              const bestDiff = Math.abs(bestTime - messageTime);
-              
-              return currentDiff < bestDiff ? current : best;
-            });
-          }
-          
-          try {
-            const parsed = JSON.parse(message.content);
-            if (parsed.files && parsed.files[mapping.fileIndex]) {
-              parsed.files[mapping.fileIndex].url = bestMatch.url;
-              parsed.files[mapping.fileIndex].uniqueFileName = bestMatch.uniqueFileName;
-              parsed.files[mapping.fileIndex].originalName = bestMatch.originalName;
-              message.content = JSON.stringify(parsed);
-            }
-          } catch {
-            if (message.content.includes(fileName)) {
-              message.content = bestMatch.url;
-            }
-          }
-        } else {
-        }
-      });
-
-      messages.forEach(msg => {
-        delete (msg as any).parsedContent;
-        this.messageContentCache.set(msg.messageId, msg.content);
-      });
-      
-      this.cdr.detectChanges();
-    } catch (error) {
-    }
-  }
-
-  // Can be abstracted or shared
-  private extractTimestampFromFileName(fileName: string): number {
-    try {
-      const parts = fileName.split('_');
-      if (parts.length >= 2) {
-        const timestamp = parseInt(parts[0]);
-        if (!isNaN(timestamp)) {
-          return timestamp;
-        }
-      }
-      return Date.now();
-    } catch {
-      return Date.now();
-    }
-  }
-
-  // Can be abstracted or shared
-  private normalizeFileName(fileName: string): string {
-    try {
-      return fileName.toLowerCase().trim().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-    } catch {
-      return fileName.toLowerCase().trim();
-    }
-  }
-
-  // Can be abstracted or shared
-  private subscribeToUserDeletion() {
-    const global$ = this.userInfoDeleted$;
-    if (global$) {
-      global$
-        .pipe(takeUntil(this.destroy$), filter((info: any) => info?.userName === this.chatNickName))
-        .subscribe(() => this.handleChatUserDeleted());
-    }
-  }
-
-  // Can be abstracted or shared
-  private handleChatUserDeleted() {
-    this.messages = [];
-    this.messageContentCache.clear();
-    this.chatUserDeleted.emit();
-  }
-
-  // Can be abstracted or shared
-  private loadMore() {
-    if (this.loading || this.allLoaded) return;
-    this.loading = true;
-    const loadHistory = this.loadHistory;
-    if (!loadHistory) {
-      this.loading = false;
-      return;
-    }
-
-    loadHistory(this.chatNickName, this.take, this.skip)
-      .pipe(takeUntil(this.destroy$))
-      .subscribe((newMsgs: OtoMessage[]) => {        
-        if (newMsgs.length === 0) {
-          this.allLoaded = true;
-        } else {
-          const filtered = newMsgs.filter(m => !m.isDeleted || !this.isMyMessage(m));
-          const existingIds = new Set(this.messages.map(m => m.messageId));
-          const unique = filtered.filter(m => !existingIds.has(m.messageId));
-        
-          if (unique.length > 0) {
-            this.messages = [...unique, ...this.messages];
-            this.skip += unique.length;
-        
-            this.loadFilesForMessages(unique);
-        
-            if (!this.shouldScrollToBottom) {
-              setTimeout(() => {
-                const el = this.scrollContainer.nativeElement;
-                el.scrollTop = el.scrollHeight - this.prevScrollHeight;
-              }, 0);
-            }
-          }
-        }
-
-        this.loading = false;
-      });
-  }
-
-  // Can be abstracted or shared
-  private isScrolledToBottom(): boolean {
-    if (!this.scrollContainer) return false;
-    const el = this.scrollContainer.nativeElement;
-    return el.scrollHeight - el.scrollTop <= el.clientHeight + 10;
-  }
-
-  // Can be abstracted or shared
-  private scrollToBottom() {
-    if (!this.scrollContainer) return;
-    const el = this.scrollContainer.nativeElement;
-    el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
-  }
-
-  // Can be abstracted or shared
   isMyMessage(msg: OtoMessage): boolean {
-    return msg.sender?.trim().toLowerCase() === this.currentUserNickName.trim().toLowerCase();
+    return this.isMyMessageBase(msg);
   }
 
-  // Can be abstracted or shared
   isMessageDeleted(msg: OtoMessage): boolean {
-    return msg.isDeleted === true;
+    return this.isMessageDeletedBase(msg);
   }
 
-  // Can be abstracted or shared
   getMessageContent(msg: OtoMessage): string {
     if (msg.isDeleted) return msg.content;
     if (msg.isDeleted) return 'This message was deleted';
     return msg.content;
   }
 
-  // Can be abstracted or shared
-  clearMessagesForDeletedUser(): void {
-    this.messages = [];
-    this.skip = 0;
-    this.allLoaded = false;
-    this.messageContentCache.clear();
+  isMessageHighlighted(id: string): boolean {
+    return this.isMessageHighlightedBase(id);
   }
 
-  // Can be abstracted or shared
-  private scheduleMappingCheck(messages: OtoMessage[], fileNames: string[], messageFileMap: Map<string, { messageIndex: number, fileIndex: number, originalName: string }>) {
-    
-    let checkCount = 0;
-    const maxChecks = 6;
-    const checkInterval = 5000;
-    
-    const checkTimer = setInterval(async () => {
-      try {
-        checkCount++;
-        
-        const batchMappings = await this.fileUploadApi.getBatchFileMappings(fileNames);
-        
-        if (batchMappings.mappings && batchMappings.mappings.length > 0) {
-          clearInterval(checkTimer);
-          await this.loadFilesWithNewSystem(messages, fileNames, messageFileMap);
-        } else if (checkCount >= maxChecks) {
-          clearInterval(checkTimer);
-        }
-      } catch (error) {
-        if (checkCount >= maxChecks) {
-          clearInterval(checkTimer);
-        }
-      }
-    }, checkInterval);
+  highlightMessage(messageId: string) {
+    this.highlightMessageBase(messageId);
   }
 
-  // Can be abstracted or shared
-  private async loadFilesWithNewSystem(messages: OtoMessage[], fileNames: string[], messageFileMap: Map<string, { messageIndex: number, fileIndex: number, originalName: string }>) {
-    try {
-      
-      let fileUrls: any[] = [];
-      let retryCount = 0;
-      const maxRetries = 3;
-      
-      while (retryCount < maxRetries) {
-        try {
-          fileUrls = await this.fileUploadApi.getDownloadUrls(fileNames);
-          
-          if (fileUrls && fileUrls.length > 0) {
-            break;
-          }
-          
-          retryCount++;
-          if (retryCount < maxRetries) {
-            await new Promise(resolve => setTimeout(resolve, 2000));
-          }
-        } catch (error) {
-          retryCount++;
-          if (retryCount < maxRetries) {
-            await new Promise(resolve => setTimeout(resolve, 2000));
-          }
-        }
-      }
-      
-      if (fileUrls && fileUrls.length > 0) {
-        fileUrls.forEach(fileUrl => {
-          const mapping = messageFileMap.get(fileUrl.originalName);
-          if (mapping) {
-            const message = messages[mapping.messageIndex];
-            try {
-              const parsed = JSON.parse(message.content);
-              if (parsed.files && parsed.files[mapping.fileIndex]) {
-                parsed.files[mapping.fileIndex].url = fileUrl.url;
-                parsed.files[mapping.fileIndex].uniqueFileName = fileUrl.uniqueFileName;
-                parsed.files[mapping.fileIndex].version = fileUrl.version || 1;
-                parsed.files[mapping.fileIndex].displayName = `${fileUrl.originalName} (v${fileUrl.version || 1})`;
-                parsed.files[mapping.fileIndex].originalName = fileUrl.originalName;
-                message.content = JSON.stringify(parsed);
-              }
-            } catch (parseError) {
-              if (message.content.includes(fileUrl.originalName)) {
-                message.content = fileUrl.url;
-              }
-            }
-          }
-        });
-        
-        messages.forEach(msg => {
-          delete (msg as any).parsedContent;
-          this.messageContentCache.set(msg.messageId, msg.content);
-        });
-        
-        this.cdr.detectChanges();
-        
-      } else {
-        this.scheduleMappingCheck(messages, fileNames, messageFileMap);
-      }
-      
-    } catch (error) {
-      this.scheduleMappingCheck(messages, fileNames, messageFileMap);
-    }
+  public clearMessageCacheBase(messageId: string): void {
+    this.clearMessageCache(messageId, this.messages, this.cdr);
   }
 
-  // Can be abstracted or shared
-  public forceMessageRefresh(messageId: string, newMessage?: OtoMessage): void {    
-    this.messageContentCache.delete(messageId);
-    
-    const messageIndex = this.messages.findIndex(m => m.messageId === messageId);
-    if (messageIndex !== -1) {
-      if (newMessage) {
-        this.messages[messageIndex] = { ...newMessage };
-      }
-      const message = this.messages[messageIndex];
-      delete (message as any).parsedContent;
-      (message as any).forceRefresh = true;
-      (message as any).lastUpdated = Date.now();
-      this.parseContent(message);
-    }
-
-    this.cdr.markForCheck();
-    this.cdr.detectChanges();
-
-    setTimeout(() => {
-      this.cdr.detectChanges();
-    }, 10);
-    
-    setTimeout(() => {
-      this.cdr.detectChanges();
-    }, 100);
+  async addFileToMessage(messageId: string, fileData: { fileName: string; uniqueFileName: string; url: string; type?: string }) {
+    await this.addFileToMessageBase(messageId, this.messages, fileData, this.cdr);
   }
 
-  // Can be abstracted or shared
+  async removeFileFromMessage(messageId: string, uniqueFileName: string) {
+    await this.removeFileFromMessageBase(messageId, this.messages, uniqueFileName, this.cdr);
+  }
+
+  public fullMessageRerender(messageId: string): void {
+    this.fullMessageRerenderBase(messageId, this.messages, this.cdr);
+  }
+
+  public forceMessageRefresh(messageId: string, newMessage?: OtoMessage): void {
+    this.forceMessageRefreshBase(
+      messageId, 
+      this.messages, 
+      (msg) => this.parseContent(msg), 
+      newMessage, 
+      this.cdr
+    );
+  }
+
   public forceFileRefresh(messageId: string, fileUniqueId: string): void {
-    const message = this.messages.find(m => m.messageId === messageId);
-    if (!message) return;
-    
-    try {
-      const parsed = JSON.parse(message.content);
-      if (parsed.files) {
-        const fileIndex = parsed.files.findIndex((f: any) => 
-          f.uniqueId === fileUniqueId || f.uniqueFileName === fileUniqueId
-        );
-        
-        if (fileIndex >= 0) {
-          const file = parsed.files[fileIndex];
-          file._refreshKey = `file_refresh_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-          file._forceUpdate = Date.now();
-          
-          if (file.type?.startsWith('video/')) {
-            file._videoRefreshKey = Date.now();
-          }
-          
-          message.content = JSON.stringify(parsed);
-          delete (message as any).parsedContent;
-          this.messageContentCache.delete(messageId);
-        }
-      }
-    } catch (e) {
-    }
-    
-    this.cdr.detectChanges();
-  }
-
-  // Can be abstracted or shared
-  getMediaFiles(files: any[]): any[] {
-    if (!files) return [];
-    return files.filter(file => 
-      file.type?.startsWith('image/') || file.type?.startsWith('video/')
-    );
-  }
-  
-  // Can be abstracted or shared
-  getOriginalFileIndex(allFiles: any[], targetFile: any): number {
-    return allFiles.findIndex(file => 
-      file.uniqueId === targetFile.uniqueId || 
-      file.url === targetFile.url || 
-      file.fileName === targetFile.fileName
-    );
+    this.forceFileRefreshBase(messageId, this.messages, fileUniqueId, this.cdr);
   }
 }
