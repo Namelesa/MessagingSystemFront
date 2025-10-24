@@ -7,7 +7,7 @@ import { Observable } from 'rxjs';
 import { takeUntil, filter } from 'rxjs/operators';
 import { BaseChatMessagesWidget } from '../shared/widget';
 import { OtoMessage } from '../../../entities/oto-message';
-import { FileUploadApiService, FileUrl } from '../../../features/file-sender';
+import { FileUploadApiService } from '../../../features/file-sender';
 import { ImageViewerComponent } from '../../../shared/image-viewer';
 import { isToday, truncateText, computeContextMenuPosition } from '../../../shared/chat';
 import { CustomAudioPlayerComponent } from '../../../shared/custom-player';
@@ -37,8 +37,12 @@ export class OtoChatMessagesWidget extends BaseChatMessagesWidget<OtoMessage>
   private historyLoadedCount = 0; 
   private latestMessageTime: number = 0; 
 
+  private urlCheckInterval?: any;
+  private fileRefreshQueue = new Map<string, Set<string>>();
+  private fileRefreshTimer?: any;
+
   constructor(
-    protected override cdr: ChangeDetectorRef,
+    public override cdr: ChangeDetectorRef,
     protected override fileUploadApi: FileUploadApiService
   ) {
     super(cdr, fileUploadApi);
@@ -78,7 +82,7 @@ export class OtoChatMessagesWidget extends BaseChatMessagesWidget<OtoMessage>
         });
   
         if (messagesWithFiles.length > 0) {
-          this.loadFilesForMessages(messagesWithFiles);
+          this.loadFilesForMessagesBase(messagesWithFiles);
         }
       }
     }, 2000);
@@ -91,14 +95,25 @@ export class OtoChatMessagesWidget extends BaseChatMessagesWidget<OtoMessage>
     }
   }
   
-  private urlCheckInterval?: any;
-  
   private startUrlExpirationCheck() {
     this.urlCheckInterval = setInterval(() => {
       this.checkAndRefreshExpiredUrls();
     }, 5 * 60 * 1000);
   }
   
+onImageError(event: Event, file: any) {
+  const img = event.target as HTMLImageElement;
+ 
+  if (!file.url || file.url === 'undefined' || file.url === 'null') return;
+  const baseUrl = file.url.split('?')[0];
+  setTimeout(() => {
+    img.src = '';
+    setTimeout(() => {
+      img.src = baseUrl + `?retry=${Date.now()}`;
+    }, 100);
+  }, 500);
+}
+
   private checkAndRefreshExpiredUrls() {
     if (!this.messages || this.messages.length === 0) return;
   
@@ -159,10 +174,9 @@ export class OtoChatMessagesWidget extends BaseChatMessagesWidget<OtoMessage>
                   parsed.files[item.fileIndex]._refreshKey = `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
                   message.content = JSON.stringify(parsed);
                   delete (message as any).parsedContent;
-                  this.messageContentCache.delete(item.messageId);
+                  this.invalidateMessageCache(item.messageId);
                 }
               } catch (e) {
-                console.error('Error updating message:', e);
               }
             }
           }
@@ -183,204 +197,141 @@ export class OtoChatMessagesWidget extends BaseChatMessagesWidget<OtoMessage>
   }
 
   parseContent(msg: OtoMessage): { text: string; files: any[] } {
-    const currentContent = msg.content;
     const messageId = msg.messageId;
-    const lastUpdated = (msg as any).lastUpdated;
-    const cachedContent = this.messageContentCache.get(messageId);
-    const hasCachedResult = !!(msg as any).parsedContent;
-    const hasTemporaryChanges = (msg as any)._hasTemporaryChanges;
-    const forceRerender = (msg as any)._forceRerender;
-    const contentUpdated = (msg as any)._contentUpdated;
+    const currentContent = msg.content;
+    const cachedData = this.messageContentCache.get(messageId);
   
-    const shouldReparse = lastUpdated ||
-      cachedContent !== currentContent ||
-      !hasCachedResult ||
-      hasTemporaryChanges ||
-      forceRerender ||
-      contentUpdated ||
-      (msg as any).forceRefresh;
+    const needsReparse = !cachedData ||
+      cachedData.timestamp < (msg as any)._version ||
+      (msg as any).forceRefresh ||
+      (msg as any)._forceRefresh ||
+      (msg as any)._forceRerender ||
+      (msg as any)._hasTemporaryChanges;
   
-    if (shouldReparse) {
-      delete (msg as any).parsedContent;
-      delete (msg as any).forceRefresh;
-      delete (msg as any)._forceRerender;
-      delete (msg as any)._contentUpdated;
-      this.messageContentCache.delete(messageId);
-      this.messageContentCache.set(messageId, currentContent);
-  
-      let result: { text: string; files: any[] };
-  
-      try {
-        const parsed = JSON.parse(currentContent);
-  
-        if (typeof parsed === 'object' && parsed !== null &&
-          (parsed.hasOwnProperty('text') || parsed.hasOwnProperty('files'))) {
-          
-          const filesWithType = (parsed.files || []).map((file: any, index: number) => {
-            const cacheKey = file.uniqueFileName || file.fileName;
-            const cachedUrl = this.urlCache.get(cacheKey);
-  
-            if (file.url && !cachedUrl) {
-              file.needsLoading = true;
-              file.isRefreshing = true;
-              
-              this.refreshFileUrl(file.fileName, file.uniqueFileName).then(newUrl => {
-                if (newUrl) {
-                  file.url = newUrl;
-                  file.isRefreshing = false;
-                  file._refreshKey = `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-                  
-                  const message = this.messages.find(m => this.getMessageIdFromMessage(m) === messageId);
-                  if (message) {
-                    try {
-                      const updatedParsed = JSON.parse(message.content);
-                      const fileIndex = updatedParsed.files.findIndex((f: any) =>
-                        (f.fileName === file.fileName && f.uniqueFileName === file.uniqueFileName) ||
-                        f.uniqueId === file.uniqueId
-                      );
-                      
-                      if (fileIndex !== -1) {
-                        updatedParsed.files[fileIndex].url = newUrl;
-                        updatedParsed.files[fileIndex]._refreshKey = file._refreshKey;
-                        updatedParsed.files[fileIndex].isRefreshing = false;
-                        message.content = JSON.stringify(updatedParsed);
-                        delete (message as any).parsedContent;
-                        this.messageContentCache.delete(messageId);
-                        this.cdr.markForCheck();
-                      }
-                    } catch (e) {
-                    }
-                  }
-                  this.cdr.markForCheck();
-                } else {
-                  file.isRefreshing = false;
-                  this.cdr.markForCheck();
-                }
-              });
-            } else if (cachedUrl) {
-              const urlExpired = this.isUrlExpired(cachedUrl.timestamp);
-              const urlAboutToExpire = this.isUrlAboutToExpire(cachedUrl.timestamp);
-  
-              if (urlExpired || urlAboutToExpire) {
-                file.isRefreshing = true;
-                this.refreshFileUrl(file.fileName, file.uniqueFileName).then(newUrl => {
-                  if (newUrl) {
-                    file.url = newUrl;
-                    file.isRefreshing = false;
-                    file._refreshKey = `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-                    
-                    const message = this.messages.find(m => this.getMessageIdFromMessage(m) === messageId);
-                    if (message) {
-                      try {
-                        const updatedParsed = JSON.parse(message.content);
-                        const fileIndex = updatedParsed.files.findIndex((f: any) =>
-                          (f.fileName === file.fileName && f.uniqueFileName === file.uniqueFileName) ||
-                          f.uniqueId === file.uniqueId
-                        );
-                        
-                        if (fileIndex !== -1) {
-                          updatedParsed.files[fileIndex].url = newUrl;
-                          updatedParsed.files[fileIndex]._refreshKey = file._refreshKey;
-                          updatedParsed.files[fileIndex].isRefreshing = false;
-                          message.content = JSON.stringify(updatedParsed);
-                          delete (message as any).parsedContent;
-                          this.messageContentCache.delete(messageId);
-                          this.cdr.markForCheck();
-                        }
-                      } catch (e) {
-                      }
-                    }
-                    this.cdr.markForCheck();
-                  } else {
-                    file.isRefreshing = false;
-                    this.cdr.markForCheck();
-                  }
-                }).catch(error => {
-                  file.isRefreshing = false;
-                  this.cdr.markForCheck();
-                });
-              } else {
-                file.url = cachedUrl.url;
-              }
-            } else if (!file.url) {
-              file.needsLoading = true;
-            }
-  
-            if (!file.type && file.fileName) {
-              file.type = this.detectFileType(file.fileName);
-            }
-  
-            if (!file.uniqueId) {
-              file.uniqueId = file.uniqueFileName || file.url || `${file.fileName}_${Date.now()}_${index}`;
-            }
-  
-            if (file._isTemporary || file._isNew) {
-              file._refreshKey = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 15)}`;
-              file._tempKey = `temporary_${index}_${Date.now()}`;
-            } else {
-              file._refreshKey = `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-            }
-  
-            if (file._forceUpdate) {
-              file._refreshKey = `force_${file._forceUpdate}_${Math.random().toString(36).substr(2, 9)}`;
-            }
-  
-            if (file._typeChanged) {
-              file._typeKey = `type_changed_${Date.now()}`;
-            }
-  
-            if (file.type?.startsWith('video/') && file._videoRefreshKey) {
-              file._refreshKey = `video_${file._videoRefreshKey}_${Math.random().toString(36).substr(2, 9)}`;
-            }
-  
-            return file;
-          });
-  
-          result = {
-            text: parsed.text || '',
-            files: filesWithType
-          };
-        } else {
-          result = {
-            text: currentContent,
-            files: []
-          };
-        }
-      } catch (error) {
-        if (currentContent && typeof currentContent === 'string') {
-          const detectedType = this.detectFileType(currentContent);
-          if (detectedType) {
-            result = {
-              text: '',
-              files: [{
-                url: currentContent,
-                fileName: currentContent.split('/').pop() || 'file',
-                type: detectedType,
-                uniqueId: `${currentContent}_${Date.now()}`,
-                _refreshKey: `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
-              }]
-            };
-          } else {
-            result = {
-              text: currentContent,
-              files: []
-            };
-          }
-        } else {
-          result = {
-            text: currentContent || '',
-            files: []
-          };
-        }
-      }
-  
-      (msg as any).parsedContent = result;
-      delete (msg as any).lastUpdated;
-      delete (msg as any)._hasTemporaryChanges;
-      return result;
+    if (!needsReparse) {
+      return { text: cachedData.text, files: cachedData.files };
     }
   
-    return (msg as any).parsedContent;
+    delete (msg as any).forceRefresh;
+    delete (msg as any)._forceRefresh;
+    delete (msg as any)._forceRerender;
+    delete (msg as any)._hasTemporaryChanges;
+  
+    let result: { text: string; files: any[] } = { text: '', files: [] };
+  
+    try {
+      const parsed = JSON.parse(currentContent);
+      
+      if (typeof parsed === 'object' && parsed !== null &&
+          (parsed.hasOwnProperty('text') || parsed.hasOwnProperty('files'))) {
+        
+        const filesWithType = (parsed.files || []).map((file: any, index: number) => {
+          const cacheKey = file.uniqueFileName || file.fileName;
+          const cachedUrl = this.urlCache.get(cacheKey);
+  
+          const timestamp = Date.now();
+          const randomKey = Math.random().toString(36).substr(2, 9);
+  
+          const newFile = {
+            ...file,
+            uniqueId: file.uniqueFileName || `${file.fileName}_${timestamp}_${randomKey}`,
+            _version: file._version || timestamp,
+            _refreshKey: file._refreshKey || `${timestamp}_${randomKey}`,
+            type: file.type || this.detectFileType(file.fileName)
+          };
+  
+          if (file.url && file._version && file._refreshKey) {
+            newFile.url = file.url;
+          } else if (cachedUrl && !this.isUrlExpired(cachedUrl.timestamp)) {
+            newFile.url = cachedUrl.url;
+          } else {
+            newFile.needsLoading = true;
+            if (cachedUrl) {
+              this.urlCache.delete(cacheKey);
+            }
+            this.queueFileUrlRefresh(newFile, messageId);
+          }
+  
+          return newFile;
+        });
+  
+        result = {
+          text: parsed.text || '',
+          files: filesWithType
+        };
+      } else {
+        result = {
+          text: currentContent,
+          files: []
+        };
+      }
+    } catch (error) {
+      result = {
+        text: currentContent,
+        files: []
+      };
+    }
+  
+    this.messageContentCache.set(messageId, {
+      ...result,
+      timestamp: Date.now(),
+      version: (msg as any)._version || Date.now()
+    });
+  
+    return result;
+  }
+
+  getTimestamp(): number {
+    return Date.now();
+  }
+
+  private queueFileUrlRefresh(file: any, messageId: string) {
+    const cacheKey = file.uniqueFileName || file.fileName;
+    
+    if (!this.fileRefreshQueue.has(cacheKey)) {
+      this.fileRefreshQueue.set(cacheKey, new Set());
+    }
+    this.fileRefreshQueue.get(cacheKey)!.add(messageId);
+  
+    if (this.fileRefreshTimer) {
+      clearTimeout(this.fileRefreshTimer);
+    }
+  
+    this.fileRefreshTimer = setTimeout(() => {
+      this.processPendingFileRefreshes();
+    }, 100);
+  }
+  
+  private async processPendingFileRefreshes() {
+    if (this.fileRefreshQueue.size === 0) return;
+  
+    const fileNames = Array.from(this.fileRefreshQueue.keys());
+    this.fileRefreshQueue.clear();
+  
+    try {
+      const fileUrls = await this.fileUploadApi.getDownloadUrls(fileNames);
+      
+      fileUrls.forEach(fileUrl => {
+        const cacheKey = fileUrl.uniqueFileName || fileUrl.originalName;
+        this.urlCache.set(cacheKey, {
+          url: fileUrl.url,
+          timestamp: Date.now()
+        });
+      });
+  
+      this.messages.forEach(msg => {
+        try {
+          const parsed = JSON.parse(msg.content);
+          if (parsed.files?.some((f: any) => fileNames.includes(f.fileName))) {
+            this.invalidateMessageCache(this.getMessageIdFromMessage(msg));
+          }
+        } catch (e) {}
+      });
+  
+      this.cdr.markForCheck();
+    } catch (error) {
+      console.error('Failed to refresh file URLs:', error);
+    }
   }
 
   openFileViewer(fileIndex: number, messageId: string) {
@@ -460,96 +411,6 @@ export class OtoChatMessagesWidget extends BaseChatMessagesWidget<OtoMessage>
     this.scrollToMessage(messageId);
   }
 
-  private async loadFilesForMessages(messages: OtoMessage[]) {
-    if (!messages || messages.length === 0) return;
-
-    try {
-      const fileNames: string[] = [];
-      const messageFileMap = new Map<string, {
-        messageIndex: number;
-        fileIndex: number;
-        originalName: string;
-        uniqueFileName?: string;
-        needsRefresh?: boolean;
-      }>();
-  
-      messages.forEach((msg, messageIndex) => {
-        try {
-          const parsed = JSON.parse(msg.content);
-          
-          if (parsed.files && Array.isArray(parsed.files)) {
-            parsed.files.forEach((file: any, fileIndex: number) => {
-              const cacheKey = file.uniqueFileName || file.fileName;
-              const cachedUrl = this.urlCache.get(cacheKey);
-
-              const urlExpired = cachedUrl && this.isUrlExpired(cachedUrl.timestamp);
-              const urlAboutToExpire = cachedUrl && this.isUrlAboutToExpire(cachedUrl.timestamp);
-              const notCached = file.url && !cachedUrl;
-  
-              if (file.fileName && (!file.url || urlExpired || urlAboutToExpire || notCached)) {
-                fileNames.push(file.fileName);
-                messageFileMap.set(`${file.fileName}_${messageIndex}_${fileIndex}`, {
-                  messageIndex,
-                  fileIndex,
-                  originalName: file.fileName,
-                  uniqueFileName: file.uniqueFileName,
-                  needsRefresh: urlExpired || urlAboutToExpire || notCached
-                });
-              } else if (file.url && cachedUrl) {
-              }
-            });
-          }
-        } catch (e) {
-        }
-      });
-  
-      if (fileNames.length === 0) {
-        this.cdr.detectChanges();
-        return;
-      }
-  
-      const fileUrls = await this.fileUploadApi.getDownloadUrls(fileNames);  
-      const filesByOriginalName = new Map<string, FileUrl[]>();
-      fileUrls.forEach(fileUrl => {
-        if (!filesByOriginalName.has(fileUrl.originalName)) {
-          filesByOriginalName.set(fileUrl.originalName, []);
-        }
-        filesByOriginalName.get(fileUrl.originalName)!.push(fileUrl);
-      });
-  
-      let updatedCount = 0;
-  
-      messageFileMap.forEach((mapping) => {
-        const message = messages[mapping.messageIndex];
-        const parsed = JSON.parse(message.content);
-        const urls = filesByOriginalName.get(mapping.originalName);
-  
-        if (urls && urls[0]) {
-          const newUrl = urls[0].url;
-          parsed.files[mapping.fileIndex].url = newUrl;
-          parsed.files[mapping.fileIndex].uniqueFileName = urls[0].uniqueFileName;
-          message.content = JSON.stringify(parsed);
-  
-          const cacheKey = urls[0].uniqueFileName || mapping.originalName;
-          this.urlCache.set(cacheKey, {
-            url: newUrl,
-            timestamp: Date.now()
-          });
-  
-          updatedCount++;
-        } else {
-        }
-      });
-  
-      messages.forEach(msg => {
-        delete (msg as any).parsedContent;
-        this.messageContentCache.set(this.getMessageIdFromMessage(msg), msg.content);
-      });
-      this.cdr.detectChanges();
-    } catch (error) {
-    }
-  }
-
   private subscribeToUserDeletion() {
     const global$ = this.userInfoDeleted$;
     if (global$) {
@@ -561,7 +422,7 @@ export class OtoChatMessagesWidget extends BaseChatMessagesWidget<OtoMessage>
 
   private handleChatUserDeleted() {
     this.messages = [];
-    this.messageContentCache.clear();
+    this.invalidateAllCache();
     this.chatUserDeleted.emit();
   }
 
@@ -569,7 +430,7 @@ export class OtoChatMessagesWidget extends BaseChatMessagesWidget<OtoMessage>
     this.messages = [];
     this.skip = 0;
     this.allLoaded = false;
-    this.messageContentCache.clear();
+    this.invalidateAllCache();
   }
 
   protected initChat() {
@@ -577,7 +438,7 @@ export class OtoChatMessagesWidget extends BaseChatMessagesWidget<OtoMessage>
     this.skip = 0;
     this.allLoaded = false;
     this.shouldScrollToBottom = true;
-    this.messageContentCache.clear();
+    this.invalidateAllCache();
     this.historyLoadedCount = 0;
     this.latestMessageTime = 0;
   
@@ -585,113 +446,28 @@ export class OtoChatMessagesWidget extends BaseChatMessagesWidget<OtoMessage>
       this.messages$
         .pipe(takeUntil(this.destroy$))
         .subscribe((newMsgs: OtoMessage[]) => {
-          const filtered = newMsgs.filter(msg => !msg.isDeleted || !this.isMyMessage(msg));
-          const isInitialLoad = this.messages.length === 0;
-          const allMessagesMap = new Map(this.messages.map(m => [m.messageId, m]));
-          
-          for (const msg of filtered) {
-            allMessagesMap.set(msg.messageId, msg);
-          }
-  
-          this.messages = Array.from(allMessagesMap.values()).sort((a, b) =>
-            new Date(a.sentAt).getTime() - new Date(b.sentAt).getTime()
-          );
-  
-          if (isInitialLoad && this.messages.length > 0) {
-  
-            if (this.messages.length > 0) {
-              const sortedMessages = [...this.messages].sort((a, b) => 
-                new Date(b.sentAt).getTime() - new Date(a.sentAt).getTime()
-              );
-              this.latestMessageTime = new Date(sortedMessages[0].sentAt).getTime();
-            }
-  
-            const messagesWithFiles = this.messages.filter(msg => {
-              try {
-                const parsed = JSON.parse(msg.content);
-                return parsed.files && parsed.files.length > 0;
-              } catch {
-                return false;
-              }
-            });
-  
-            if (messagesWithFiles.length > 0) {
-              this.loadFilesForMessages(messagesWithFiles);
-            }
-  
-            setTimeout(() => {
-              this.scrollToBottomBase(this.scrollContainer);
-            }, 100);
-            
-          } else if (!isInitialLoad) {
-            const oldMessages = [...this.messages];
-            const oldMessagesMap = new Map(oldMessages.map(m => [m.messageId, m]));
-            const newMsgIds = new Set(filtered.map(m => m.messageId));
-            const messagesToRemove = oldMessages.filter(msg => {
-              const msgTime = new Date(msg.sentAt).getTime();
-              const isRecent = msgTime > this.latestMessageTime || this.latestMessageTime === 0;
-              const notInNewList = !newMsgIds.has(msg.messageId);
-              return isRecent && notInNewList;
-            });
-            
-            if (messagesToRemove.length > 0) {
-              messagesToRemove.forEach(msg => {
-                allMessagesMap.delete(msg.messageId);
-              });
-              
-              this.messages = Array.from(allMessagesMap.values()).sort((a, b) =>
-                new Date(a.sentAt).getTime() - new Date(b.sentAt).getTime()
-              );
-            }
-            
-            const actuallyNewMessages = filtered.filter(msg => !oldMessagesMap.has(msg.messageId));
-                        
-            if (actuallyNewMessages.length > 0) {
-              const realtimeNewMessages = actuallyNewMessages.filter(msg => 
-                new Date(msg.sentAt).getTime() > this.latestMessageTime
-              );
-              
-              if (realtimeNewMessages.length > 0) {
-                const sortedNew = [...realtimeNewMessages].sort((a, b) => 
-                  new Date(b.sentAt).getTime() - new Date(a.sentAt).getTime()
-                );
-                const newestTime = new Date(sortedNew[0].sentAt).getTime();
-                if (newestTime > this.latestMessageTime) {
-                  this.latestMessageTime = newestTime;
-                }
-              }
-              
-              const messagesNeedingFiles = actuallyNewMessages.filter(msg => {
-                try {
-                  const parsed = JSON.parse(msg.content);
-                  return parsed.files && parsed.files.length > 0;
-                } catch {
-                  return false;
-                }
-              });
-              
-              if (messagesNeedingFiles.length > 0) {
-                this.loadFilesForMessages(messagesNeedingFiles);
-              }
-              
-              if (realtimeNewMessages.length > 0) {
-                const wasAtBottom = this.isScrolledToBottom();
-                setTimeout(() => {
-                  if (wasAtBottom) {
-                    this.scrollToBottomBase(this.scrollContainer);
-                  }
-                }, 100);
-              }
-            }
-          }
-  
-          this.cdr.markForCheck();
+          this.handleNewMessages(newMsgs);
         });
     }
   
     setTimeout(() => {
       this.loadMore();
     }, 100);
+  }
+
+  private handleNewMessages(newMsgs: OtoMessage[]) {
+    const result = this.handleNewMessagesBase(
+      this.messages,
+      newMsgs,
+      this.latestMessageTime,
+      (msg) => msg.sentAt,
+      this.scrollContainer,
+      () => this.isScrolledToBottom()
+    );
+  
+    this.messages = result.messages;
+    this.latestMessageTime = result.latestTime;
+    this.cdr.detectChanges();
   }
 
   protected loadMore() {
@@ -727,21 +503,17 @@ export class OtoChatMessagesWidget extends BaseChatMessagesWidget<OtoMessage>
           }
   
           const filtered = newMsgs.filter(m => !m.isDeleted || !this.isMyMessage(m));
-  
           if (filtered.length === 0) {
             this.historyLoadedCount += newMsgs.length;
             this.loading = false;
-            
             if (newMsgs.length < this.take) {
               this.allLoaded = true;
             } else {
               setTimeout(() => this.loadMore(), 100);
             }
-            
             this.cdr.markForCheck();
             return;
           }
-  
           const existingIds = new Set(this.messages.map(m => m.messageId));
           const unique = filtered.filter(m => !existingIds.has(m.messageId));
   
@@ -759,7 +531,7 @@ export class OtoChatMessagesWidget extends BaseChatMessagesWidget<OtoMessage>
             return;
           }
           this.historyLoadedCount += unique.length;
-          this.loadFilesForMessages(unique);
+          this.loadFilesForMessagesBase(unique);
           this.messages = [...unique, ...this.messages];
 
           if (unique.length < this.take) {
@@ -803,10 +575,18 @@ export class OtoChatMessagesWidget extends BaseChatMessagesWidget<OtoMessage>
   get groupedMessages() {
     const groups: { date: string; messages: OtoMessage[] }[] = [];
     let lastDate = '';
+    const filtered = this.messages.filter(msg => {
+      if (!msg.isDeleted) return true;
+      
+      if (msg.isDeleted && this.isMyMessage(msg)) return false;
 
-    const filtered = this.messages.filter(msg => !msg.isDeleted || !this.isMyMessage(msg));
-    const sorted = [...filtered].sort((a, b) => new Date(a.sentAt).getTime() - new Date(b.sentAt).getTime());
-
+      return true;
+    });
+  
+    const sorted = [...filtered].sort((a, b) => 
+      new Date(a.sentAt).getTime() - new Date(b.sentAt).getTime()
+    );
+  
     for (const msg of sorted) {
       const msgDate = new Date(msg.sentAt).toDateString();
       if (msgDate !== lastDate) {
@@ -815,13 +595,21 @@ export class OtoChatMessagesWidget extends BaseChatMessagesWidget<OtoMessage>
       } else {
         groups[groups.length - 1].messages.push(msg);
       }
-    }
-
+    }  
     return groups;
   }
 
   trackByGroup(index: number, group: { date: string; messages: OtoMessage[] }): string {
     return group.date;
+  }
+  override trackByFileWithRefresh(index: number, file: any): string {
+    if (!file) return String(index);
+    
+    const uniquePart = file.uniqueId || file.uniqueFileName || file.fileName || index;
+    const versionPart = file._refreshKey || file._version || 0;
+    const typePart = file._typeKey || file.type || '';
+    
+    return `${uniquePart}_${versionPart}_${typePart}_${index}`;
   }
 
   trackByMessageId = this.trackByMessageBase;
@@ -903,7 +691,6 @@ export class OtoChatMessagesWidget extends BaseChatMessagesWidget<OtoMessage>
   }
 
   getMessageContent(msg: OtoMessage): string {
-    if (msg.isDeleted) return msg.content;
     if (msg.isDeleted) return 'This message was deleted';
     return msg.content;
   }
@@ -944,5 +731,13 @@ export class OtoChatMessagesWidget extends BaseChatMessagesWidget<OtoMessage>
 
   public forceFileRefresh(messageId: string, fileUniqueId: string): void {
     this.forceFileRefreshBase(messageId, this.messages, fileUniqueId, this.cdr);
+  }
+
+  async replaceFileInMessage(
+    messageId: string, 
+    oldUniqueFileName: string,
+    newFileData: { fileName: string; uniqueFileName: string; url: string; type?: string }
+  ) {
+    await this.replaceFileInMessageBase(messageId, this.messages, oldUniqueFileName, newFileData, this.cdr);
   }
 }

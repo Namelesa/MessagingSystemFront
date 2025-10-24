@@ -135,24 +135,27 @@
                              'col-span-2': getMediaFiles(content.files).length === 3 && isFirst,
                              'row-span-2': getMediaFiles(content.files).length === 5 && isFirst
                            }"
-                           [attr.data-file-key]="file._refreshKey"
-                           [attr.data-message-id]="msg.messageId"
-                           [attr.data-file-index]="getOriginalFileIndex(content.files, file)"
-                           [attr.data-file-type]="file.type"
-                           [attr.data-unique-id]="file.uniqueId"
-                           [attr.data-force-update]="file._forceUpdate"
-                           [attr.data-type-key]="file._typeKey"
-                           (click)="openFileViewer(getOriginalFileIndex(content.files, file), msg.messageId)">
+                            [attr.data-file-key]="file._refreshKey"
+                            [attr.data-message-id]="msg.messageId"
+                            [attr.data-file-index]="getOriginalFileIndex(content.files, file)"
+                            [attr.data-file-type]="file.type"
+                            [attr.data-unique-id]="file.uniqueId"
+                            [attr.data-force-update]="file._forceUpdate"
+                            [attr.data-type-key]="file._typeKey"
+                            (click)="openFileViewer(getOriginalFileIndex(content.files, file), msg.messageId)">
                         
-                        <img [src]="file.url"
-                             [alt]="file.fileName"
-                             [attr.data-refresh]="file._refreshKey"
-                             [attr.data-unique-id]="file.uniqueId"
-                             [attr.data-file-type]="file.type"
-                             [attr.data-force-update]="file._forceUpdate"
-                             [attr.data-type-key]="file._typeKey"
-                             class="w-full h-full object-cover group-hover:opacity-90 transition-opacity"/>
-                        
+                            <img [src]="file.url"
+     [alt]="file.fileName"
+     [attr.data-unique-id]="file.uniqueId"
+     [attr.data-file-type]="file.type"
+     [attr.data-force-update]="file._forceUpdate"
+     [attr.data-type-key]="file._typeKey"
+     [attr.data-refresh]="file._refreshKey || file._version"
+     [attr.crossorigin]="'anonymous'"
+     crossorigin="anonymous"
+     (error)="onImageError($event, file)"
+     class="w-full h-full object-cover group-hover:opacity-90 transition-opacity"/>
+                       
                         <div *ngIf="getMediaFiles(content.files).length > 4 && fileIndex === 3" 
                              class="absolute inset-0 bg-black bg-opacity-60 flex items-center justify-center">
                           <span class="text-white text-lg font-semibold">+{{ getMediaFiles(content.files).length - 4 }}</span>

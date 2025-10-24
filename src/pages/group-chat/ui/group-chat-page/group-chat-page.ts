@@ -111,7 +111,6 @@ export class GroupChatPageComponent extends BaseChatPageComponent {
     if (groupId) {
       this.groupNavigation.selectGroupByIds(groupId, nickname, image);
       
-      // ✅ КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Автоскролл после выбора чата
       setTimeout(() => {
         if (this.messagesComponent) {
           this.messagesComponent.scrollToBottomAfterNewMessage();
@@ -333,7 +332,6 @@ export class GroupChatPageComponent extends BaseChatPageComponent {
         await this.groupMessageState.completeEdit(editData.messageId, editData.content);
       }
       
-      // ✅ КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Скролл после завершения редактирования
       setTimeout(() => {
         if (this.messagesComponent) {
           this.messagesComponent.scrollToBottomAfterNewMessage();
@@ -435,13 +433,7 @@ export class GroupChatPageComponent extends BaseChatPageComponent {
       [fileName],
       this.currentUserNickName
     );
-        
-    const url = downloadUrls?.[0]?.url || '';
-    
-    if (!url) {
-      console.warn('⚠️ [GET DOWNLOAD URL] No URL received for:', fileName);
-    }
-    
+    const url = downloadUrls?.[0]?.url || '';    
     return url;
   }
 
@@ -594,7 +586,7 @@ export class GroupChatPageComponent extends BaseChatPageComponent {
     const max = this.maxFileSize; const warn = max * 0.9;
     if (total > max) {
       console.warn(`❌ Total upload size ${this.formatFileSize(total)} exceeds limit (${this.formatFileSize(max)})`);
-    } else if (total > warn) {
+    } else{
       console.warn(`⚠️ Total upload size ${this.formatFileSize(total)} is nearing limit (${this.formatFileSize(max)})`);
     }
   }
@@ -672,7 +664,6 @@ export class GroupChatPageComponent extends BaseChatPageComponent {
         this.closeUploadModal();
         this.isEditingWithFiles = false;
         
-        // ✅ ИСПРАВЛЕНИЕ: Скролл после редактирования с файлами
         setTimeout(() => {
           if (this.messagesComponent) {
             this.messagesComponent.scrollToBottomAfterNewMessage();
@@ -726,7 +717,6 @@ export class GroupChatPageComponent extends BaseChatPageComponent {
           await this.groupMessageState.sendMessage(content);
           this.draftText = '';
           
-          // ✅ КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Скролл после отправки файлов
           setTimeout(() => {
             if (this.messagesComponent) {
               this.messagesComponent.scrollToBottomAfterNewMessage();
@@ -737,7 +727,6 @@ export class GroupChatPageComponent extends BaseChatPageComponent {
           const fallback = JSON.stringify({ text: this.uploadCaption || '', files: uploadedFiles });
           await this.groupMessageState.sendMessage(fallback);
           
-          // ✅ Скролл в fallback тоже
           setTimeout(() => {
             if (this.messagesComponent) {
               this.messagesComponent.scrollToBottomAfterNewMessage();

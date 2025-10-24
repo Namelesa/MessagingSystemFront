@@ -1,6 +1,6 @@
 import { Observable, Subscription } from 'rxjs';
 import { Router } from '@angular/router';
-import { Component, Input, ViewChild, OnInit, ChangeDetectorRef, OnDestroy, HostListener } from '@angular/core';
+import { Component, Input, ViewChild, OnInit, ChangeDetectorRef, OnDestroy, HostListener, NgZone} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { TranslateModule } from '@ngx-translate/core';
@@ -95,7 +95,8 @@ export class OtoChatPageComponent extends BaseChatPageComponent implements OnIni
     private router: Router,
     private cdr: ChangeDetectorRef,
     private findUserStore: FindUserStore,
-    private toastService: ToastService
+    private toastService: ToastService,
+    private ngZone: NgZone
   ) {
     super();
     this.apiService = this.otoChatApi;
@@ -771,10 +772,18 @@ export class OtoChatPageComponent extends BaseChatPageComponent implements OnIni
   async onEditComplete(editData: { messageId: string; content: string }) {
     try {
       let parsedContent: any;
+      const filesToDeleteFromServer: string[] = [];
+      
       try {
         parsedContent = JSON.parse(editData.content);
+        
         if (parsedContent.files && parsedContent.files.length > 0) {
           for (const file of parsedContent.files) {
+            if (file._replacesFile) {
+              filesToDeleteFromServer.push(file._replacesFile);
+              delete file._replacesFile;
+            }
+            
             if (!file.url || file.url.includes('s3.amazonaws.com')) {
               try {
                 const downloadUrls = await this.fileUploadApi.getDownloadUrls([file.fileName], this.currentUserNickName);
@@ -782,48 +791,68 @@ export class OtoChatPageComponent extends BaseChatPageComponent implements OnIni
                   file.url = downloadUrls[0].url;
                 }
               } catch (error) {
+                console.error('Error getting download URL:', error);
               }
             }
-
+  
+            delete file._isTemporary;
             delete file._forceUpdate;
             delete file._typeChanged;
             delete file._replacementKey;
             delete file._isNew;
             delete file._addedKey;
+            delete file._oldFile;
+            delete file._version;
           }
           
           editData.content = JSON.stringify(parsedContent);
         }
       } catch (parseError) {
+        console.error('Parse error:', parseError);
       }
-
+  
       if (this.editingOriginalFiles && this.editingOriginalFiles.length > 0) {
         const finalFiles = parsedContent?.files || [];
         await this.deleteRemovedFilesAfterEdit(this.editingOriginalFiles, finalFiles);
       }
-      
+  
+      if (filesToDeleteFromServer.length > 0) await this.deleteReplacedFiles(filesToDeleteFromServer);
+
       await this.messageService.editMessage(editData.messageId, editData.content);
             
       if (this.messagesComponent) {
-        
         this.messagesComponent['messageContentCache'].delete(editData.messageId);
-        
         const message = this.messagesComponent.messages.find(m => m.messageId === editData.messageId);
         if (message) {
           delete (message as any).parsedContent;
           delete (message as any)._hasTemporaryChanges;
           message.content = editData.content;
-          
-          (message as any)._savedSuccessfully = Date.now();
+          (message as any)._version = Date.now();
         }
-      }
 
+        if (parsedContent?.files) {
+          parsedContent.files.forEach((file: any) => {
+            const cacheKeys = [file.uniqueFileName, file.fileName].filter(Boolean);
+            cacheKeys.forEach(key => {
+              this.messagesComponent!.urlCache.set(key, {
+                url: file.url,
+                timestamp: Date.now()
+              });
+            });
+          });
+        }
+        
+        setTimeout(() => {
+          if (this.messagesComponent) {
+            this.messagesComponent.fullMessageRerender(editData.messageId);
+          }
+        }, 100);
+      }
+  
       this.editingMessage = undefined;
       this.editingOriginalFiles = [];
       this.cdr.detectChanges();
       
-      this.forceCompleteMessageUpdate(editData.messageId);
-
       setTimeout(() => {
         if (this.messagesComponent) {
           this.messagesComponent.scrollToBottomAfterNewMessage();
@@ -831,6 +860,31 @@ export class OtoChatPageComponent extends BaseChatPageComponent implements OnIni
       }, 150);
       
     } catch (error) {
+      console.error('Error in onEditComplete:', error);
+      this.toastService.show('Failed to save changes', 'error');
+    }
+  }
+
+  private async deleteReplacedFiles(uniqueFileNames: string[]): Promise<void> {
+    if (uniqueFileNames.length === 0) return;
+  
+    try {
+      const deletionPromises = uniqueFileNames.map(async (uniqueFileName) => {
+        try {
+          const success = await this.fileUploadApi.deleteSpecificFileVersion(
+            uniqueFileName, 
+            this.currentUserNickName
+          );
+          return { uniqueFileName, success };
+        } catch (error) {
+          console.error(`❌ Failed to delete replaced file: ${uniqueFileName}`, error);
+          return { uniqueFileName, success: false, error };
+        }
+      });
+  
+      await Promise.all(deletionPromises);
+    } catch (error) {
+      console.error('Error deleting replaced files:', error);
     }
   }
 
@@ -893,9 +947,36 @@ export class OtoChatPageComponent extends BaseChatPageComponent implements OnIni
     }
   }
 
-  onEditCancel() {
+  async onEditCancel() {
+    if (this.editingMessage) {
+      try {
+        const parsed = JSON.parse(this.editingMessage.content);
+        const temporaryFiles = parsed.files?.filter((f: any) => f._isTemporary) || [];
+        
+        if (temporaryFiles.length > 0) {          
+          const deletionPromises = temporaryFiles.map(async (file: any) => {
+            try {
+              if (file.uniqueFileName) {
+                await this.fileUploadApi.deleteSpecificFileVersion(
+                  file.uniqueFileName, 
+                  this.currentUserNickName
+                );
+              }
+            } catch (error) {
+              console.warn('⚠️ Could not delete temporary file:', error);
+            }
+          });
+          
+          await Promise.all(deletionPromises);
+        }
+      } catch (e) {
+        console.error('Error cleaning up temporary files:', e);
+      }
+    }
+    
     this.editingMessage = undefined;
     this.editingOriginalFiles = [];
+    this.cdr.detectChanges();
   }
 
   get isEditFileUploading(): boolean {
@@ -903,129 +984,231 @@ export class OtoChatPageComponent extends BaseChatPageComponent implements OnIni
   }
 
   async onEditFile(editData: { messageId: string; file: any }) {
-    this.editFileUploadingCount = (this.editFileUploadingCount || 0) + 1;
+    this.editFileUploadingCount++;
     this.cdr.detectChanges();
   
     try {
       const newFile: File = editData.file?.file;
       const messageId = editData.messageId;
-  
-      if (!newFile || !messageId || !this.editingMessage) {
-        return;
-      }
-  
       const oldFile = editData.file;
   
-      try {
-        if (oldFile?.uniqueFileName) {
-          try {
-            await this.fileUploadApi.deleteSpecificFileVersion(oldFile.uniqueFileName, this.currentUserNickName);
-          } catch (error) {
-          }
-        }
+      if (!newFile || !messageId || !this.editingMessage) return;
+      
+      const [uploadUrl] = await this.fileUploadApi.getUploadUrls([newFile]);
+      const uploadedFile = await this.uploadNewFile(newFile, uploadUrl.url);
+      const rawUrl = await this.getDownloadUrl(uploadedFile.fileName);
+      const timestamp = Date.now();
+      const randomKey = Math.random().toString(36).substr(2, 9);
+      
+      const newFileData = {
+        fileName: uploadedFile.fileName,
+        uniqueFileName: uploadedFile.uniqueFileName,
+        url: rawUrl,
+        type: newFile.type,
+        size: newFile.size,
+        uniqueId: `FILE_${timestamp}_${randomKey}_${uploadedFile.fileName.replace(/[^a-zA-Z0-9]/g, '_')}`,
+        _version: timestamp,
+        _refreshKey: `${timestamp}_${randomKey}`,
+        _isTemporary: true,
+        _replacesFile: oldFile?.uniqueFileName || oldFile?.fileName
+      };
   
-        const [uploadUrl] = await this.fileUploadApi.getUploadUrls([newFile]);
-        const uploadedFile = await this.uploadNewFile(newFile, uploadUrl.url);
+      this.updateEditingMessageAndComponent(oldFile, newFileData, messageId);
+      this.forceImageReload(messageId);
   
-        const rawUrl = await this.getDownloadUrl(uploadedFile.fileName).catch(() => uploadedFile.url);
-        const downloadUrl = `${rawUrl}?v=${Date.now()}`;
-  
-        const newFileData = {
-          fileName: uploadedFile.fileName,
-          uniqueFileName: uploadedFile.uniqueFileName,
-          url: downloadUrl,
-          type: newFile.type,
-          size: newFile.size,
-          uniqueId: `${uploadedFile.uniqueFileName}_${Date.now()}`,
-          _refreshKey: `replacement_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-          _forceUpdate: Date.now(),
-          _typeChanged: (oldFile?.type !== newFile.type),
-          _replacementKey: `replace_${Date.now()}_${Math.random()}`
-        };
-  
-        this.updateEditingMessageOnly(oldFile, newFileData);
-  
-        if (this.messagesComponent) {
-          try {
-            this.messagesComponent.clearMessageCacheBase(messageId);
-            setTimeout(() => this.messagesComponent?.forceFileRefresh(messageId, oldFile?.uniqueId), 50);
-            setTimeout(() => this.messagesComponent?.fullMessageRerender(messageId), 100);
-          } catch (e) {
-          }
-        }
-  
-      } catch (err) {
-      }
+    } catch (err) {
+      this.toastService.show('Failed to replace file', 'error');
     } finally {
-      this.editFileUploadingCount = Math.max(0, (this.editFileUploadingCount || 1) - 1);
-      try {
-        this.cdr.detectChanges();
-      } catch (e) {
-      }
+      this.editFileUploadingCount = Math.max(0, this.editFileUploadingCount - 1);
+      this.cdr.detectChanges();
     }
-  }  
-  
-  private updateEditingMessageOnly(oldFile: any, newFileData: any): void {
-    if (!this.editingMessage) return;
-  
-    let parsed: any;
-    try {
-      parsed = JSON.parse(this.editingMessage.content || '{}');
-    } catch {
-      parsed = { text: this.editingMessage.content || '', files: [] };
-    }
-  
-    parsed.files = parsed.files || [];
-    
-    const fileIndex = this.findFileIndex(parsed.files, oldFile);
-    
-    if (fileIndex >= 0) {
-      const oldFileData = { ...parsed.files[fileIndex] };
-      
-      parsed.files[fileIndex] = {
-        ...newFileData,
-        _forceUpdate: Date.now(), 
-        _typeChanged: oldFileData.type !== newFileData.type, 
-        _replacementKey: `replacement_${Date.now()}_${Math.random()}`
-      };
-      
-    } else {
-    
-      const newFile = {
-        ...newFileData,
-        _isNew: true,
-        _forceUpdate: Date.now(),
-        _addedKey: `added_${Date.now()}_${Math.random()}`
-      };
-      
-      parsed.files.push(newFile);
-      parsed.files = this.removeDuplicateFiles(parsed.files);
-    }
-  
-    this.editingMessage = {
-      ...this.editingMessage,
-      content: JSON.stringify(parsed),
-      _hasTemporaryChanges: true, 
-      lastUpdated: Date.now(),
-      forceRefresh: true,
-      _contentUpdated: Date.now() 
-    } as OtoMessage;
-  
-    (this.editingMessage as any).parsedFiles = parsed.files;
-    
-    if (this.messagesComponent) {
-      this.messagesComponent.clearMessageCacheBase(this.editingMessage.messageId);
-      
-      setTimeout(() => {
-        if (this.messagesComponent) {
-          this.messagesComponent.fullMessageRerender(this.editingMessage!.messageId);
-        }
-      }, 50);
-    }
-    
-    this.cdr.markForCheck();
-    this.cdr.detectChanges();
   }
+
+  private forceImageReload(messageId: string): void {
+    [0, 50, 100, 200, 400].forEach(delay => {
+      setTimeout(() => this.forceImageReloadInternal(messageId), delay);
+    });
+  }
+  
+  private forceImageReloadInternal(messageId: string): void {
+    const messageElements = document.querySelectorAll(`[data-message-id="${messageId}"]`);
+    
+    messageElements.forEach(msgEl => {
+      const images = msgEl.querySelectorAll('img[src]');
+      
+      images.forEach((img) => {
+        const imgElement = img as HTMLImageElement;
+        const currentSrc = imgElement.src;
+        
+        if (!currentSrc || currentSrc === '') return;
+        
+        imgElement.removeAttribute('src');
+        void imgElement.offsetHeight; 
+        imgElement.setAttribute('src', currentSrc);
+      });
+      
+      const videos = msgEl.querySelectorAll('video');
+      videos.forEach((video) => {
+        const videoElement = video as HTMLVideoElement;
+        videoElement.load();
+      });
+    });
+  }
+
+private updateEditingMessageAndComponent(
+  oldFile: any, 
+  newFileData: any, 
+  messageId: string
+): void {
+  if (!this.editingMessage || !this.messagesComponent) return;
+
+  const versionTimestamp = Date.now();
+  const randomKey = Math.random().toString(36).substr(2, 9);
+    
+  const enhancedNewFileData = {
+    fileName: newFileData.fileName,
+    uniqueFileName: newFileData.uniqueFileName,
+    url: newFileData.url, 
+    type: newFileData.type,
+    size: newFileData.size,
+    uniqueId: `FILE_${versionTimestamp}_${randomKey}_${newFileData.fileName.replace(/[^a-zA-Z0-9]/g, '_')}`,
+    _version: versionTimestamp,
+    _refreshKey: `${versionTimestamp}_${randomKey}`,
+    _forceUpdate: versionTimestamp,
+    _typeKey: `${newFileData.type}_${versionTimestamp}`,
+    _replacesFile: oldFile?.uniqueFileName || oldFile?.fileName,
+    _isTemporary: true
+  };
+
+  let parsedEditing: any;
+  try {
+    parsedEditing = JSON.parse(this.editingMessage.content || '{}');
+  } catch {
+    parsedEditing = { text: this.editingMessage.content || '', files: [] };
+  }
+
+  parsedEditing.files = parsedEditing.files || [];
+
+  const editingFileIndex = parsedEditing.files.findIndex((f: any) =>
+    f.uniqueFileName === oldFile.uniqueFileName ||
+    f.uniqueId === oldFile.uniqueId ||
+    f.fileName === oldFile.fileName
+  );
+
+  const newFilesArray = [...parsedEditing.files];
+  if (editingFileIndex >= 0) {
+    newFilesArray[editingFileIndex] = { ...enhancedNewFileData };
+  } else {
+    newFilesArray.push({ ...enhancedNewFileData, _isNew: true });
+  }
+  
+  parsedEditing.files = newFilesArray;
+  this.editingMessage = {
+    messageId: this.editingMessage.messageId,
+    sender: this.editingMessage.sender,
+    sentAt: this.editingMessage.sentAt,
+    content: JSON.stringify(parsedEditing),
+    isDeleted: this.editingMessage.isDeleted,
+    isEdited: this.editingMessage.isEdited,
+    editedAt: this.editingMessage.editedAt,
+    replyFor: this.editingMessage.replyFor,
+    _hasTemporaryChanges: true,
+    _version: versionTimestamp,
+    _refreshKey: `${versionTimestamp}_${randomKey}`
+  } as any;
+
+  const messageIndex = this.messagesComponent.messages.findIndex(
+    m => m.messageId === messageId
+  );
+
+  if (messageIndex !== -1) {
+    const message = this.messagesComponent.messages[messageIndex];
+    let parsedMessage: any;
+    
+    try {
+      parsedMessage = JSON.parse(message.content || '{}');
+    } catch {
+      parsedMessage = { text: message.content || '', files: [] };
+    }
+
+    parsedMessage.files = parsedMessage.files || [];
+
+    const messageFileIndex = parsedMessage.files.findIndex((f: any) =>
+      f.uniqueFileName === oldFile.uniqueFileName ||
+      f.uniqueId === oldFile.uniqueId ||
+      f.fileName === oldFile.fileName
+    );
+
+    const newMessageFilesArray = [...parsedMessage.files];
+    if (messageFileIndex >= 0) {
+      newMessageFilesArray[messageFileIndex] = { ...enhancedNewFileData };
+    } else {
+      newMessageFilesArray.push({ ...enhancedNewFileData, _isNew: true });
+    }
+    
+    parsedMessage.files = newMessageFilesArray;
+
+    const updatedMessage: OtoMessage = {
+      messageId: message.messageId,
+      sender: message.sender,
+      sentAt: message.sentAt,
+      content: JSON.stringify(parsedMessage),
+      isDeleted: message.isDeleted,
+      isEdited: message.isEdited,
+      editedAt: message.editedAt,
+      replyFor: message.replyFor,
+      _version: versionTimestamp,
+      _refreshKey: `${versionTimestamp}_${randomKey}`,
+      _forceRerender: versionTimestamp
+    } as any;
+
+    this.messagesComponent.messages = [
+      ...this.messagesComponent.messages.slice(0, messageIndex),
+      updatedMessage,
+      ...this.messagesComponent.messages.slice(messageIndex + 1)
+    ];
+
+    this.messagesComponent['messageContentCache'].clear();
+
+    const oldCacheKeys = [
+      oldFile.uniqueFileName,
+      oldFile.fileName,
+      oldFile.uniqueId
+    ].filter(Boolean);
+
+    oldCacheKeys.forEach(key => {
+      this.messagesComponent!.urlCache.delete(key);
+    });
+
+    const newCacheKeys = [
+      enhancedNewFileData.uniqueFileName,
+      enhancedNewFileData.fileName
+    ].filter(Boolean);
+
+    newCacheKeys.forEach(key => {
+      this.messagesComponent!.urlCache.set(key, {
+        url: enhancedNewFileData.url,
+        timestamp: Date.now()
+      });
+    });    
+  }
+  this.ngZone.run(() => {
+    this.cdr.detectChanges();
+    if (this.messagesComponent) {
+      this.messagesComponent.cdr.detectChanges();
+    }
+
+    setTimeout(() => {
+      if (this.messagesComponent) {
+        this.messagesComponent['messageContentCache'].clear();
+        this.messagesComponent.cdr.detach();
+        this.messagesComponent.cdr.reattach();
+        this.messagesComponent.cdr.detectChanges();
+      }
+      this.cdr.detectChanges();
+    }, 50);
+  });
+}
   
   private async uploadNewFile(
     file: File, 
@@ -1062,47 +1245,9 @@ export class OtoChatPageComponent extends BaseChatPageComponent implements OnIni
     });
   }
   
-  private removeDuplicateFiles(files: any[]): any[] {
-    const seen = new Set<string>();
-    return files.filter(file => {
-      const key = file.fileName;
-      if (seen.has(key)) return false;
-      seen.add(key);
-      return true;
-    });
-  }
-  
   private async getDownloadUrl(fileName: string): Promise<string> {
     const downloadUrls = await this.fileUploadApi.getDownloadUrls([fileName], this.currentUserNickName);
     return downloadUrls?.[0]?.url || '';
-  }
-  
-  private findFileIndex(files: any[], targetFile: any): number {
-    const searchStrategies = [
-      (f: any) => f.uniqueFileName === targetFile.uniqueFileName,
-      
-      (f: any) => f.uniqueId === targetFile.uniqueId || f.uniqueFileName === targetFile.uniqueId,
-      
-      (f: any) => f.url === targetFile.url && f.url,
-      
-      (f: any) => f.fileName === targetFile.fileName && f.type === targetFile.type,
-      
-      (f: any) => f.fileName === targetFile.fileName,
-      
-      (f: any) => f.fileName === targetFile.fileName && f.size === targetFile.size,
-
-      (f: any, index: number) => index === 0 && files.length === 1
-    ];
-  
-    for (let i = 0; i < searchStrategies.length; i++) {
-      const strategy = searchStrategies[i];
-      const index = files.findIndex((f, idx) => strategy(f, idx));
-      
-      if (index >= 0) {
-        return index;
-      }
-    }
-    return -1;
   }
     
   onDeleteMessage(message: OtoMessage) {
