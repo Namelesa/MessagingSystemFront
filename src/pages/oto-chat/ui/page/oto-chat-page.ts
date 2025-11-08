@@ -18,6 +18,9 @@ import { ChatLayoutComponent } from '../../../../widgets/chat-layout';
 import { BaseChatPageComponent} from '../../../../shared/chat';
 import { ToastService, ToastComponent } from '../../../../shared/ui-elements';
 import { SendAreaComponent, FileDropDirective, FileDropOverlayComponent } from '../../../../shared/send-message-area';
+import { FileUploadStateService } from '../../model/file-state-service';
+import { MessageStateService } from '../../model/message-state.service';
+import { FileEditStateService } from '../../model/file-edit-state-service';
 
 @Component({
   selector: 'app-oto-chat-page',
@@ -35,58 +38,36 @@ export class OtoChatPageComponent extends BaseChatPageComponent implements OnIni
   selectedOtoChat?: OtoChat;
   currentUserNickName: string = '';
   editingMessage?: OtoMessage;
-  
   isDeleteModalOpen: boolean = false;
   messageToDelete?: OtoMessage;
-  
   replyingToMessage?: OtoMessage;
-  
   forceMessageComponentReload = false;
-  
   showUserDeletedNotification = false;
   deletedUserName = '';
-  isDragOver = false;
-
   draftText: string = '';
-
-  isUploadModalOpen = false;
-  uploadCaption: string = '';
-  uploadItems: Array<{ 
-    file: File; 
-    name: string; 
-    size: number; 
-    progress: number; 
-    url?: string; 
-    error?: string;
-    abort?: () => void;
-    subscription?: any;
-  }> = [];
-  isUploading = false;
   
   @Input() foundedUser?: { nick: string, image: string };
   @Input() edit: string = '';
 
-  @ViewChild(OtoChatMessagesWidget) messagesComponent?: OtoChatMessagesWidget;
+  @ViewChild(OtoChatMessagesWidget) 
+  set messagesComponent(widget: OtoChatMessagesWidget | undefined) {
+    this._messagesComponent = widget;
+    this.messageStateService.setMessagesWidget(widget);
+  }
+
+  get messagesComponent(): OtoChatMessagesWidget | undefined {
+    return this._messagesComponent;
+  }
+  private _messagesComponent?: OtoChatMessagesWidget;
+
   @ViewChild(OtoChatListComponent) chatListComponent?: OtoChatListComponent;
   @ViewChild('modalFileInput') modalFileInput?: any;
   
   private subscriptions: Subscription[] = [];
   user$: Observable<SearchUser | null>;
-  private editFileUploadingCount = 0;
+  
+  isDragOver = false;
 
-  private editingOriginalFiles: Array<any> = [];
-
-  maxFileSize: number = 1024 * 1024 * 1024;
-
-  fileValidationErrors: Array<{
-    fileName: string;
-    error: 'size' | 'type';
-    actualSize?: number;
-    actualType?: string;
-    message: string;
-  }> = [];
-  showErrorNotification = false;
- 
   constructor(
     public otoChatApi: OtoChatApiService, 
     private authService: AuthService, 
@@ -96,7 +77,10 @@ export class OtoChatPageComponent extends BaseChatPageComponent implements OnIni
     private cdr: ChangeDetectorRef,
     private findUserStore: FindUserStore,
     private toastService: ToastService,
-    private ngZone: NgZone
+    private ngZone: NgZone,
+    public fileUploadStateService: FileUploadStateService,
+    private messageStateService: MessageStateService,
+    private fileEditStateService: FileEditStateService
   ) {
     super();
     this.apiService = this.otoChatApi;
@@ -104,6 +88,10 @@ export class OtoChatPageComponent extends BaseChatPageComponent implements OnIni
       this.currentUserNickName = this.authService.getNickName() || '';
     });
     this.user$ = this.findUserStore.user$;
+  }
+
+  get uploadState$() {
+    return this.fileUploadStateService.uploadState$;
   }
 
   override ngOnInit(): void {
@@ -114,6 +102,8 @@ export class OtoChatPageComponent extends BaseChatPageComponent implements OnIni
 
   override ngOnDestroy(): void {
     this.subscriptions.forEach(sub => sub.unsubscribe());
+    this.messageStateService.setMessagesWidget(undefined); 
+    this.fileEditStateService.resetState();
   }
 
   private subscribeToUserDeletion(): void {
@@ -210,7 +200,7 @@ export class OtoChatPageComponent extends BaseChatPageComponent implements OnIni
   }
 
   hideErrorNotification(): void {
-    this.showErrorNotification = false;
+    this.fileUploadStateService.hideErrorNotification();
   }
 
   private checkForOpenChatUser(): void {
@@ -265,10 +255,6 @@ export class OtoChatPageComponent extends BaseChatPageComponent implements OnIni
     }
   }
 
-  isImageFile(file: File): boolean {
-    return file.type.startsWith('image/');
-  }
-
   onFoundedUser(userData: { nick: string, image: string }) {
     const foundedUserChat: OtoChat = {
       nickName: userData.nick,
@@ -309,62 +295,39 @@ export class OtoChatPageComponent extends BaseChatPageComponent implements OnIni
           this.selectedChat
         ).then(() => {
           this.replyingToMessage = undefined;
-          
-          setTimeout(() => {
-            if (this.messagesComponent) {
-              this.messagesComponent.scrollToBottomAfterNewMessage();
-            }
-          }, 150);
+          this.messageStateService.scrollToBottom();
         }).catch(error => {
+          console.error('Error sending reply:', error);
         });
       } else {
         this.messageService.sendMessage(this.selectedChat, content).catch(error => {
+          console.error('Error sending message:', error);
         });
         this.draftText = '';
-        
-        setTimeout(() => {
-          if (this.messagesComponent) {
-            this.messagesComponent.scrollToBottomAfterNewMessage();
-          }
-        }, 150);
+        this.messageStateService.scrollToBottom();
       }
     }
-  }
-
-  public formatFileSize(size: number): string {
-    const units = ['B', 'KB', 'MB', 'GB', 'TB'];
-    let index = 0;
-    let formattedSize = size;
-
-    while (formattedSize >= 1024 && index < units.length - 1) {
-      formattedSize /= 1024;
-      index++;
-    }
-
-    return `${formattedSize.toFixed(2)} ${units[index]}`;
   }
 
   onFileUpload(fileUploadEvent: { files: File[]; message?: string }) {
     if (!this.selectedChat || fileUploadEvent.files.length === 0) return;
     
-    const { validFiles, errors } = this.validateFiles(fileUploadEvent.files);
+    const result = this.fileUploadStateService.handleFileUpload(
+      fileUploadEvent.files, 
+      fileUploadEvent.message,
+      !!this.editingMessage
+    );
   
-    if (errors.length > 0) {
-      this.onFileValidationError(errors);
+    if (result.errors.length > 0) {
+      result.errors.forEach(error => {
+        this.toastService.show(error.message, "error");
+      });
     }
   
-    if (validFiles.length > 0) {
+    if (result.validFiles.length > 0) {
       if (this.editingMessage) {
-        this.addFilesToEditingMessage(validFiles, fileUploadEvent.message);
+        this.addFilesToEditingMessage(result.validFiles, fileUploadEvent.message);
       } else {
-        this.uploadItems = validFiles.map(f => ({ 
-          file: f, 
-          name: f.name, 
-          size: f.size, 
-          progress: 0 
-        }));
-        this.uploadCaption = fileUploadEvent.message || '';
-        this.isUploadModalOpen = true;
         this.checkUploadSizeLimit();
       }
     }
@@ -374,141 +337,34 @@ export class OtoChatPageComponent extends BaseChatPageComponent implements OnIni
     if (!this.editingMessage) return;
   
     try {
-      const uploadUrls = await this.fileUploadApi.getUploadUrls(files);
-      const nameToUrl = new Map(uploadUrls.map(u => [u.originalName, u.url] as const));
-  
-      const uploadedFiles: Array<{ fileName: string; uniqueFileName: string; url: string; type: string; size: number }> = [];
+      this.editingMessage = await this.fileEditStateService.addFilesToEditingMessage(
+        this.editingMessage,
+        files,
+        message,
+        this.currentUserNickName
+      );
       
-      await Promise.all(files.map(file => new Promise<void>((resolve, reject) => {
-        const url = nameToUrl.get(file.name);
-        if (!url) {
-          reject(new Error(`No URL for file ${file.name}`));
-          return;
-        }
-  
-        const { observable } = this.fileUploadApi.uploadFileWithProgress(file, url, this.currentUserNickName);
-        
-        observable.subscribe({
-          next: (result: { progress: number; fileData?: { fileName: string; uniqueFileName: string; url: string } }) => {
-            if (result.fileData) {
-              uploadedFiles.push({
-                ...result.fileData,
-                type: file.type,
-                size: file.size
-              });
-            }
-          },
-          error: (err: any) => reject(err),
-          complete: () => resolve()
-        });
-      })));
-  
-      if (uploadedFiles.length > 0) {
-        try {
-          const fileNames = uploadedFiles.map(f => f.fileName);
-          const downloadUrls = await this.fileUploadApi.getDownloadUrls(fileNames);
-          
-          uploadedFiles.forEach(file => {
-            const downloadUrl = downloadUrls.find(d => d.originalName === file.fileName);
-            if (downloadUrl) {
-              file.url = downloadUrl.url;
-            }
-          });
-        } catch (error) {
-        }
-      }
-
-      let parsed: any;
-      try {
-        parsed = JSON.parse(this.editingMessage.content);
-      } catch {
-        parsed = { text: this.editingMessage.content || '', files: [] };
-      }
-  
-      if (message !== undefined) {
-        parsed.text = message;
-      }
-
-      parsed.files = parsed.files || [];
-      
-      const newFiles = uploadedFiles.map(file => ({
-        fileName: file.fileName,
-        uniqueFileName: file.uniqueFileName,
-        url: file.url,
-        type: file.type,
-        size: file.size,
-        uniqueId: file.uniqueFileName
-      }));
-  
-      parsed.files.push(...newFiles);
-  
-      const newEditingMessage = {
-        ...this.editingMessage,
-        content: JSON.stringify(parsed)
-      } as OtoMessage;
-  
-      (newEditingMessage as any).parsedFiles = parsed.files;
-  
-      this.editingMessage = newEditingMessage;
       this.cdr.detectChanges();
-  
     } catch (error) {
       this.toastService.show('Failed to add files to message', 'error');
     }
   }
 
-  private validateFiles(files: File[]): { validFiles: File[], errors: Array<{
-    fileName: string;
-    error: 'size' | 'type';
-    actualSize?: number;
-    actualType?: string;
-  }> } {
-    const validFiles: File[] = [];
-    const errors: Array<{
-      fileName: string;
-      error: 'size' | 'type';
-      actualSize?: number;
-      actualType?: string;
-    }> = [];
-  
-    files.forEach(file => {
-      if (file.size > this.maxFileSize) {
-        errors.push({
-          fileName: file.name,
-          error: 'size',
-          actualSize: file.size,
-          actualType: file.type
-        });
-        return;
-      }
-
-      validFiles.push(file);
-    });
-  
-    return { validFiles, errors };
-  }
-
-  private getTotalUploadSize(): number {
-    return this.uploadItems.reduce((sum, item) => sum + item.size, 0);
-  }
-
   private checkUploadSizeLimit(): void {
-    const totalSize = this.getTotalUploadSize();
-    const maxSize = this.maxFileSize;
-    const warningThreshold = maxSize * 0.9; 
-  
-    if (totalSize > maxSize) {
+    const check = this.fileUploadStateService.checkUploadSizeLimit();
+    
+    if (check.isOverLimit) {
       this.toastService.show(
-        `Total file size ${this.formatFileSize(totalSize)} exceeds max limit of ${this.formatFileSize(maxSize)}.`,
+        `Total file size ${this.fileUploadStateService.formatFileSize(check.totalSize)} exceeds max limit of ${this.fileUploadStateService.formatFileSize(check.maxSize)}.`,
         "error"
       );
-    } else if (totalSize > warningThreshold) {
+    } else if (check.isNearLimit) {
       this.toastService.show(
-        `Warning: total file size ${this.formatFileSize(totalSize)} is close to the limit (${this.formatFileSize(maxSize)}).`,
+        `Warning: total file size ${this.fileUploadStateService.formatFileSize(check.totalSize)} is close to the limit (${this.fileUploadStateService.formatFileSize(check.maxSize)}).`,
         "error"
       );
     }
-  }  
+  }
 
   onFileValidationError(errors: Array<{
     fileName: string;
@@ -516,26 +372,11 @@ export class OtoChatPageComponent extends BaseChatPageComponent implements OnIni
     actualSize?: number;
     actualType?: string;
   }>) {
-
-    this.fileValidationErrors = errors.map(error => {
-      let message = '';
-      
-      if (error.error === 'size') {
-        const actualSize = this.formatFileSize(error.actualSize!);
-        const maxSize = this.formatFileSize(this.maxFileSize);
-        this.toastService.show(`File "${error.fileName}" to big (${actualSize}). Max size: ${maxSize}`, "error");
-      } else if (error.error === 'type') {
-        const fileType = error.actualType || 'unknown';
-        this.toastService.show(`File type "${error.fileName}" is not supported (${fileType})`, "error");
-      }
-      
-      return {
-        ...error,
-        message
-      };
-    });
+    const formattedErrors = this.fileUploadStateService.setFileValidationErrors(errors);
     
-    this.showErrorNotification = true;
+    formattedErrors.forEach(error => {
+      this.toastService.show(error.message, "error");
+    });
     
     setTimeout(() => {
       this.hideErrorNotification();
@@ -545,32 +386,20 @@ export class OtoChatPageComponent extends BaseChatPageComponent implements OnIni
   onFileDrop(files: File[]) {
     if (!this.selectedChat || files.length === 0) return;
   
-    const { validFiles, errors } = this.validateFiles(files);
-
-    if (errors.length > 0) {
-      this.onFileValidationError(errors);
+    const result = this.fileUploadStateService.handleFileDrop(
+      files, 
+      this.draftText,
+      !!this.editingMessage
+    );
+  
+    if (result.errors.length > 0) {
+      result.errors.forEach(error => {
+        this.toastService.show(error.message, "error");
+      });
     }
   
-    if (validFiles.length > 0) {
-      if (this.editingMessage) {
-        this.addFilesToEditingMessage(validFiles);
-      } else {
-        const newItems = validFiles.map(f => ({ 
-          file: f, 
-          name: f.name, 
-          size: f.size, 
-          progress: 0 
-        }));
-        this.uploadItems.push(...newItems);
-
-        if (this.draftText.trim()) {
-          this.uploadCaption = this.draftText;
-        }
-  
-        if (!this.isUploadModalOpen) {
-          this.isUploadModalOpen = true;
-        }
-      }
+    if (result.validFiles.length > 0 && this.editingMessage) {
+      this.addFilesToEditingMessage(result.validFiles);
     }
   }
 
@@ -578,21 +407,13 @@ export class OtoChatPageComponent extends BaseChatPageComponent implements OnIni
     const input = event.target as HTMLInputElement;
     if (input.files && input.files.length > 0) {
       const files = Array.from(input.files);
-    
-      const { validFiles, errors } = this.validateFiles(files);
+      
+      const result = this.fileUploadStateService.handleModalFileInput(files);
   
-      if (errors.length > 0) {
-        this.onFileValidationError(errors);
-      }
-  
-      if (validFiles.length > 0) {
-        const newItems = validFiles.map(f => ({ 
-          file: f, 
-          name: f.name, 
-          size: f.size, 
-          progress: 0 
-        }));
-        this.uploadItems.push(...newItems);
+      if (result.errors.length > 0) {
+        result.errors.forEach(error => {
+          this.toastService.show(error.message, "error");
+        });
       }
   
       input.value = '';
@@ -600,52 +421,63 @@ export class OtoChatPageComponent extends BaseChatPageComponent implements OnIni
   }
 
   async startUploadAndSend() {
-    if (!this.selectedChat || this.uploadItems.length === 0 || this.isUploading) return;
-    this.isUploading = true;
-
-    if(this.uploadItems.length >= 40){
+    const state = this.fileUploadStateService.getUploadState();
+    
+    if (!this.selectedChat || state.uploadItems.length === 0 || state.isUploading) return;
+    
+    this.fileUploadStateService.setIsUploading(true);
+  
+    if(state.uploadItems.length >= 40){
       this.toastService.show("You can upload max 40 files at once", "error");
     }
-
+  
     try {
-      const files = this.uploadItems.map(i => i.file);
+      const files = state.uploadItems.map(i => i.file);
       const uploadUrls = await this.fileUploadApi.getUploadUrls(files);
-
       const nameToUrl = new Map(uploadUrls.map(u => [u.originalName, u.url] as const));
-
       const uploadedFiles: Array<{ fileName: string; uniqueFileName: string; url: string }> = [];
       
-      await Promise.all(this.uploadItems.map(item => new Promise<void>((resolve) => {
+      await Promise.all(state.uploadItems.map((item, index) => new Promise<void>((resolve) => {
         const url = nameToUrl.get(item.name);
         if (!url) {
-          item.error = 'No URL';
+          this.fileUploadStateService.updateUploadItem(index, { error: 'No URL' });
           resolve();
           return;
         }
+        
         const uploadResult = this.fileUploadApi.uploadFileWithProgress(item.file, url, this.currentUserNickName);
-        item.abort = uploadResult.abort;
-        item.subscription = uploadResult.observable.subscribe({
+        const abort = uploadResult.abort;
+        
+        const subscription = uploadResult.observable.subscribe({
           next: (result: { progress: number; fileData?: { fileName: string; uniqueFileName: string; url: string } }) => {
-            item.progress = result.progress;
+            this.fileUploadStateService.updateUploadItem(index, { 
+              progress: result.progress,
+              abort,
+              subscription
+            });
             if (result.fileData) {
               uploadedFiles.push(result.fileData);
             }
           },
           error: (err: any) => { 
-            item.error = String(err); 
-            item.progress = 0; 
-            resolve(); 
-            if (item.subscription) item.subscription.unsubscribe(); 
+            this.fileUploadStateService.updateUploadItem(index, {
+              error: String(err),
+              progress: 0
+            });
+            resolve();
+            if (subscription) subscription.unsubscribe();
           },
           complete: () => { 
-            item.url = url;
-            item.progress = 100; 
-            resolve(); 
-            if (item.subscription) item.subscription.unsubscribe(); 
+            this.fileUploadStateService.updateUploadItem(index, {
+              url: url,
+              progress: 100
+            });
+            resolve();
+            if (subscription) subscription.unsubscribe();
           }
         });
       })));
-
+  
       if (uploadedFiles.length) {
         const fileNames = uploadedFiles.map(f => f.fileName);
         try {
@@ -659,68 +491,34 @@ export class OtoChatPageComponent extends BaseChatPageComponent implements OnIni
             };
           });
           
-          const content = JSON.stringify({ text: this.uploadCaption || '', files: updatedFiles });
+          const content = JSON.stringify({ text: state.uploadCaption || '', files: updatedFiles });
           await this.messageService.sendMessage(this.selectedChat, content);
           this.draftText = '';
-
-          setTimeout(() => {
-            if (this.messagesComponent) {
-              this.messagesComponent.scrollToBottomAfterNewMessage();
-            }
-          }, 50);
-
+  
+          this.messageStateService.scrollToBottom();
         } catch (error) {
-          const content = JSON.stringify({ text: this.uploadCaption || '', files: uploadedFiles });
+          const content = JSON.stringify({ text: state.uploadCaption || '', files: uploadedFiles });
           await this.messageService.sendMessage(this.selectedChat, content);
-
-          setTimeout(() => {
-            if (this.messagesComponent) {
-              this.messagesComponent.scrollToBottomAfterNewMessage();
-            }
-          }, 50);
+          
+          this.messageStateService.scrollToBottom();
         }
       }
       this.closeUploadModal();
     } catch (e) {
-      this.isUploading = false;
+      this.fileUploadStateService.setIsUploading(false);
     }
   }
 
   cancelFileUpload(index: number) {
-    const item = this.uploadItems[index];
-    if (item.abort) {
-      item.abort();
-    }
-    if (item.subscription) {
-      item.subscription.unsubscribe();
-    }
-    this.uploadItems.splice(index, 1);
-    
-    if (this.uploadItems.length === 0) {
-      this.closeUploadModal();
-    }
+    this.fileUploadStateService.removeUploadItem(index);
   }
 
   removeFileFromList(index: number) {
-    const item = this.uploadItems[index];
-    if (item.abort) {
-      item.abort();
-    }
-    if (item.subscription) {
-      item.subscription.unsubscribe();
-    }
-    this.uploadItems.splice(index, 1);
-    
-    if (this.uploadItems.length === 0) {
-      this.closeUploadModal();
-    }
+    this.fileUploadStateService.removeUploadItem(index);
   }
 
   closeUploadModal() {
-    this.isUploadModalOpen = false;
-    this.isUploading = false;
-    this.uploadItems = [];
-    this.uploadCaption = '';
+    this.fileUploadStateService.closeUploadModal();
   }
 
   onEditMessage(message: OtoMessage) {
@@ -737,12 +535,13 @@ export class OtoChatPageComponent extends BaseChatPageComponent implements OnIni
   
       this.editingMessage = editableMessage;
 
-      this.editingOriginalFiles = (parsedContent.files || []).map((f: any) => ({
+      const originalFiles = (parsedContent.files || []).map((f: any) => ({
         ...f,
         originalUniqueId: f.uniqueId || f.uniqueFileName,
         originalFileName: f.fileName,
         originalUniqueFileName: f.uniqueFileName
       }));
+      this.fileEditStateService.setEditingOriginalFiles(originalFiles);  
 
     } else {
       let parsed: any;
@@ -758,12 +557,13 @@ export class OtoChatPageComponent extends BaseChatPageComponent implements OnIni
         parsedFiles: parsed.files || []
       } as OtoMessage & { parsedFiles?: any[] };
 
-      this.editingOriginalFiles = (parsed.files || []).map((f: any) => ({
+      const originalFiles = (parsed.files || []).map((f: any) => ({
         ...f,
         originalUniqueId: f.uniqueId || f.uniqueFileName,
         originalFileName: f.fileName,
         originalUniqueFileName: f.uniqueFileName
       }));
+      this.fileEditStateService.setEditingOriginalFiles(originalFiles);
     }
   
     this.replyingToMessage = undefined;
@@ -783,27 +583,12 @@ export class OtoChatPageComponent extends BaseChatPageComponent implements OnIni
               filesToDeleteFromServer.push(file._replacesFile);
               delete file._replacesFile;
             }
-            
-            if (!file.url || file.url.includes('s3.amazonaws.com')) {
-              try {
-                const downloadUrls = await this.fileUploadApi.getDownloadUrls([file.fileName], this.currentUserNickName);
-                if (downloadUrls && downloadUrls.length > 0) {
-                  file.url = downloadUrls[0].url;
-                }
-              } catch (error) {
-                console.error('Error getting download URL:', error);
-              }
-            }
-  
-            delete file._isTemporary;
-            delete file._forceUpdate;
-            delete file._typeChanged;
-            delete file._replacementKey;
-            delete file._isNew;
-            delete file._addedKey;
-            delete file._oldFile;
-            delete file._version;
           }
+          
+          parsedContent.files = await this.fileEditStateService.updateFileDownloadUrls(
+            parsedContent.files,
+            this.currentUserNickName
+          );
           
           editData.content = JSON.stringify(parsedContent);
         }
@@ -811,13 +596,30 @@ export class OtoChatPageComponent extends BaseChatPageComponent implements OnIni
         console.error('Parse error:', parseError);
       }
   
-      if (this.editingOriginalFiles && this.editingOriginalFiles.length > 0) {
+      const originalFiles = this.fileEditStateService.editingOriginalFiles;
+      if (originalFiles && originalFiles.length > 0) {
         const finalFiles = parsedContent?.files || [];
-        await this.deleteRemovedFilesAfterEdit(this.editingOriginalFiles, finalFiles);
+        const result = await this.fileEditStateService.deleteRemovedFilesAfterEdit(
+          originalFiles,
+          finalFiles,
+          this.currentUserNickName
+        );
+        
+        if (!result.success && result.failedCount > 0) {
+          this.toastService.show(
+            `Warning: ${result.failedCount} file(s) could not be deleted from storage`,
+            'error'
+          );
+        }
       }
   
-      if (filesToDeleteFromServer.length > 0) await this.deleteReplacedFiles(filesToDeleteFromServer);
-
+      if (filesToDeleteFromServer.length > 0) {
+        await this.fileEditStateService.deleteReplacedFiles(
+          filesToDeleteFromServer,
+          this.currentUserNickName
+        );
+      }
+  
       await this.messageService.editMessage(editData.messageId, editData.content);
             
       if (this.messagesComponent) {
@@ -829,7 +631,7 @@ export class OtoChatPageComponent extends BaseChatPageComponent implements OnIni
           message.content = editData.content;
           (message as any)._version = Date.now();
         }
-
+  
         if (parsedContent?.files) {
           parsedContent.files.forEach((file: any) => {
             const cacheKeys = [file.uniqueFileName, file.fileName].filter(Boolean);
@@ -841,23 +643,14 @@ export class OtoChatPageComponent extends BaseChatPageComponent implements OnIni
             });
           });
         }
-        
-        setTimeout(() => {
-          if (this.messagesComponent) {
-            this.messagesComponent.fullMessageRerender(editData.messageId);
-          }
-        }, 100);
       }
   
+      this.messageStateService.forceMessageUpdate(editData.messageId);
+      this.messageStateService.scrollToBottom();
+  
       this.editingMessage = undefined;
-      this.editingOriginalFiles = [];
+      this.fileEditStateService.clearEditingOriginalFiles();
       this.cdr.detectChanges();
-      
-      setTimeout(() => {
-        if (this.messagesComponent) {
-          this.messagesComponent.scrollToBottomAfterNewMessage();
-        }
-      }, 150);
       
     } catch (error) {
       console.error('Error in onEditComplete:', error);
@@ -948,43 +741,22 @@ export class OtoChatPageComponent extends BaseChatPageComponent implements OnIni
   }
 
   async onEditCancel() {
-    if (this.editingMessage) {
-      try {
-        const parsed = JSON.parse(this.editingMessage.content);
-        const temporaryFiles = parsed.files?.filter((f: any) => f._isTemporary) || [];
-        
-        if (temporaryFiles.length > 0) {          
-          const deletionPromises = temporaryFiles.map(async (file: any) => {
-            try {
-              if (file.uniqueFileName) {
-                await this.fileUploadApi.deleteSpecificFileVersion(
-                  file.uniqueFileName, 
-                  this.currentUserNickName
-                );
-              }
-            } catch (error) {
-              console.warn('⚠️ Could not delete temporary file:', error);
-            }
-          });
-          
-          await Promise.all(deletionPromises);
-        }
-      } catch (e) {
-        console.error('Error cleaning up temporary files:', e);
-      }
-    }
+    await this.fileEditStateService.cleanupTemporaryFiles(
+      this.editingMessage,
+      this.currentUserNickName
+    );
     
     this.editingMessage = undefined;
-    this.editingOriginalFiles = [];
+    this.fileEditStateService.clearEditingOriginalFiles(); 
     this.cdr.detectChanges();
   }
 
   get isEditFileUploading(): boolean {
-    return this.editFileUploadingCount > 0;
+    return this.fileEditStateService.isEditFileUploading;
   }
 
   async onEditFile(editData: { messageId: string; file: any }) {
-    this.editFileUploadingCount++;
+    this.fileEditStateService.incrementEditFileUploadingCount();
     this.cdr.detectChanges();
   
     try {
@@ -994,24 +766,11 @@ export class OtoChatPageComponent extends BaseChatPageComponent implements OnIni
   
       if (!newFile || !messageId || !this.editingMessage) return;
       
-      const [uploadUrl] = await this.fileUploadApi.getUploadUrls([newFile]);
-      const uploadedFile = await this.uploadNewFile(newFile, uploadUrl.url);
-      const rawUrl = await this.getDownloadUrl(uploadedFile.fileName);
-      const timestamp = Date.now();
-      const randomKey = Math.random().toString(36).substr(2, 9);
-      
-      const newFileData = {
-        fileName: uploadedFile.fileName,
-        uniqueFileName: uploadedFile.uniqueFileName,
-        url: rawUrl,
-        type: newFile.type,
-        size: newFile.size,
-        uniqueId: `FILE_${timestamp}_${randomKey}_${uploadedFile.fileName.replace(/[^a-zA-Z0-9]/g, '_')}`,
-        _version: timestamp,
-        _refreshKey: `${timestamp}_${randomKey}`,
-        _isTemporary: true,
-        _replacesFile: oldFile?.uniqueFileName || oldFile?.fileName
-      };
+      const newFileData = await this.fileEditStateService.replaceFileInMessage(
+        oldFile,
+        newFile,
+        this.currentUserNickName
+      );
   
       this.updateEditingMessageAndComponent(oldFile, newFileData, messageId);
       this.forceImageReload(messageId);
@@ -1019,7 +778,7 @@ export class OtoChatPageComponent extends BaseChatPageComponent implements OnIni
     } catch (err) {
       this.toastService.show('Failed to replace file', 'error');
     } finally {
-      this.editFileUploadingCount = Math.max(0, this.editFileUploadingCount - 1);
+      this.fileEditStateService.decrementEditFileUploadingCount();
       this.cdr.detectChanges();
     }
   }
@@ -1209,47 +968,7 @@ private updateEditingMessageAndComponent(
     }, 50);
   });
 }
-  
-  private async uploadNewFile(
-    file: File, 
-    uploadUrl: string
-  ): Promise<{ fileName: string; uniqueFileName: string; url: string }> {
-    const { observable } = this.fileUploadApi.uploadFileWithProgress(
-      file, 
-      uploadUrl, 
-      this.currentUserNickName
-    );
-  
-    return new Promise((resolve, reject) => {
-      let finalFileData: any = null;
-  
-      const subscription = observable.subscribe({
-        next: result => {
-          if (result.fileData) {
-            finalFileData = result.fileData;
-          }
-        },
-        error: error => {
-          subscription.unsubscribe();
-          reject(error);
-        },
-        complete: () => {
-          subscription.unsubscribe();
-          if (finalFileData) {
-            resolve(finalFileData);
-          } else {
-            reject(new Error('Upload completed but no file data received'));
-          }
-        }
-      });
-    });
-  }
-  
-  private async getDownloadUrl(fileName: string): Promise<string> {
-    const downloadUrls = await this.fileUploadApi.getDownloadUrls([fileName], this.currentUserNickName);
-    return downloadUrls?.[0]?.url || '';
-  }
-    
+        
   onDeleteMessage(message: OtoMessage) {
     this.messageToDelete = message;
     this.isDeleteModalOpen = true;
@@ -1303,69 +1022,36 @@ private updateEditingMessageAndComponent(
   async onConfirmDelete() {
     if (this.messageToDelete && this.selectedChat) {
       const deleteType = this.deleteForBoth ? 'hard' : 'soft';
+      const messageId = this.messageToDelete.messageId;
       
       try {
         if (deleteType === 'hard') {
-          await this.deleteFilesFromMessage(this.messageToDelete);
+          const result = await this.fileEditStateService.deleteFilesFromMessage(
+            this.messageToDelete,
+            this.currentUserNickName
+          );
+          
+          if (result.failedFiles.length > 0) {
+            console.warn('Some files failed to delete:', result.failedFiles);
+          }
         }
         
-        await this.messageService.deleteMessage(this.messageToDelete.messageId, deleteType);
+        // ✅ Просто вызываем API - пусть SignalR обновит UI
+        await this.messageService.deleteMessage(messageId, deleteType);
+        
+        // ❌ УДАЛИ весь этот блок мануального обновления UI
+        // SignalR сам обновит через handleNewMessages
+        
         this.closeDeleteModal();
       } catch (error) {
+        console.error('Error deleting message:', error);
+        this.toastService.show('Failed to delete message', 'error');
       }
     }
   }
 
   isMyMessage(msg: OtoMessage): boolean {
     return msg.sender?.trim().toLowerCase() === this.currentUserNickName.trim().toLowerCase();
-  }
-
-  private async deleteFilesFromMessage(message: OtoMessage) {
-    try {
-      let parsed: any;
-      
-      try {
-        parsed = JSON.parse(message.content);
-      } catch (parseError) {
-        return;
-      }
-      
-      if (!parsed.files || !Array.isArray(parsed.files) || parsed.files.length === 0) {
-        return;
-      }
-      
-      const filesToDelete = parsed.files
-        .filter((file: any) => file.fileName && file.uniqueFileName)
-        .map((file: any) => ({
-          fileName: file.fileName,
-          uniqueFileName: file.uniqueFileName
-        }));
-            
-      const deletionPromises = filesToDelete.map(async (file: { fileName: string; uniqueFileName: string }) => {
-        try {
-          const success = await this.fileUploadApi.deleteSpecificFileVersion(
-            file.uniqueFileName, 
-            this.currentUserNickName
-          );
-          
-          if (success && this.messagesComponent) {
-            await this.messagesComponent.removeFileFromMessage(message.messageId, file.uniqueFileName);
-          }
-          
-          return { fileName: file.fileName, uniqueFileName: file.uniqueFileName, success };
-        } catch (error) {
-          return { fileName: file.fileName, uniqueFileName: file.uniqueFileName, success: false, error };
-        }
-      });
-      
-      const results = await Promise.all(deletionPromises);
-      const failed = results.filter(r => !r.success).map(r => r.fileName);
-                    
-      if (failed.length > 0) {
-      }
-      
-    } catch (error) {
-    }
   }
 
   closeDeleteModal() {
@@ -1384,15 +1070,14 @@ private updateEditingMessageAndComponent(
   }
 
   onScrollToMessage(messageId: string) {
-    if (this.messagesComponent) {
-      this.messagesComponent.scrollToMessage(messageId);
-    }
+    this.messageStateService.scrollToMessage(messageId);
   }
 
   onUploadEnter(event: KeyboardEvent) {
     if (event.key === 'Enter') {
       event.preventDefault();
-      if (!this.isUploading && this.uploadItems.length > 0) {
+      const state = this.fileUploadStateService.getUploadState();
+      if (!state.isUploading && state.uploadItems.length > 0) {
         this.startUploadAndSend();
       }
     }

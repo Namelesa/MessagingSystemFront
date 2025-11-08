@@ -1,7 +1,7 @@
 import { Directive, Input, ViewChild, ElementRef, ChangeDetectorRef } from '@angular/core';
 import { Subject } from 'rxjs';
 import { BaseMessage, ParsedContent, CachedParsedContent } from './widget-interface';
-import { FileUploadApiService, FileUrl } from '../../../features/file-sender';
+import { FileUploadApiService } from '../../../features/file-sender';
 import { ImageViewerItem } from '../../../shared/image-viewer';
 
 @Directive()

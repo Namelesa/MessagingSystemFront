@@ -7,6 +7,7 @@ import { UserStateService, ChatState, UserDeletionInfo, UserUpdateInfo } from '.
 import { MessageStateService, MessageState } from './message-state.service';
 import { UserSearchService, UserSearchState } from './user-search.service';
 import { ChatNavigationService } from './chat-navigation.service';
+import { FileEditStateService } from '../model/file-edit-state-service';
 
 export interface CompleteChatState {
   chat: ChatState;
@@ -28,6 +29,9 @@ export class ChatFacadeService {
   private messageStateService = inject(MessageStateService);
   private userSearchService = inject(UserSearchService);
   private chatNavigationService = inject(ChatNavigationService);
+  private fileEditStateService = inject(FileEditStateService);
+
+  public fileEditState$ = this.fileEditStateService.fileEditState$;
 
   public completeChatState$ = combineLatest([
     this.userStateService.chatState$,
@@ -92,4 +96,103 @@ export class ChatFacadeService {
   isChatActive(chatNickName: string): boolean { return this.userStateService.isChatActive(chatNickName); }
   resetAllStates(): void { this.chatNavigationService.resetSelectedChat(); }
   resetEditingStates(): void { this.messageStateService.resetEditingStates(); }
+
+
+  get isEditFileUploading(): boolean { 
+    return this.fileEditStateService.isEditFileUploading; 
+  }
+  
+  get editingOriginalFiles(): Array<any> { 
+    return this.fileEditStateService.editingOriginalFiles; 
+  }
+  
+  setEditingOriginalFiles(files: Array<any>): void { 
+    this.fileEditStateService.setEditingOriginalFiles(files); 
+  }
+  
+  clearEditingOriginalFiles(): void { 
+    this.fileEditStateService.clearEditingOriginalFiles(); 
+  }
+  
+  async addFilesToEditingMessage(
+    editingMessage: OtoMessage,
+    files: File[],
+    message: string | undefined,
+    currentUserNickName: string
+  ): Promise<OtoMessage> {
+    return this.fileEditStateService.addFilesToEditingMessage(
+      editingMessage, 
+      files, 
+      message, 
+      currentUserNickName
+    );
+  }
+  
+  async replaceFileInMessage(
+    oldFile: any,
+    newFile: File,
+    currentUserNickName: string
+  ): Promise<any> {
+    return this.fileEditStateService.replaceFileInMessage(
+      oldFile, 
+      newFile, 
+      currentUserNickName
+    );
+  }
+  
+  async deleteFilesFromMessage(
+    message: OtoMessage,
+    currentUserNickName: string
+  ): Promise<{ success: boolean; failedFiles: string[] }> {
+    return this.fileEditStateService.deleteFilesFromMessage(
+      message, 
+      currentUserNickName
+    );
+  }
+  
+  async deleteRemovedFilesAfterEdit(
+    originalFiles: any[],
+    finalFiles: any[],
+    currentUserNickName: string
+  ): Promise<{ success: boolean; failedCount: number }> {
+    return this.fileEditStateService.deleteRemovedFilesAfterEdit(
+      originalFiles, 
+      finalFiles, 
+      currentUserNickName
+    );
+  }
+  
+  async deleteReplacedFiles(
+    uniqueFileNames: string[],
+    currentUserNickName: string
+  ): Promise<void> {
+    return this.fileEditStateService.deleteReplacedFiles(
+      uniqueFileNames, 
+      currentUserNickName
+    );
+  }
+  
+  async cleanupTemporaryFiles(
+    editingMessage: OtoMessage | undefined,
+    currentUserNickName: string
+  ): Promise<void> {
+    return this.fileEditStateService.cleanupTemporaryFiles(
+      editingMessage, 
+      currentUserNickName
+    );
+  }
+  
+  async updateFileDownloadUrls(
+    files: any[],
+    currentUserNickName: string
+  ): Promise<any[]> {
+    return this.fileEditStateService.updateFileDownloadUrls(
+      files, 
+      currentUserNickName
+    );
+  }
+  
+  resetFileEditState(): void { 
+    this.fileEditStateService.resetState(); 
+  }
 }

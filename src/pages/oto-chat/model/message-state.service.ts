@@ -3,6 +3,7 @@ import { BehaviorSubject } from 'rxjs';
 import { OtoMessage } from '../../../entities/oto-message';
 import { OtoMessagesService } from '../api/oto-message/oto-messages.api';
 import { UserStateService } from './user-state.service';
+import { OtoChatMessagesWidget } from '../../../widgets/chat-messages';
 
 export interface MessageState {
   editingMessage?: OtoMessage;
@@ -25,10 +26,40 @@ export class MessageStateService {
 
   public messageState$ = this.messageStateSubject.asObservable();
 
+  private messagesWidgetRef?: OtoChatMessagesWidget;
+
   constructor(
     private messageService: OtoMessagesService,
     private userStateService: UserStateService
   ) {}
+
+  setMessagesWidget(widget: OtoChatMessagesWidget | undefined): void {
+    this.messagesWidgetRef = widget;
+  }
+
+  handleNewMessages(messages: OtoMessage[]): void {
+    if (this.messagesWidgetRef) {
+      this.messagesWidgetRef.handleNewMessages(messages);
+    }
+  }
+
+  scrollToBottom(): void {
+    if (this.messagesWidgetRef) {
+      this.messagesWidgetRef.scrollToBottomAfterNewMessage();
+    }
+  }
+
+  forceMessageUpdate(messageId: string): void {
+    if (this.messagesWidgetRef) {
+      this.messagesWidgetRef.fullMessageRerender(messageId);
+    }
+  }
+
+  scrollToMessage(messageId: string): void {
+    if (this.messagesWidgetRef) {
+      this.messagesWidgetRef.scrollToMessage(messageId);
+    }
+  }
 
   getCurrentMessageState(): MessageState {
     return this.messageStateSubject.value;
@@ -56,6 +87,9 @@ export class MessageStateService {
       } else {
         await this.messageService.sendMessage(selectedChat, content);
       }
+      
+      // ✅ Скроллим вниз после отправки
+      setTimeout(() => this.scrollToBottom(), 150);
     } catch (error) {
       console.error('Error sending message:', error);
       throw error;
@@ -73,6 +107,9 @@ export class MessageStateService {
     try {
       await this.messageService.editMessage(messageId, content);
       this.cancelEdit();
+      
+      setTimeout(() => this.forceMessageUpdate(messageId), 100);
+      setTimeout(() => this.scrollToBottom(), 150);
     } catch (error) {
       console.error('Error editing message:', error);
       throw error;
@@ -141,6 +178,7 @@ export class MessageStateService {
       deleteForBoth: false,
       forceMessageComponentReload: false
     });
+    this.messagesWidgetRef = undefined; 
   }
 
   resetEditingStates(): void {

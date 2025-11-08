@@ -112,7 +112,7 @@
                 {{ content.text }}
               </div>
 
-              <div *ngIf="content.files?.length" class="mt-2">
+              <div *ngIf="content.files.length" class="mt-2">
                 <div class="media-files" 
                      [style.display]="getMediaFiles(content.files).length > 0 ? 'block' : 'none'">
                   <div class="grid gap-1 rounded-lg overflow-hidden max-w-xs"

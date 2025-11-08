@@ -445,8 +445,8 @@ onImageError(event: Event, file: any) {
     if (this.messages$) {
       this.messages$
         .pipe(takeUntil(this.destroy$))
-        .subscribe((newMsgs: OtoMessage[]) => {
-          this.handleNewMessages(newMsgs);
+        .subscribe(msgs => {
+          this.handleNewMessages(msgs);
         });
     }
   
@@ -455,19 +455,53 @@ onImageError(event: Event, file: any) {
     }, 100);
   }
 
-  private handleNewMessages(newMsgs: OtoMessage[]) {
-    const result = this.handleNewMessagesBase(
-      this.messages,
-      newMsgs,
-      this.latestMessageTime,
-      (msg) => msg.sentAt,
-      this.scrollContainer,
-      () => this.isScrolledToBottom()
-    );
+  public handleNewMessages(newMsgs: OtoMessage[]) {
+    if (!newMsgs || newMsgs.length === 0) return;
+    
+    const updatedMessages: OtoMessage[] = [];
+    const messagesToRemove: string[] = [];
+    
+    newMsgs.forEach(msg => {
+      const index = this.messages.findIndex(m => m.messageId === msg.messageId);
+
+      // Если сообщение удалено и это моё сообщение - добавляем в список на удаление
+      if (msg.isDeleted && this.isMyMessage(msg)) {
+        messagesToRemove.push(msg.messageId);
+        if (index !== -1) {
+          this.clearMessageCacheBase(msg.messageId);
+        }
+        return;
+      }
+      
+      if (index !== -1) {
+        this.messages[index] = {
+          ...this.messages[index],
+          ...msg
+        };
+        this.clearMessageCacheBase(msg.messageId);
+        updatedMessages.push(this.messages[index]);
+      } else {
+        this.messages.push(msg);
+        updatedMessages.push(msg);
+      }
+    });
   
-    this.messages = result.messages;
-    this.latestMessageTime = result.latestTime;
-    this.cdr.detectChanges();
+    // Удаляем все сообщения из списка на удаление
+    if (messagesToRemove.length > 0) {
+      this.messages = this.messages.filter(
+        m => !messagesToRemove.includes(m.messageId)
+      );
+    }
+  
+    this.messages.sort((a, b) => 
+      new Date(a.sentAt).getTime() - new Date(b.sentAt).getTime()
+    );
+    
+    this.latestMessageTime = this.messages.length > 0 
+      ? Math.max(...this.messages.map(m => new Date(m.sentAt).getTime()))
+      : 0;
+      
+    this.cdr.markForCheck();
   }
 
   protected loadMore() {
@@ -577,9 +611,7 @@ onImageError(event: Event, file: any) {
     let lastDate = '';
     const filtered = this.messages.filter(msg => {
       if (!msg.isDeleted) return true;
-      
       if (msg.isDeleted && this.isMyMessage(msg)) return false;
-
       return true;
     });
   
@@ -622,10 +654,6 @@ onImageError(event: Event, file: any) {
 
   scrollToMessage(messageId: string): void {
     this.scrollToMessageBase(messageId, this.scrollContainer);
-  }
-
-  private isScrolledToBottom(): boolean {
-    return this.isScrolledToBottomBase(this.scrollContainer);
   }
 
   public scrollToBottomAfterNewMessage() {
