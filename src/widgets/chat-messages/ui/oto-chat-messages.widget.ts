@@ -457,27 +457,15 @@ onImageError(event: Event, file: any) {
 
   public handleNewMessages(newMsgs: OtoMessage[]) {
     if (!newMsgs || newMsgs.length === 0) return;
-    
+  
     const updatedMessages: OtoMessage[] = [];
     const messagesToRemove: string[] = [];
-    
+  
     newMsgs.forEach(msg => {
       const index = this.messages.findIndex(m => m.messageId === msg.messageId);
-
-      // Если сообщение удалено и это моё сообщение - добавляем в список на удаление
-      if (msg.isDeleted && this.isMyMessage(msg)) {
-        messagesToRemove.push(msg.messageId);
-        if (index !== -1) {
-          this.clearMessageCacheBase(msg.messageId);
-        }
-        return;
-      }
-      
+  
       if (index !== -1) {
-        this.messages[index] = {
-          ...this.messages[index],
-          ...msg
-        };
+        this.messages[index] = { ...this.messages[index], ...msg };
         this.clearMessageCacheBase(msg.messageId);
         updatedMessages.push(this.messages[index]);
       } else {
@@ -486,22 +474,33 @@ onImageError(event: Event, file: any) {
       }
     });
   
-    // Удаляем все сообщения из списка на удаление
-    if (messagesToRemove.length > 0) {
-      this.messages = this.messages.filter(
-        m => !messagesToRemove.includes(m.messageId)
-      );
+    newMsgs.forEach(msg => {
+      if (msg.isDeleted && this.isMyMessage(msg)) {
+        messagesToRemove.push(msg.messageId);
+      }
+    });
+  
+    const newIds = newMsgs.map(m => m.messageId);
+    const hardDeleted = this.messages.filter(m => !newIds.includes(m.messageId));
+    if (hardDeleted.length > 0) {
+      messagesToRemove.push(...hardDeleted.map(m => m.messageId));
     }
   
-    this.messages.sort((a, b) => 
-      new Date(a.sentAt).getTime() - new Date(b.sentAt).getTime()
-    );
-    
-    this.latestMessageTime = this.messages.length > 0 
+    if (messagesToRemove.length > 0) {
+      this.messages = this.messages.filter(m => !messagesToRemove.includes(m.messageId));
+      this.cdr.markForCheck();
+    }
+  
+    this.messages.sort((a, b) => new Date(a.sentAt).getTime() - new Date(b.sentAt).getTime());
+    this.latestMessageTime = this.messages.length > 0
       ? Math.max(...this.messages.map(m => new Date(m.sentAt).getTime()))
       : 0;
-      
+  
     this.cdr.markForCheck();
+  }  
+
+  trackByMessageId(index: number, message: OtoMessage) {
+    return message.messageId;
   }
 
   protected loadMore() {
@@ -644,7 +643,6 @@ onImageError(event: Event, file: any) {
     return `${uniquePart}_${versionPart}_${typePart}_${index}`;
   }
 
-  trackByMessageId = this.trackByMessageBase;
   isToday = isToday;
   truncateText = truncateText;
 
