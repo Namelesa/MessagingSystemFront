@@ -496,17 +496,77 @@ export class GroupMessagesWidget extends BaseChatMessagesWidget<GroupMessage>
   }
   
   private handleNewMessages(newMsgs: GroupMessage[]) {
-    const result = this.handleNewMessagesBase(
-      this.messages,
-      newMsgs,
-      this.latestMessageTime,
-      (msg) => msg.sendTime,
-      this.scrollContainer,
-      () => this.isScrolledToBottom()
+    if (!newMsgs || newMsgs.length === 0) return;
+
+    const updatedMessages: GroupMessage[] = [];
+    const messagesToRemove: string[] = [];
+  
+    newMsgs.forEach(msg => {
+      const index = this.messages.findIndex(m => m.id === msg.id);
+  
+      if (index !== -1) {
+        const existing = this.messages[index];
+    
+        if (existing.content !== msg.content) {
+          (msg as any).forceRefresh = true;
+          (msg as any)._version = Date.now();
+        }
+        
+        this.messages[index] = { ...existing, ...msg };
+        this.invalidateMessageCache(msg.id!);
+        updatedMessages.push(this.messages[index]);
+      } else {
+        this.messages.push(msg);
+        updatedMessages.push(msg);
+      }
+    });
+  
+    newMsgs.forEach(msg => {
+      if (msg.isDeleted && !this.isMyMessage(msg)) {
+        messagesToRemove.push(msg.id!);
+      }
+    });
+  
+    const newIds = newMsgs.map(m => m.id);
+    const hardDeleted = this.messages.filter(m => !newIds.includes(m.id));
+    if (hardDeleted.length > 0) {
+      messagesToRemove.push(...hardDeleted.map(m => m.id!));
+    }
+  
+    if (messagesToRemove.length > 0) {    
+      this.messages = this.messages.filter(m => !messagesToRemove.includes(m.id!));
+      messagesToRemove.forEach(id => {
+        this.messageContentCache.delete(id);
+        const msg = newMsgs.find(m => m.id === id);
+        if (msg) {
+          try {
+            const parsed = JSON.parse(msg.content);
+            if (parsed.files?.length > 0) {
+              parsed.files.forEach((file: any) => {
+                const cacheKey = file.uniqueFileName || file.fileName;
+                this.urlCache.delete(cacheKey);
+              });
+            }
+          } catch (e) {}
+        }
+      });
+    }
+  
+    this.messages.sort((a, b) => 
+      new Date(a.sendTime).getTime() - new Date(b.sendTime).getTime()
     );
   
-    this.messages = result.messages;
-    this.latestMessageTime = result.latestTime;
+    this.latestMessageTime = this.messages.length > 0
+      ? Math.max(...this.messages.map(m => new Date(m.sendTime).getTime()))
+      : 0;
+  
+    this.cdr.markForCheck();
+  
+    if (this.shouldScrollToBottom || this.isScrolledToBottom()) {
+      setTimeout(() => {
+        this.scrollToBottomBase(this.scrollContainer);
+      }, 100);
+    }
   }
 
   protected loadMore() {

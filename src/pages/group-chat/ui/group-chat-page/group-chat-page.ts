@@ -1,4 +1,4 @@
-import { Observable, Subscription } from 'rxjs';
+import { Observable } from 'rxjs';
 import { Component,  Input, ViewChild, HostListener, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -21,7 +21,9 @@ import { ChatLayoutComponent } from '../../../../widgets/chat-layout';
 import { GroupMessagesWidget } from '../../../../widgets/chat-messages';
 import { BaseChatPageComponent } from '../../../../shared/realtime';
 import { SendAreaComponent, FileDropDirective, FileDropOverlayComponent } from '../../../../shared/send-message-area';
-import { FileUploadApiService } from '../../../../features/file-sender';
+import { GroupFileUploadService} from '../../model/group-file-state.service';
+import { GroupFileEditService } from '../../model/group-edit-file.service';
+import { GroupModalStateService } from '../../model/group-modal-state.service';
 
 @Component({
   selector: 'app-group-chat-page',
@@ -33,54 +35,27 @@ import { FileUploadApiService } from '../../../../features/file-sender';
 })
 export class GroupChatPageComponent extends BaseChatPageComponent {
   protected apiService: GroupChatApiService;
-
-  groupInfoModalOpen = false;
   isDragOver = false;
-
-  @Input() edit: string = '';
-
-  @ViewChild(GroupMessagesWidget) messagesComponent?: GroupMessagesWidget;
-  @ViewChild(GroupChatListComponent) chatListComponent?: GroupChatListComponent;
-
+  draftText: string = '';
   user$: Observable<SearchUser | null>;
   userSuggestion: SearchUser[] = [];
 
-  draftText: string = '';
-  isUploadModalOpen = false;
-  uploadCaption: string = '';
-  uploadItems: Array<{ 
-    file: File; 
-    name: string; 
-    size: number; 
-    progress: number; 
-    url?: string; 
-    error?: string;
-    abort?: () => void;
-    subscription?: any;
-  }> = [];
-  isUploading = false;
-  maxFileSize: number = 1024 * 1024 * 1024;
-  fileValidationErrors: Array<{
-    fileName: string;
-    error: 'size' | 'type';
-    actualSize?: number;
-    actualType?: string;
-    message?: string;
-  }> = [];
-  showErrorNotification = false;
-  private isEditingWithFiles = false;
+  @Input() edit: string = '';
+  @ViewChild(GroupMessagesWidget) messagesComponent?: GroupMessagesWidget;
+  @ViewChild(GroupChatListComponent) chatListComponent?: GroupChatListComponent;
 
   constructor(
     private groupChatApi: GroupChatApiService,
     public groupMessages: GroupMessagesApiService,
-    private fileUploadApi: FileUploadApiService,
+    public fileUploadService: GroupFileUploadService,
     private cdr: ChangeDetectorRef,
     private findUserStore: FindUserStore,
-    
+    public fileEditService: GroupFileEditService,
     public groupUserState: GroupUserStateService,
     public groupMessageState: GroupMessageStateService,
     private groupNavigation: GroupNavigationService,
     private groupSearch: GroupSearchService,
+    public modalState: GroupModalStateService,
     private router: Router
   ) {
     super();
@@ -119,22 +94,12 @@ export class GroupChatPageComponent extends BaseChatPageComponent {
     }
   }
 
-  private pendingFileEdit: {
-    messageId: string;
-    oldFile: any;
-    newFile: File;
-  } | null = null;
-  
-  get hasPendingFileEdit(): boolean {
-    return this.pendingFileEdit !== null;
-  }
-
   onHeaderClick() {
-    this.groupInfoModalOpen = true;
+    this.modalState.openGroupInfoModal();
   }
 
   closeGroupInfoModal() {
-    this.groupInfoModalOpen = false;
+    this.modalState.closeGroupInfoModal();
   }
 
   onGroupUpdated() {
@@ -205,58 +170,24 @@ export class GroupChatPageComponent extends BaseChatPageComponent {
 
   onFileUpload(fileUploadEvent: { files: File[]; message?: string }) {
     if (this.editingMessage) {
-      const { validFiles, errors } = this.validateFiles(fileUploadEvent.files);
-  
-      if (errors.length > 0) {
-        this.onFileValidationError(errors);
+      this.fileUploadService.setUploadItems(fileUploadEvent.files);
+      
+      let currentText = '';
+      try {
+        const parsed = JSON.parse(this.editingMessage.content);
+        currentText = parsed.text || '';
+      } catch {
+        currentText = this.editingMessage.content || '';
       }
-  
-      if (validFiles.length > 0) {
-        this.uploadItems = validFiles.map(f => ({ 
-          file: f, 
-          name: f.name, 
-          size: f.size, 
-          progress: 0 
-        }));
-        
-        let currentText = '';
-        try {
-          const parsed = JSON.parse(this.editingMessage.content);
-          currentText = parsed.text || '';
-        } catch {
-          currentText = this.editingMessage.content || '';
-        }
-        
-        this.uploadCaption = currentText;
-        this.isUploadModalOpen = true;
-        this.isEditingWithFiles = true;
-        this.checkUploadSizeLimit();
-        this.cdr.detectChanges();
-      }
+      
+      this.fileUploadService.openUploadModal(currentText, true);
       return;
     }
-
+  
     if (!this.selectedGroupId || fileUploadEvent.files.length === 0) return;
-  
-    const { validFiles, errors } = this.validateFiles(fileUploadEvent.files);
-  
-    if (errors.length > 0) {
-      this.onFileValidationError(errors);
-    }
-  
-    if (validFiles.length > 0) {
-      this.uploadItems = validFiles.map(f => ({ 
-        file: f, 
-        name: f.name, 
-        size: f.size, 
-        progress: 0 
-      }));
-      this.uploadCaption = fileUploadEvent.message || this.draftText || '';
-      this.isUploadModalOpen = true;
-      this.isEditingWithFiles = false;
-      this.checkUploadSizeLimit();
-      this.cdr.detectChanges();
-    }
+    
+    this.fileUploadService.setUploadItems(fileUploadEvent.files);
+    this.fileUploadService.openUploadModal(fileUploadEvent.message || this.draftText || '', false);
   }
 
   onEditMessage(message: GroupMessage) {
@@ -265,86 +196,43 @@ export class GroupChatPageComponent extends BaseChatPageComponent {
 
   async onEditComplete(editData: { messageId: string; content: string }) {
     try {
-      if (this.pendingFileEdit && this.pendingFileEdit.messageId === editData.messageId) {
-      
-        this.editFileUploadingCount = 1;
+      const pendingEdit = this.fileEditService.getPendingFileEdit();
+      if (pendingEdit && pendingEdit.messageId === editData.messageId) {
         this.cdr.detectChanges();
   
-        try {
-          const { oldFile, newFile } = this.pendingFileEdit;
+        const result = await this.fileEditService.executeFileReplacement(
+          editData.messageId,
+          this.currentUserNickName
+        );
   
-          if (oldFile?.uniqueFileName) {
-            try {
-              await this.fileUploadApi.deleteSpecificFileVersion(
-                oldFile.uniqueFileName,
-                this.currentUserNickName
-              );
-            } catch (error) {
-              console.warn('⚠️ [EDIT FILE] Failed to delete old file:', error);
-            }
-          }
-  
-          const uploadUrlsResponse = await this.fileUploadApi.getUploadUrls([newFile]);
-  
-          if (!uploadUrlsResponse || uploadUrlsResponse.length === 0) {
-            throw new Error('No upload URL received');
-          }
-  
-          const uploadUrl = uploadUrlsResponse[0];
-          const uploadedFile = await this.uploadNewFile(newFile, uploadUrl.url);
-          let downloadUrl: string;
-          try {
-            downloadUrl = await this.getDownloadUrl(uploadedFile.fileName);
-          } catch (error) {
-            downloadUrl = uploadedFile.url;
-          }
-  
-          const newFileData = {
-            fileName: uploadedFile.fileName,
-            uniqueFileName: uploadedFile.uniqueFileName,
-            url: downloadUrl,
-            type: newFile.type,
-            size: newFile.size,
-            uniqueId: `${uploadedFile.uniqueFileName}_${Date.now()}`,
-            _refreshKey: `replacement_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-            _forceUpdate: Date.now(),
-            _typeChanged: (oldFile?.type !== newFile.type),
-            _replacementKey: `replace_${Date.now()}_${Math.random()}`
-          };
-  
-          const updatedMessage = this.updateEditingMessageOnly(
-            this.editingMessage as GroupMessage,
-            oldFile,
-            newFileData
-          );    
-          await this.groupMessageState.completeEdit(editData.messageId, updatedMessage.content);
-          this.pendingFileEdit = null;
-  
-        } catch (error) {
-          console.error('❌ [EDIT FILE] Error during file replacement:', error);
-          throw error;
-        } finally {
-          this.editFileUploadingCount = 0;
-          this.cdr.detectChanges();
+        if (!result.success) {
+          throw new Error(result.error || 'File replacement failed');
         }
   
-      } else {
+        await this.groupMessageState.completeEditWithFile(
+          editData.messageId,
+          editData.content,
+          { oldFile: pendingEdit.oldFile, newFileData: result.newFileData },
+          async (uniqueFileName: string) => {
+            await this.fileUploadService.deleteSpecificFile(
+              uniqueFileName,
+              this.currentUserNickName
+            );
+          }
+        );
+        
+        this.cdr.detectChanges();
+      } 
+      else {
         await this.groupMessageState.completeEdit(editData.messageId, editData.content);
       }
       
-      setTimeout(() => {
-        if (this.messagesComponent) {
-          this.messagesComponent.scrollToBottomAfterNewMessage();
-        }
-      }, 150);
+      this.scrollToBottom();
       
     } catch (error) {
       console.error('❌ [EDIT COMPLETE] Error:', error);
     }
   }
-
-  private editFileUploadingCount = 0;
-  get isEditFileUploading(): boolean { return this.editFileUploadingCount > 0; }
 
   async onEditFile(editData: { messageId: string; file: any }) {
     const newFile: File = editData.file?.file;
@@ -354,105 +242,12 @@ export class GroupChatPageComponent extends BaseChatPageComponent {
     if (!newFile || !messageId || !this.editingMessage) {
       return;
     }
-
-    this.pendingFileEdit = {
-      messageId,
-      oldFile,
-      newFile
-    };
-  }
-
-  private updateEditingMessageOnly(message: GroupMessage, oldFile: any, newFileData: any): GroupMessage {
-    let parsed: any;
-    try { parsed = JSON.parse(message.content || '{}'); } catch { parsed = { text: message.content || '', files: [] }; }
-    parsed.files = parsed.files || [];
-    const idx = this.findFileIndex(parsed.files, oldFile);
-    if (idx >= 0) {
-      const oldFileData = { ...parsed.files[idx] };
-      parsed.files[idx] = { ...newFileData, _forceUpdate: Date.now(), _typeChanged: oldFileData.type !== newFileData.type, _replacementKey: `replacement_${Date.now()}_${Math.random()}` };
-    } else {
-      const newF = { ...newFileData, _isNew: true, _forceUpdate: Date.now(), _addedKey: `added_${Date.now()}_${Math.random()}` };
-      parsed.files.push(newF);
-      parsed.files = this.removeDuplicateFiles(parsed.files);
-    }
-    const newMessage = { ...message, content: JSON.stringify(parsed) } as GroupMessage;
-    (newMessage as any).parsedFiles = parsed.files;
-    return newMessage;
-  }
-
-  private removeDuplicateFiles(files: any[]): any[] {
-    const seen = new Set<string>();
-    return files.filter(file => { const key = file.fileName; if (seen.has(key)) return false; seen.add(key); return true; });
-  }
-
-  private async uploadNewFile(file: File, uploadUrl: string): Promise<{
-    fileName: string;
-    uniqueFileName: string;
-    url: string;
-  }> {
-    const { observable } = this.fileUploadApi.uploadFileWithProgress(
-      file,
-      uploadUrl,
-      this.currentUserNickName
-    );
   
-    return new Promise((resolve, reject) => {
-      let finalFileData: any = null;
-      let lastProgress = 0;
-  
-      const subscription = observable.subscribe({
-        next: (result: any) => {
-          if (result.progress !== undefined && result.progress !== lastProgress) {
-            lastProgress = result.progress;
-          }
-          
-          if (result.fileData) {
-            finalFileData = result.fileData;
-          }
-        },
-        error: (error: any) => {
-          subscription.unsubscribe();
-          reject(error);
-        },
-        complete: () => {
-          subscription.unsubscribe();
-          
-          if (finalFileData) {
-            resolve(finalFileData);
-          } else {
-            console.error('❌ [UPLOAD NEW FILE] No file data received');
-            reject(new Error('Upload completed but no file data received'));
-          }
-        }
-      });
-    });
-  }
-
-  private async getDownloadUrl(fileName: string): Promise<string> {    
-    const downloadUrls = await this.fileUploadApi.getDownloadUrls(
-      [fileName],
-      this.currentUserNickName
-    );
-    const url = downloadUrls?.[0]?.url || '';    
-    return url;
-  }
-
-  private findFileIndex(files: any[], targetFile: any): number {
-    const strategies = [
-      (f: any) => f.uniqueFileName === targetFile.uniqueFileName,
-      (f: any) => f.uniqueId === targetFile.uniqueId || f.uniqueFileName === targetFile.uniqueId,
-      (f: any) => f.url === targetFile.url && f.url,
-      (f: any) => f.fileName === targetFile.fileName && f.type === targetFile.type,
-      (f: any) => f.fileName === targetFile.fileName,
-      (f: any) => f.fileName === targetFile.fileName && f.size === targetFile.size,
-      (_f: any, index: number) => index === 0 && files.length === 1
-    ];
-    for (let i = 0; i < strategies.length; i++) { const s = strategies[i]; const index = files.findIndex((f, idx) => s(f, idx)); if (index >= 0) return index; }
-    return -1;
+    this.fileEditService.handleEditFile(messageId, oldFile, newFile);
   }
 
   onEditCancel() { 
-    this.pendingFileEdit = null;
+    this.fileEditService.clearPendingFileEdit();
     this.groupMessageState.cancelEdit(); 
   }
   
@@ -470,18 +265,17 @@ export class GroupChatPageComponent extends BaseChatPageComponent {
     }
   }
 
-  private loadGroupMembers(groupId: string) { this.groupUserState.loadGroupInfo(groupId); }
-
   @HostListener('document:keydown.escape')
-  onEscapePressed() {
-  this.resetSelectedChat();
-}
+    onEscapePressed() {
+    this.resetSelectedChat();
+  }
 
   private resetSelectedChat(): void {
     this.selectedChat = undefined;
     this.selectedChatImage = undefined;
     this.groupMessageState.resetAll();
-    this.closeUploadModal();
+    this.fileUploadService.closeUploadModal();
+    this.modalState.closeAllModals(); 
   }
 
   get selectedGroupId(): string | undefined {
@@ -518,257 +312,118 @@ export class GroupChatPageComponent extends BaseChatPageComponent {
   async onConfirmDelete() {
     const msg = this.groupMessageState.getMessageToDelete();
     if (msg && this.deleteForBoth) {
-      await this.deleteFilesFromMessage(msg);
+      await this.fileUploadService.deleteFilesFromMessage(msg.content, this.currentUserNickName);
     }
     await this.groupMessageState.confirmDelete();
-  }
-
-  private async deleteFilesFromMessage(message: GroupMessage) {
-    try {
-      let parsed: any;
-      try { parsed = JSON.parse(message.content); } catch { return; }
-      if (!parsed.files || !Array.isArray(parsed.files) || parsed.files.length === 0) return;
-      const filesToDelete = parsed.files
-        .filter((file: any) => file.fileName && file.uniqueFileName)
-        .map((file: any) => ({ fileName: file.fileName, uniqueFileName: file.uniqueFileName }));
-      const deletionPromises = filesToDelete.map(async (file: { fileName: string; uniqueFileName: string }) => {
-        try { return { ...file, success: await this.fileUploadApi.deleteSpecificFileVersion(file.uniqueFileName, this.currentUserNickName) }; }
-        catch (error) { return { ...file, success: false, error }; }
-      });
-      const results = await Promise.all(deletionPromises);
-      const failed = results.filter(r => !r.success);
-      if (failed.length > 0) {
-        console.warn('❌ [DELETE FILES] Some files failed to delete:', failed);
-      }
-    } catch {}
-  }
-
-  isImageFile(file: File): boolean { return file.type.startsWith('image/'); }
-  formatFileSize(size: number): string {
-    const units = ['B', 'KB', 'MB', 'GB', 'TB'];
-    let index = 0; let formatted = size;
-    while (formatted >= 1024 && index < units.length - 1) { formatted /= 1024; index++; }
-    return `${formatted.toFixed(2)} ${units[index]}`;
-  }
-
-  private validateFiles(files: File[]): { validFiles: File[], errors: Array<{ fileName: string; error: 'size' | 'type'; actualSize?: number; actualType?: string; }> } {
-    const validFiles: File[] = [];
-    const errors: Array<{ fileName: string; error: 'size' | 'type'; actualSize?: number; actualType?: string; }> = [];
-    files.forEach(file => {
-      if (file.size > this.maxFileSize) {
-        errors.push({ fileName: file.name, error: 'size', actualSize: file.size, actualType: file.type });
-      } else {
-        validFiles.push(file);
-      }
-    });
-    return { validFiles, errors };
-  }
-
-  onFileValidationError(errors: Array<{ fileName: string; error: 'size' | 'type'; actualSize?: number; actualType?: string; }>) {
-    this.fileValidationErrors = errors.map(error => {
-      if (error.error === 'size') {
-        const actualSize = this.formatFileSize(error.actualSize || 0);
-        const maxSize = this.formatFileSize(this.maxFileSize);
-        console.warn(`❌ File "${error.fileName}" exceeds size limit: ${actualSize} > ${maxSize}`);
-      } else if (error.error === 'type') {
-        const fileType = error.actualType || 'unknown';
-        console.warn(`❌ File "${error.fileName}" has unsupported type: ${fileType}`);
-      }
-      return { ...error };
-    });
-    this.showErrorNotification = true;
-    setTimeout(() => { this.showErrorNotification = false; this.cdr.detectChanges(); }, 500);
-  }
-
-  private getTotalUploadSize(): number { return this.uploadItems.reduce((sum, i) => sum + i.size, 0); }
-  private checkUploadSizeLimit(): void {
-    const total = this.getTotalUploadSize();
-    const max = this.maxFileSize; const warn = max * 0.9;
-    if (total > max) {
-      console.warn(`❌ Total upload size ${this.formatFileSize(total)} exceeds limit (${this.formatFileSize(max)})`);
-    } else{
-      console.warn(`⚠️ Total upload size ${this.formatFileSize(total)} is nearing limit (${this.formatFileSize(max)})`);
-    }
   }
 
   onModalFileInputChange(event: Event) {
     const input = event.target as HTMLInputElement;
     if (input.files && input.files.length > 0) {
       const files = Array.from(input.files);
-      const { validFiles, errors } = this.validateFiles(files);
-      if (errors.length > 0) this.onFileValidationError(errors);
-      if (validFiles.length > 0) {
-        const newItems = validFiles.map(f => ({ file: f, name: f.name, size: f.size, progress: 0 }));
-        this.uploadItems.push(...newItems);
-        this.cdr.detectChanges();
-      }
+      this.fileUploadService.addUploadItems(files);
       input.value = '';
     }
   }
 
   async startUploadAndSend() {
-    if (this.isEditingWithFiles && this.editingMessage) {
-      if (this.uploadItems.length === 0 || this.isUploading) return;
-      this.isUploading = true;
+    try {
+      const uploadedFiles = await this.fileUploadService.uploadFiles(this.currentUserNickName);
       
-      try {
-        const files = this.uploadItems.map(i => i.file);
-        const uploadUrls = await this.fileUploadApi.getUploadUrls(files);
-        const nameToUrl = new Map(uploadUrls.map(u => [u.originalName, u.url] as const));
-        const uploadedFiles: Array<{ fileName: string; uniqueFileName: string; url: string }> = [];
-  
-        await Promise.all(this.uploadItems.map(item => new Promise<void>((resolve) => {
-          const url = nameToUrl.get(item.name);
-          if (!url) { item.error = 'No URL'; resolve(); return; }
-          const uploadResult = this.fileUploadApi.uploadFileWithProgress(item.file, url, this.currentUserNickName);
-          item.abort = uploadResult.abort;
-          item.subscription = uploadResult.observable.subscribe({
-            next: (result: { progress: number; fileData?: { fileName: string; uniqueFileName: string; url: string } }) => {
-              item.progress = result.progress;
-              if (result.fileData) uploadedFiles.push(result.fileData);
-            },
-            error: () => { item.error = 'Upload error'; item.progress = 0; resolve(); if (item.subscription) item.subscription.unsubscribe(); },
-            complete: () => { item.url = url; item.progress = 100; resolve(); if (item.subscription) item.subscription.unsubscribe(); }
-          });
-        })));
-  
-        if (uploadedFiles.length) {
-          const fileNames = uploadedFiles.map(f => f.fileName);
-          try {
-            const downloadUrls = await this.fileUploadApi.getDownloadUrls(fileNames);
-            const updatedFiles = uploadedFiles.map(file => {
-              const d = downloadUrls.find(x => x.originalName === file.fileName);
-              return { ...file, url: d?.url || file.url };
-            });
-  
-            let existingFiles: any[] = [];
-            try {
-              const parsed = JSON.parse(this.editingMessage.content);
-              existingFiles = parsed.files || [];
-            } catch {}
-  
-            const allFiles = [...existingFiles, ...updatedFiles];
-            
-            const content = JSON.stringify({ 
-              text: this.uploadCaption || '', 
-              files: allFiles 
-            });
-  
-            await this.groupMessageState.completeEdit(this.editingMessage.id!, content);
-            
-          } catch (error) {
-            console.error('❌ [UPLOAD] Failed to get download URLs:', error);
-          }
-        }
-        
-        this.closeUploadModal();
-        this.isEditingWithFiles = false;
-        
-        setTimeout(() => {
-          if (this.messagesComponent) {
-            this.messagesComponent.scrollToBottomAfterNewMessage();
-          }
-        }, 200);
-        
-      } catch (error) {
-        console.error('❌ [UPLOAD] Upload failed:', error);
-        this.isUploading = false;
+      if (uploadedFiles.length === 0) {
+        this.fileUploadService.closeUploadModal();
+        return;
       }
-      return;
-    }
   
-    if (!this.selectedGroupId || this.uploadItems.length === 0 || this.isUploading) return;
-    this.isUploading = true;
-    
-    if (this.uploadItems.length >= 40) {
-      console.warn('⚠️ Uploading a large number of files may take some time.');
+      const filesWithUrls = await this.getFilesWithDownloadUrls(uploadedFiles);
+      const caption = this.fileUploadService.uploadCaption || '';
+  
+      if (this.fileUploadService.isEditingWithFiles && this.editingMessage) {
+        await this.groupMessageState.addFilesToMessage(
+          this.editingMessage.id!,
+          filesWithUrls
+        );
+      } 
+      else if (this.selectedGroupId) {
+        await this.groupMessageState.sendMessageWithFiles(caption, filesWithUrls);
+        this.draftText = '';
+      }
+  
+      this.fileUploadService.closeUploadModal();
+      this.scrollToBottom();
+      
+    } catch (error) {
+      console.error('❌ [UPLOAD] Failed:', error);
     }
+  }
+  
+  private async getFilesWithDownloadUrls(uploadedFiles: any[]): Promise<any[]> {
+    const fileNames = uploadedFiles.map(f => f.fileName);
     
     try {
-      const files = this.uploadItems.map(i => i.file);
-      const uploadUrls = await this.fileUploadApi.getUploadUrls(files);
-      const nameToUrl = new Map(uploadUrls.map(u => [u.originalName, u.url] as const));
-      const uploadedFiles: Array<{ fileName: string; uniqueFileName: string; url: string }> = [];
-  
-      await Promise.all(this.uploadItems.map(item => new Promise<void>((resolve) => {
-        const url = nameToUrl.get(item.name);
-        if (!url) { item.error = 'No URL'; resolve(); return; }
-        const uploadResult = this.fileUploadApi.uploadFileWithProgress(item.file, url, this.currentUserNickName);
-        item.abort = uploadResult.abort;
-        item.subscription = uploadResult.observable.subscribe({
-          next: (result: { progress: number; fileData?: { fileName: string; uniqueFileName: string; url: string } }) => {
-            item.progress = result.progress;
-            if (result.fileData) uploadedFiles.push(result.fileData);
-          },
-          error: () => { item.error = 'Upload error'; item.progress = 0; resolve(); if (item.subscription) item.subscription.unsubscribe(); },
-          complete: () => { item.url = url; item.progress = 100; resolve(); if (item.subscription) item.subscription.unsubscribe(); }
-        });
-      })));
-  
-      if (uploadedFiles.length) {
-        const fileNames = uploadedFiles.map(f => f.fileName);
-        try {
-          const downloadUrls = await this.fileUploadApi.getDownloadUrls(fileNames);
-          const updatedFiles = uploadedFiles.map(file => {
-            const d = downloadUrls.find(x => x.originalName === file.fileName);
-            return { ...file, url: d?.url || file.url };
-          });
-          const content = JSON.stringify({ text: this.uploadCaption || '', files: updatedFiles });
-          await this.groupMessageState.sendMessage(content);
-          this.draftText = '';
-          
-          setTimeout(() => {
-            if (this.messagesComponent) {
-              this.messagesComponent.scrollToBottomAfterNewMessage();
-            }
-          }, 200);
-          
-        } catch {
-          const fallback = JSON.stringify({ text: this.uploadCaption || '', files: uploadedFiles });
-          await this.groupMessageState.sendMessage(fallback);
-          
-          setTimeout(() => {
-            if (this.messagesComponent) {
-              this.messagesComponent.scrollToBottomAfterNewMessage();
-            }
-          }, 200);
-        }
-      }
-      this.closeUploadModal();
-    } catch {
-      this.isUploading = false;
+      const downloadUrls = await this.fileUploadService.getDownloadUrls(
+        fileNames,
+        this.currentUserNickName
+      );
+      
+      return uploadedFiles.map(file => {
+        const downloadUrl = downloadUrls.find(x => x.originalName === file.fileName);
+        return { ...file, url: downloadUrl?.url || file.url };
+      });
+    } catch (error) {
+      console.warn('⚠️ Failed to get download URLs, using upload URLs', error);
+      return uploadedFiles;
     }
   }
-
-  cancelFileUpload(index: number) {
-    const item = this.uploadItems[index];
-    if (item.abort) item.abort();
-    if (item.subscription) item.subscription.unsubscribe();
-    this.uploadItems.splice(index, 1);
-    if (this.uploadItems.length === 0) this.closeUploadModal();
-  }
-
-  removeFileFromList(index: number) { this.cancelFileUpload(index); }
-
-  closeUploadModal() {
-    this.isUploadModalOpen = false;
-    this.isUploading = false;
-    this.uploadItems = [];
-    this.uploadCaption = '';
-    this.isEditingWithFiles = false;
+  
+  private scrollToBottom() {
+    setTimeout(() => {
+      if (this.messagesComponent) {
+        this.messagesComponent.scrollToBottomAfterNewMessage();
+      }
+    }, 200);
   }
 
   onUploadEnter(event: KeyboardEvent) {
     if (event.key === 'Enter') {
       event.preventDefault();
-      if (!this.isUploading && this.uploadItems.length > 0) this.startUploadAndSend();
+      if (!this.fileUploadService.isUploading && this.fileUploadService.uploadItems.length > 0) {
+        this.startUploadAndSend();
+      }
     }
+  }
+
+  get isUploading(): boolean {
+    return this.fileUploadService.isUploading;
+  }
+
+  get uploadCaption(): string {
+    return this.fileUploadService.uploadCaption;
+  }
+  
+  set uploadCaption(value: string) {
+    this.fileUploadService.setUploadCaption(value);
+  }
+
+  get groupInfoModalOpen(): boolean {
+    return this.modalState.isGroupInfoModalOpen;
   }
 
   @HostListener('document:keydown', ['$event'])
   onDocumentKeyDown(event: KeyboardEvent) {
     if (event.key === 'Escape') {
-      if (this.isUploadModalOpen) { this.closeUploadModal(); return; }
+      if (this.fileUploadService.isUploadModalOpen) {
+        this.fileUploadService.closeUploadModal();
+        return;
+      }
+      if (this.modalState.isGroupInfoModalOpen) {
+        this.modalState.closeGroupInfoModal();
+        return;
+      }
+      if (this.modalState.isDeleteModalOpen) {
+        this.modalState.closeDeleteModal();
+        return;
+      }
     }
   }
 }
