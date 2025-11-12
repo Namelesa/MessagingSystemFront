@@ -1,5 +1,5 @@
 import { Observable, throwError } from 'rxjs';
-import { retryWhen, scan, delay, catchError } from 'rxjs/operators';
+import { retryWhen, scan, delay, catchError, switchMap } from 'rxjs/operators';
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { AuthService, ProfileApiResult } from '../../../entities/session';
@@ -9,6 +9,8 @@ import { environment } from '../../../shared/api-urls';
 @Injectable({ providedIn: 'root' })
 export class UserProfileApi {
   constructor(private http: HttpClient, private authService: AuthService) {}
+
+  private apiUrl = 'http://localhost:3000/api/users';
 
   getUserProfile(): Observable<ProfileApiResult> {
     const nickName = this.authService.getNickName();
@@ -64,27 +66,30 @@ export class UserProfileApi {
       catchError(err => throwError(() => err))
     );
   }
-  
-  deleteUserProfile(): Observable<AuthApiResult>{
+
+  deleteUserProfile(): Observable<AuthApiResult> {
     const nickName = this.authService.getNickName();
     if (!nickName) {
       throw new Error('Nickname is not set in AuthService');
     }
-  
-    const queryString = `nickName=${encodeURIComponent(nickName)}`;
-    
+
     const maxRetries = 3;
     const baseDelayMs = 300;
+    
     return this.http.delete<AuthApiResult>(
-      `${environment.apiUrl}user/delete?${queryString}`,
-      {
-        withCredentials: true
-      }
+      `${this.apiUrl}/nickName/${encodeURIComponent(nickName)}`,
+      { withCredentials: true }
     ).pipe(
       retryWhen(errors => errors.pipe(
         scan((acc, err) => { if (acc >= maxRetries) throw err; return acc + 1; }, 0),
         delay(baseDelayMs)
       )),
+      switchMap(() => 
+        this.http.delete<AuthApiResult>(
+          `${environment.apiUrl}user/delete?nickName=${encodeURIComponent(nickName)}`,
+          { withCredentials: true }
+        )
+      ),
       catchError(err => throwError(() => err))
     );
   }
