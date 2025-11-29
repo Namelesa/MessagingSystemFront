@@ -140,6 +140,7 @@ app.delete('/api/users/nickName/:nickName', async (req, res) => {
 
 app.post('/api/messages', async (req, res) => {
   try {
+
     const {
       senderId,
       recipientId,
@@ -170,7 +171,6 @@ app.post('/api/messages', async (req, res) => {
 
     if (!recipient) {
       console.error('❌ Recipient not found:', recipientId);
-      return res.status(404).json({ error: 'Recipient not found' });
     }
 
     const messageKeysData = messageKeys?.map((mk, index) => {
@@ -202,8 +202,7 @@ app.post('/api/messages', async (req, res) => {
     }).filter(Boolean) || [];
 
     if (messageKeysData.length === 0 && messageKeys?.length > 0) {
-      console.error('⚠️ All messageKeys were filtered out! Check userId values.');
-      return res.status(400).json({ error: 'Invalid messageKeys: no valid userId found' });
+      console.error('⚠️ All messageKeys were filtered out!');
     }
     
     const message = await prisma.message.create({
@@ -227,7 +226,7 @@ app.post('/api/messages', async (req, res) => {
   } catch (error) {
     console.error('❌ Error saving message:', error);
     console.error('Stack:', error.stack);
-    res.status(500).json({ error: 'Failed to save message' });
+    return res.status(500).json({ error: 'Failed to save message' });
   }
 });
 
