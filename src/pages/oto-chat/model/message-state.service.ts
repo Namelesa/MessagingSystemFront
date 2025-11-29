@@ -88,7 +88,6 @@ export class MessageStateService {
         await this.messageService.sendMessage(selectedChat, content);
       }
       
-      // ✅ Скроллим вниз после отправки
       setTimeout(() => this.scrollToBottom(), 150);
     } catch (error) {
       console.error('Error sending message:', error);

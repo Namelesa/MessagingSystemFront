@@ -18,6 +18,21 @@ export type PrismaPromise<T> = $Public.PrismaPromise<T>
  * 
  */
 export type User = $Result.DefaultSelection<Prisma.$UserPayload>
+/**
+ * Model Message
+ * 
+ */
+export type Message = $Result.DefaultSelection<Prisma.$MessagePayload>
+/**
+ * Model MessageKey
+ * 
+ */
+export type MessageKey = $Result.DefaultSelection<Prisma.$MessageKeyPayload>
+/**
+ * Model RatchetState
+ * 
+ */
+export type RatchetState = $Result.DefaultSelection<Prisma.$RatchetStatePayload>
 
 /**
  * ##  Prisma Client ʲˢ
@@ -146,6 +161,36 @@ export class PrismaClient<
     * ```
     */
   get user(): Prisma.UserDelegate<ExtArgs, ClientOptions>;
+
+  /**
+   * `prisma.message`: Exposes CRUD operations for the **Message** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more Messages
+    * const messages = await prisma.message.findMany()
+    * ```
+    */
+  get message(): Prisma.MessageDelegate<ExtArgs, ClientOptions>;
+
+  /**
+   * `prisma.messageKey`: Exposes CRUD operations for the **MessageKey** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more MessageKeys
+    * const messageKeys = await prisma.messageKey.findMany()
+    * ```
+    */
+  get messageKey(): Prisma.MessageKeyDelegate<ExtArgs, ClientOptions>;
+
+  /**
+   * `prisma.ratchetState`: Exposes CRUD operations for the **RatchetState** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more RatchetStates
+    * const ratchetStates = await prisma.ratchetState.findMany()
+    * ```
+    */
+  get ratchetState(): Prisma.RatchetStateDelegate<ExtArgs, ClientOptions>;
 }
 
 export namespace Prisma {
@@ -587,7 +632,10 @@ export namespace Prisma {
 
 
   export const ModelName: {
-    User: 'User'
+    User: 'User',
+    Message: 'Message',
+    MessageKey: 'MessageKey',
+    RatchetState: 'RatchetState'
   };
 
   export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -606,7 +654,7 @@ export namespace Prisma {
       omit: GlobalOmitOptions
     }
     meta: {
-      modelProps: "user"
+      modelProps: "user" | "message" | "messageKey" | "ratchetState"
       txIsolationLevel: Prisma.TransactionIsolationLevel
     }
     model: {
@@ -681,6 +729,228 @@ export namespace Prisma {
           count: {
             args: Prisma.UserCountArgs<ExtArgs>
             result: $Utils.Optional<UserCountAggregateOutputType> | number
+          }
+        }
+      }
+      Message: {
+        payload: Prisma.$MessagePayload<ExtArgs>
+        fields: Prisma.MessageFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.MessageFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$MessagePayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.MessageFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$MessagePayload>
+          }
+          findFirst: {
+            args: Prisma.MessageFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$MessagePayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.MessageFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$MessagePayload>
+          }
+          findMany: {
+            args: Prisma.MessageFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$MessagePayload>[]
+          }
+          create: {
+            args: Prisma.MessageCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$MessagePayload>
+          }
+          createMany: {
+            args: Prisma.MessageCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          createManyAndReturn: {
+            args: Prisma.MessageCreateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$MessagePayload>[]
+          }
+          delete: {
+            args: Prisma.MessageDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$MessagePayload>
+          }
+          update: {
+            args: Prisma.MessageUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$MessagePayload>
+          }
+          deleteMany: {
+            args: Prisma.MessageDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.MessageUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateManyAndReturn: {
+            args: Prisma.MessageUpdateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$MessagePayload>[]
+          }
+          upsert: {
+            args: Prisma.MessageUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$MessagePayload>
+          }
+          aggregate: {
+            args: Prisma.MessageAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateMessage>
+          }
+          groupBy: {
+            args: Prisma.MessageGroupByArgs<ExtArgs>
+            result: $Utils.Optional<MessageGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.MessageCountArgs<ExtArgs>
+            result: $Utils.Optional<MessageCountAggregateOutputType> | number
+          }
+        }
+      }
+      MessageKey: {
+        payload: Prisma.$MessageKeyPayload<ExtArgs>
+        fields: Prisma.MessageKeyFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.MessageKeyFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$MessageKeyPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.MessageKeyFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$MessageKeyPayload>
+          }
+          findFirst: {
+            args: Prisma.MessageKeyFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$MessageKeyPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.MessageKeyFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$MessageKeyPayload>
+          }
+          findMany: {
+            args: Prisma.MessageKeyFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$MessageKeyPayload>[]
+          }
+          create: {
+            args: Prisma.MessageKeyCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$MessageKeyPayload>
+          }
+          createMany: {
+            args: Prisma.MessageKeyCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          createManyAndReturn: {
+            args: Prisma.MessageKeyCreateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$MessageKeyPayload>[]
+          }
+          delete: {
+            args: Prisma.MessageKeyDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$MessageKeyPayload>
+          }
+          update: {
+            args: Prisma.MessageKeyUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$MessageKeyPayload>
+          }
+          deleteMany: {
+            args: Prisma.MessageKeyDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.MessageKeyUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateManyAndReturn: {
+            args: Prisma.MessageKeyUpdateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$MessageKeyPayload>[]
+          }
+          upsert: {
+            args: Prisma.MessageKeyUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$MessageKeyPayload>
+          }
+          aggregate: {
+            args: Prisma.MessageKeyAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateMessageKey>
+          }
+          groupBy: {
+            args: Prisma.MessageKeyGroupByArgs<ExtArgs>
+            result: $Utils.Optional<MessageKeyGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.MessageKeyCountArgs<ExtArgs>
+            result: $Utils.Optional<MessageKeyCountAggregateOutputType> | number
+          }
+        }
+      }
+      RatchetState: {
+        payload: Prisma.$RatchetStatePayload<ExtArgs>
+        fields: Prisma.RatchetStateFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.RatchetStateFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$RatchetStatePayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.RatchetStateFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$RatchetStatePayload>
+          }
+          findFirst: {
+            args: Prisma.RatchetStateFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$RatchetStatePayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.RatchetStateFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$RatchetStatePayload>
+          }
+          findMany: {
+            args: Prisma.RatchetStateFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$RatchetStatePayload>[]
+          }
+          create: {
+            args: Prisma.RatchetStateCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$RatchetStatePayload>
+          }
+          createMany: {
+            args: Prisma.RatchetStateCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          createManyAndReturn: {
+            args: Prisma.RatchetStateCreateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$RatchetStatePayload>[]
+          }
+          delete: {
+            args: Prisma.RatchetStateDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$RatchetStatePayload>
+          }
+          update: {
+            args: Prisma.RatchetStateUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$RatchetStatePayload>
+          }
+          deleteMany: {
+            args: Prisma.RatchetStateDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.RatchetStateUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateManyAndReturn: {
+            args: Prisma.RatchetStateUpdateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$RatchetStatePayload>[]
+          }
+          upsert: {
+            args: Prisma.RatchetStateUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$RatchetStatePayload>
+          }
+          aggregate: {
+            args: Prisma.RatchetStateAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateRatchetState>
+          }
+          groupBy: {
+            args: Prisma.RatchetStateGroupByArgs<ExtArgs>
+            result: $Utils.Optional<RatchetStateGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.RatchetStateCountArgs<ExtArgs>
+            result: $Utils.Optional<RatchetStateCountAggregateOutputType> | number
           }
         }
       }
@@ -781,6 +1051,9 @@ export namespace Prisma {
   }
   export type GlobalOmitConfig = {
     user?: UserOmit
+    message?: MessageOmit
+    messageKey?: MessageKeyOmit
+    ratchetState?: RatchetStateOmit
   }
 
   /* Types for Logging */
@@ -855,6 +1128,94 @@ export namespace Prisma {
    * Count Types
    */
 
+
+  /**
+   * Count Type UserCountOutputType
+   */
+
+  export type UserCountOutputType = {
+    sentMessages: number
+    receivedMessages: number
+    messageKeys: number
+  }
+
+  export type UserCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    sentMessages?: boolean | UserCountOutputTypeCountSentMessagesArgs
+    receivedMessages?: boolean | UserCountOutputTypeCountReceivedMessagesArgs
+    messageKeys?: boolean | UserCountOutputTypeCountMessageKeysArgs
+  }
+
+  // Custom InputTypes
+  /**
+   * UserCountOutputType without action
+   */
+  export type UserCountOutputTypeDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the UserCountOutputType
+     */
+    select?: UserCountOutputTypeSelect<ExtArgs> | null
+  }
+
+  /**
+   * UserCountOutputType without action
+   */
+  export type UserCountOutputTypeCountSentMessagesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: MessageWhereInput
+  }
+
+  /**
+   * UserCountOutputType without action
+   */
+  export type UserCountOutputTypeCountReceivedMessagesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: MessageWhereInput
+  }
+
+  /**
+   * UserCountOutputType without action
+   */
+  export type UserCountOutputTypeCountMessageKeysArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: MessageKeyWhereInput
+  }
+
+
+  /**
+   * Count Type MessageCountOutputType
+   */
+
+  export type MessageCountOutputType = {
+    replies: number
+    messageKeys: number
+  }
+
+  export type MessageCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    replies?: boolean | MessageCountOutputTypeCountRepliesArgs
+    messageKeys?: boolean | MessageCountOutputTypeCountMessageKeysArgs
+  }
+
+  // Custom InputTypes
+  /**
+   * MessageCountOutputType without action
+   */
+  export type MessageCountOutputTypeDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the MessageCountOutputType
+     */
+    select?: MessageCountOutputTypeSelect<ExtArgs> | null
+  }
+
+  /**
+   * MessageCountOutputType without action
+   */
+  export type MessageCountOutputTypeCountRepliesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: MessageWhereInput
+  }
+
+  /**
+   * MessageCountOutputType without action
+   */
+  export type MessageCountOutputTypeCountMessageKeysArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: MessageKeyWhereInput
+  }
 
 
   /**
@@ -1017,6 +1378,10 @@ export namespace Prisma {
     nickName?: boolean
     key?: boolean
     createdAt?: boolean
+    sentMessages?: boolean | User$sentMessagesArgs<ExtArgs>
+    receivedMessages?: boolean | User$receivedMessagesArgs<ExtArgs>
+    messageKeys?: boolean | User$messageKeysArgs<ExtArgs>
+    _count?: boolean | UserCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["user"]>
 
   export type UserSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
@@ -1041,10 +1406,22 @@ export namespace Prisma {
   }
 
   export type UserOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "nickName" | "key" | "createdAt", ExtArgs["result"]["user"]>
+  export type UserInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    sentMessages?: boolean | User$sentMessagesArgs<ExtArgs>
+    receivedMessages?: boolean | User$receivedMessagesArgs<ExtArgs>
+    messageKeys?: boolean | User$messageKeysArgs<ExtArgs>
+    _count?: boolean | UserCountOutputTypeDefaultArgs<ExtArgs>
+  }
+  export type UserIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {}
+  export type UserIncludeUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {}
 
   export type $UserPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     name: "User"
-    objects: {}
+    objects: {
+      sentMessages: Prisma.$MessagePayload<ExtArgs>[]
+      receivedMessages: Prisma.$MessagePayload<ExtArgs>[]
+      messageKeys: Prisma.$MessageKeyPayload<ExtArgs>[]
+    }
     scalars: $Extensions.GetPayloadResult<{
       id: string
       nickName: string
@@ -1444,6 +1821,9 @@ export namespace Prisma {
    */
   export interface Prisma__UserClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
     readonly [Symbol.toStringTag]: "PrismaPromise"
+    sentMessages<T extends User$sentMessagesArgs<ExtArgs> = {}>(args?: Subset<T, User$sentMessagesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$MessagePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+    receivedMessages<T extends User$receivedMessagesArgs<ExtArgs> = {}>(args?: Subset<T, User$receivedMessagesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$MessagePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+    messageKeys<T extends User$messageKeysArgs<ExtArgs> = {}>(args?: Subset<T, User$messageKeysArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$MessageKeyPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1494,6 +1874,10 @@ export namespace Prisma {
      */
     omit?: UserOmit<ExtArgs> | null
     /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: UserInclude<ExtArgs> | null
+    /**
      * Filter, which User to fetch.
      */
     where: UserWhereUniqueInput
@@ -1512,6 +1896,10 @@ export namespace Prisma {
      */
     omit?: UserOmit<ExtArgs> | null
     /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: UserInclude<ExtArgs> | null
+    /**
      * Filter, which User to fetch.
      */
     where: UserWhereUniqueInput
@@ -1529,6 +1917,10 @@ export namespace Prisma {
      * Omit specific fields from the User
      */
     omit?: UserOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: UserInclude<ExtArgs> | null
     /**
      * Filter, which User to fetch.
      */
@@ -1578,6 +1970,10 @@ export namespace Prisma {
      */
     omit?: UserOmit<ExtArgs> | null
     /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: UserInclude<ExtArgs> | null
+    /**
      * Filter, which User to fetch.
      */
     where?: UserWhereInput
@@ -1626,6 +2022,10 @@ export namespace Prisma {
      */
     omit?: UserOmit<ExtArgs> | null
     /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: UserInclude<ExtArgs> | null
+    /**
      * Filter, which Users to fetch.
      */
     where?: UserWhereInput
@@ -1668,6 +2068,10 @@ export namespace Prisma {
      * Omit specific fields from the User
      */
     omit?: UserOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: UserInclude<ExtArgs> | null
     /**
      * The data needed to create a User.
      */
@@ -1716,6 +2120,10 @@ export namespace Prisma {
      * Omit specific fields from the User
      */
     omit?: UserOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: UserInclude<ExtArgs> | null
     /**
      * The data needed to update a User.
      */
@@ -1783,6 +2191,10 @@ export namespace Prisma {
      */
     omit?: UserOmit<ExtArgs> | null
     /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: UserInclude<ExtArgs> | null
+    /**
      * The filter to search for the User to update in case it exists.
      */
     where: UserWhereUniqueInput
@@ -1809,6 +2221,10 @@ export namespace Prisma {
      */
     omit?: UserOmit<ExtArgs> | null
     /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: UserInclude<ExtArgs> | null
+    /**
      * Filter which User to delete.
      */
     where: UserWhereUniqueInput
@@ -1829,6 +2245,78 @@ export namespace Prisma {
   }
 
   /**
+   * User.sentMessages
+   */
+  export type User$sentMessagesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Message
+     */
+    select?: MessageSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Message
+     */
+    omit?: MessageOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: MessageInclude<ExtArgs> | null
+    where?: MessageWhereInput
+    orderBy?: MessageOrderByWithRelationInput | MessageOrderByWithRelationInput[]
+    cursor?: MessageWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: MessageScalarFieldEnum | MessageScalarFieldEnum[]
+  }
+
+  /**
+   * User.receivedMessages
+   */
+  export type User$receivedMessagesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Message
+     */
+    select?: MessageSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Message
+     */
+    omit?: MessageOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: MessageInclude<ExtArgs> | null
+    where?: MessageWhereInput
+    orderBy?: MessageOrderByWithRelationInput | MessageOrderByWithRelationInput[]
+    cursor?: MessageWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: MessageScalarFieldEnum | MessageScalarFieldEnum[]
+  }
+
+  /**
+   * User.messageKeys
+   */
+  export type User$messageKeysArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the MessageKey
+     */
+    select?: MessageKeySelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the MessageKey
+     */
+    omit?: MessageKeyOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: MessageKeyInclude<ExtArgs> | null
+    where?: MessageKeyWhereInput
+    orderBy?: MessageKeyOrderByWithRelationInput | MessageKeyOrderByWithRelationInput[]
+    cursor?: MessageKeyWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: MessageKeyScalarFieldEnum | MessageKeyScalarFieldEnum[]
+  }
+
+  /**
    * User without action
    */
   export type UserDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -1840,6 +2328,3566 @@ export namespace Prisma {
      * Omit specific fields from the User
      */
     omit?: UserOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: UserInclude<ExtArgs> | null
+  }
+
+
+  /**
+   * Model Message
+   */
+
+  export type AggregateMessage = {
+    _count: MessageCountAggregateOutputType | null
+    _avg: MessageAvgAggregateOutputType | null
+    _sum: MessageSumAggregateOutputType | null
+    _min: MessageMinAggregateOutputType | null
+    _max: MessageMaxAggregateOutputType | null
+  }
+
+  export type MessageAvgAggregateOutputType = {
+    messageNumber: number | null
+    previousChainN: number | null
+  }
+
+  export type MessageSumAggregateOutputType = {
+    messageNumber: number | null
+    previousChainN: number | null
+  }
+
+  export type MessageMinAggregateOutputType = {
+    id: string | null
+    senderId: string | null
+    recipientId: string | null
+    encryptedContent: string | null
+    ephemeralKey: string | null
+    nonce: string | null
+    messageNumber: number | null
+    previousChainN: number | null
+    timestamp: Date | null
+    editedAt: Date | null
+    deletedAt: Date | null
+    deleteType: string | null
+    replyToId: string | null
+  }
+
+  export type MessageMaxAggregateOutputType = {
+    id: string | null
+    senderId: string | null
+    recipientId: string | null
+    encryptedContent: string | null
+    ephemeralKey: string | null
+    nonce: string | null
+    messageNumber: number | null
+    previousChainN: number | null
+    timestamp: Date | null
+    editedAt: Date | null
+    deletedAt: Date | null
+    deleteType: string | null
+    replyToId: string | null
+  }
+
+  export type MessageCountAggregateOutputType = {
+    id: number
+    senderId: number
+    recipientId: number
+    encryptedContent: number
+    ephemeralKey: number
+    nonce: number
+    messageNumber: number
+    previousChainN: number
+    timestamp: number
+    editedAt: number
+    deletedAt: number
+    deleteType: number
+    replyToId: number
+    _all: number
+  }
+
+
+  export type MessageAvgAggregateInputType = {
+    messageNumber?: true
+    previousChainN?: true
+  }
+
+  export type MessageSumAggregateInputType = {
+    messageNumber?: true
+    previousChainN?: true
+  }
+
+  export type MessageMinAggregateInputType = {
+    id?: true
+    senderId?: true
+    recipientId?: true
+    encryptedContent?: true
+    ephemeralKey?: true
+    nonce?: true
+    messageNumber?: true
+    previousChainN?: true
+    timestamp?: true
+    editedAt?: true
+    deletedAt?: true
+    deleteType?: true
+    replyToId?: true
+  }
+
+  export type MessageMaxAggregateInputType = {
+    id?: true
+    senderId?: true
+    recipientId?: true
+    encryptedContent?: true
+    ephemeralKey?: true
+    nonce?: true
+    messageNumber?: true
+    previousChainN?: true
+    timestamp?: true
+    editedAt?: true
+    deletedAt?: true
+    deleteType?: true
+    replyToId?: true
+  }
+
+  export type MessageCountAggregateInputType = {
+    id?: true
+    senderId?: true
+    recipientId?: true
+    encryptedContent?: true
+    ephemeralKey?: true
+    nonce?: true
+    messageNumber?: true
+    previousChainN?: true
+    timestamp?: true
+    editedAt?: true
+    deletedAt?: true
+    deleteType?: true
+    replyToId?: true
+    _all?: true
+  }
+
+  export type MessageAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which Message to aggregate.
+     */
+    where?: MessageWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of Messages to fetch.
+     */
+    orderBy?: MessageOrderByWithRelationInput | MessageOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: MessageWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` Messages from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` Messages.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned Messages
+    **/
+    _count?: true | MessageCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: MessageAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: MessageSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: MessageMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: MessageMaxAggregateInputType
+  }
+
+  export type GetMessageAggregateType<T extends MessageAggregateArgs> = {
+        [P in keyof T & keyof AggregateMessage]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateMessage[P]>
+      : GetScalarType<T[P], AggregateMessage[P]>
+  }
+
+
+
+
+  export type MessageGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: MessageWhereInput
+    orderBy?: MessageOrderByWithAggregationInput | MessageOrderByWithAggregationInput[]
+    by: MessageScalarFieldEnum[] | MessageScalarFieldEnum
+    having?: MessageScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: MessageCountAggregateInputType | true
+    _avg?: MessageAvgAggregateInputType
+    _sum?: MessageSumAggregateInputType
+    _min?: MessageMinAggregateInputType
+    _max?: MessageMaxAggregateInputType
+  }
+
+  export type MessageGroupByOutputType = {
+    id: string
+    senderId: string
+    recipientId: string
+    encryptedContent: string
+    ephemeralKey: string
+    nonce: string
+    messageNumber: number
+    previousChainN: number
+    timestamp: Date
+    editedAt: Date | null
+    deletedAt: Date | null
+    deleteType: string | null
+    replyToId: string | null
+    _count: MessageCountAggregateOutputType | null
+    _avg: MessageAvgAggregateOutputType | null
+    _sum: MessageSumAggregateOutputType | null
+    _min: MessageMinAggregateOutputType | null
+    _max: MessageMaxAggregateOutputType | null
+  }
+
+  type GetMessageGroupByPayload<T extends MessageGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<MessageGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof MessageGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], MessageGroupByOutputType[P]>
+            : GetScalarType<T[P], MessageGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type MessageSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    senderId?: boolean
+    recipientId?: boolean
+    encryptedContent?: boolean
+    ephemeralKey?: boolean
+    nonce?: boolean
+    messageNumber?: boolean
+    previousChainN?: boolean
+    timestamp?: boolean
+    editedAt?: boolean
+    deletedAt?: boolean
+    deleteType?: boolean
+    replyToId?: boolean
+    sender?: boolean | UserDefaultArgs<ExtArgs>
+    recipient?: boolean | UserDefaultArgs<ExtArgs>
+    replyTo?: boolean | Message$replyToArgs<ExtArgs>
+    replies?: boolean | Message$repliesArgs<ExtArgs>
+    messageKeys?: boolean | Message$messageKeysArgs<ExtArgs>
+    _count?: boolean | MessageCountOutputTypeDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["message"]>
+
+  export type MessageSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    senderId?: boolean
+    recipientId?: boolean
+    encryptedContent?: boolean
+    ephemeralKey?: boolean
+    nonce?: boolean
+    messageNumber?: boolean
+    previousChainN?: boolean
+    timestamp?: boolean
+    editedAt?: boolean
+    deletedAt?: boolean
+    deleteType?: boolean
+    replyToId?: boolean
+    sender?: boolean | UserDefaultArgs<ExtArgs>
+    recipient?: boolean | UserDefaultArgs<ExtArgs>
+    replyTo?: boolean | Message$replyToArgs<ExtArgs>
+  }, ExtArgs["result"]["message"]>
+
+  export type MessageSelectUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    senderId?: boolean
+    recipientId?: boolean
+    encryptedContent?: boolean
+    ephemeralKey?: boolean
+    nonce?: boolean
+    messageNumber?: boolean
+    previousChainN?: boolean
+    timestamp?: boolean
+    editedAt?: boolean
+    deletedAt?: boolean
+    deleteType?: boolean
+    replyToId?: boolean
+    sender?: boolean | UserDefaultArgs<ExtArgs>
+    recipient?: boolean | UserDefaultArgs<ExtArgs>
+    replyTo?: boolean | Message$replyToArgs<ExtArgs>
+  }, ExtArgs["result"]["message"]>
+
+  export type MessageSelectScalar = {
+    id?: boolean
+    senderId?: boolean
+    recipientId?: boolean
+    encryptedContent?: boolean
+    ephemeralKey?: boolean
+    nonce?: boolean
+    messageNumber?: boolean
+    previousChainN?: boolean
+    timestamp?: boolean
+    editedAt?: boolean
+    deletedAt?: boolean
+    deleteType?: boolean
+    replyToId?: boolean
+  }
+
+  export type MessageOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "senderId" | "recipientId" | "encryptedContent" | "ephemeralKey" | "nonce" | "messageNumber" | "previousChainN" | "timestamp" | "editedAt" | "deletedAt" | "deleteType" | "replyToId", ExtArgs["result"]["message"]>
+  export type MessageInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    sender?: boolean | UserDefaultArgs<ExtArgs>
+    recipient?: boolean | UserDefaultArgs<ExtArgs>
+    replyTo?: boolean | Message$replyToArgs<ExtArgs>
+    replies?: boolean | Message$repliesArgs<ExtArgs>
+    messageKeys?: boolean | Message$messageKeysArgs<ExtArgs>
+    _count?: boolean | MessageCountOutputTypeDefaultArgs<ExtArgs>
+  }
+  export type MessageIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    sender?: boolean | UserDefaultArgs<ExtArgs>
+    recipient?: boolean | UserDefaultArgs<ExtArgs>
+    replyTo?: boolean | Message$replyToArgs<ExtArgs>
+  }
+  export type MessageIncludeUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    sender?: boolean | UserDefaultArgs<ExtArgs>
+    recipient?: boolean | UserDefaultArgs<ExtArgs>
+    replyTo?: boolean | Message$replyToArgs<ExtArgs>
+  }
+
+  export type $MessagePayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "Message"
+    objects: {
+      sender: Prisma.$UserPayload<ExtArgs>
+      recipient: Prisma.$UserPayload<ExtArgs>
+      replyTo: Prisma.$MessagePayload<ExtArgs> | null
+      replies: Prisma.$MessagePayload<ExtArgs>[]
+      messageKeys: Prisma.$MessageKeyPayload<ExtArgs>[]
+    }
+    scalars: $Extensions.GetPayloadResult<{
+      id: string
+      senderId: string
+      recipientId: string
+      encryptedContent: string
+      ephemeralKey: string
+      nonce: string
+      messageNumber: number
+      previousChainN: number
+      timestamp: Date
+      editedAt: Date | null
+      deletedAt: Date | null
+      deleteType: string | null
+      replyToId: string | null
+    }, ExtArgs["result"]["message"]>
+    composites: {}
+  }
+
+  type MessageGetPayload<S extends boolean | null | undefined | MessageDefaultArgs> = $Result.GetResult<Prisma.$MessagePayload, S>
+
+  type MessageCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
+    Omit<MessageFindManyArgs, 'select' | 'include' | 'distinct' | 'omit'> & {
+      select?: MessageCountAggregateInputType | true
+    }
+
+  export interface MessageDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['Message'], meta: { name: 'Message' } }
+    /**
+     * Find zero or one Message that matches the filter.
+     * @param {MessageFindUniqueArgs} args - Arguments to find a Message
+     * @example
+     * // Get one Message
+     * const message = await prisma.message.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends MessageFindUniqueArgs>(args: SelectSubset<T, MessageFindUniqueArgs<ExtArgs>>): Prisma__MessageClient<$Result.GetResult<Prisma.$MessagePayload<ExtArgs>, T, "findUnique", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find one Message that matches the filter or throw an error with `error.code='P2025'`
+     * if no matches were found.
+     * @param {MessageFindUniqueOrThrowArgs} args - Arguments to find a Message
+     * @example
+     * // Get one Message
+     * const message = await prisma.message.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends MessageFindUniqueOrThrowArgs>(args: SelectSubset<T, MessageFindUniqueOrThrowArgs<ExtArgs>>): Prisma__MessageClient<$Result.GetResult<Prisma.$MessagePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first Message that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {MessageFindFirstArgs} args - Arguments to find a Message
+     * @example
+     * // Get one Message
+     * const message = await prisma.message.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends MessageFindFirstArgs>(args?: SelectSubset<T, MessageFindFirstArgs<ExtArgs>>): Prisma__MessageClient<$Result.GetResult<Prisma.$MessagePayload<ExtArgs>, T, "findFirst", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first Message that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {MessageFindFirstOrThrowArgs} args - Arguments to find a Message
+     * @example
+     * // Get one Message
+     * const message = await prisma.message.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends MessageFindFirstOrThrowArgs>(args?: SelectSubset<T, MessageFindFirstOrThrowArgs<ExtArgs>>): Prisma__MessageClient<$Result.GetResult<Prisma.$MessagePayload<ExtArgs>, T, "findFirstOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find zero or more Messages that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {MessageFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all Messages
+     * const messages = await prisma.message.findMany()
+     * 
+     * // Get first 10 Messages
+     * const messages = await prisma.message.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const messageWithIdOnly = await prisma.message.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends MessageFindManyArgs>(args?: SelectSubset<T, MessageFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$MessagePayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
+
+    /**
+     * Create a Message.
+     * @param {MessageCreateArgs} args - Arguments to create a Message.
+     * @example
+     * // Create one Message
+     * const Message = await prisma.message.create({
+     *   data: {
+     *     // ... data to create a Message
+     *   }
+     * })
+     * 
+     */
+    create<T extends MessageCreateArgs>(args: SelectSubset<T, MessageCreateArgs<ExtArgs>>): Prisma__MessageClient<$Result.GetResult<Prisma.$MessagePayload<ExtArgs>, T, "create", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Create many Messages.
+     * @param {MessageCreateManyArgs} args - Arguments to create many Messages.
+     * @example
+     * // Create many Messages
+     * const message = await prisma.message.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends MessageCreateManyArgs>(args?: SelectSubset<T, MessageCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create many Messages and returns the data saved in the database.
+     * @param {MessageCreateManyAndReturnArgs} args - Arguments to create many Messages.
+     * @example
+     * // Create many Messages
+     * const message = await prisma.message.createManyAndReturn({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Create many Messages and only return the `id`
+     * const messageWithIdOnly = await prisma.message.createManyAndReturn({
+     *   select: { id: true },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    createManyAndReturn<T extends MessageCreateManyAndReturnArgs>(args?: SelectSubset<T, MessageCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$MessagePayload<ExtArgs>, T, "createManyAndReturn", GlobalOmitOptions>>
+
+    /**
+     * Delete a Message.
+     * @param {MessageDeleteArgs} args - Arguments to delete one Message.
+     * @example
+     * // Delete one Message
+     * const Message = await prisma.message.delete({
+     *   where: {
+     *     // ... filter to delete one Message
+     *   }
+     * })
+     * 
+     */
+    delete<T extends MessageDeleteArgs>(args: SelectSubset<T, MessageDeleteArgs<ExtArgs>>): Prisma__MessageClient<$Result.GetResult<Prisma.$MessagePayload<ExtArgs>, T, "delete", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Update one Message.
+     * @param {MessageUpdateArgs} args - Arguments to update one Message.
+     * @example
+     * // Update one Message
+     * const message = await prisma.message.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends MessageUpdateArgs>(args: SelectSubset<T, MessageUpdateArgs<ExtArgs>>): Prisma__MessageClient<$Result.GetResult<Prisma.$MessagePayload<ExtArgs>, T, "update", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Delete zero or more Messages.
+     * @param {MessageDeleteManyArgs} args - Arguments to filter Messages to delete.
+     * @example
+     * // Delete a few Messages
+     * const { count } = await prisma.message.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends MessageDeleteManyArgs>(args?: SelectSubset<T, MessageDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more Messages.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {MessageUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many Messages
+     * const message = await prisma.message.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends MessageUpdateManyArgs>(args: SelectSubset<T, MessageUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more Messages and returns the data updated in the database.
+     * @param {MessageUpdateManyAndReturnArgs} args - Arguments to update many Messages.
+     * @example
+     * // Update many Messages
+     * const message = await prisma.message.updateManyAndReturn({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Update zero or more Messages and only return the `id`
+     * const messageWithIdOnly = await prisma.message.updateManyAndReturn({
+     *   select: { id: true },
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    updateManyAndReturn<T extends MessageUpdateManyAndReturnArgs>(args: SelectSubset<T, MessageUpdateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$MessagePayload<ExtArgs>, T, "updateManyAndReturn", GlobalOmitOptions>>
+
+    /**
+     * Create or update one Message.
+     * @param {MessageUpsertArgs} args - Arguments to update or create a Message.
+     * @example
+     * // Update or create a Message
+     * const message = await prisma.message.upsert({
+     *   create: {
+     *     // ... data to create a Message
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the Message we want to update
+     *   }
+     * })
+     */
+    upsert<T extends MessageUpsertArgs>(args: SelectSubset<T, MessageUpsertArgs<ExtArgs>>): Prisma__MessageClient<$Result.GetResult<Prisma.$MessagePayload<ExtArgs>, T, "upsert", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+
+    /**
+     * Count the number of Messages.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {MessageCountArgs} args - Arguments to filter Messages to count.
+     * @example
+     * // Count the number of Messages
+     * const count = await prisma.message.count({
+     *   where: {
+     *     // ... the filter for the Messages we want to count
+     *   }
+     * })
+    **/
+    count<T extends MessageCountArgs>(
+      args?: Subset<T, MessageCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], MessageCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a Message.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {MessageAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends MessageAggregateArgs>(args: Subset<T, MessageAggregateArgs>): Prisma.PrismaPromise<GetMessageAggregateType<T>>
+
+    /**
+     * Group by Message.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {MessageGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends MessageGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: MessageGroupByArgs['orderBy'] }
+        : { orderBy?: MessageGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, MessageGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetMessageGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the Message model
+   */
+  readonly fields: MessageFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for Message.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__MessageClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    sender<T extends UserDefaultArgs<ExtArgs> = {}>(args?: Subset<T, UserDefaultArgs<ExtArgs>>): Prisma__UserClient<$Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+    recipient<T extends UserDefaultArgs<ExtArgs> = {}>(args?: Subset<T, UserDefaultArgs<ExtArgs>>): Prisma__UserClient<$Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+    replyTo<T extends Message$replyToArgs<ExtArgs> = {}>(args?: Subset<T, Message$replyToArgs<ExtArgs>>): Prisma__MessageClient<$Result.GetResult<Prisma.$MessagePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+    replies<T extends Message$repliesArgs<ExtArgs> = {}>(args?: Subset<T, Message$repliesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$MessagePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+    messageKeys<T extends Message$messageKeysArgs<ExtArgs> = {}>(args?: Subset<T, Message$messageKeysArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$MessageKeyPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the Message model
+   */
+  interface MessageFieldRefs {
+    readonly id: FieldRef<"Message", 'String'>
+    readonly senderId: FieldRef<"Message", 'String'>
+    readonly recipientId: FieldRef<"Message", 'String'>
+    readonly encryptedContent: FieldRef<"Message", 'String'>
+    readonly ephemeralKey: FieldRef<"Message", 'String'>
+    readonly nonce: FieldRef<"Message", 'String'>
+    readonly messageNumber: FieldRef<"Message", 'Int'>
+    readonly previousChainN: FieldRef<"Message", 'Int'>
+    readonly timestamp: FieldRef<"Message", 'DateTime'>
+    readonly editedAt: FieldRef<"Message", 'DateTime'>
+    readonly deletedAt: FieldRef<"Message", 'DateTime'>
+    readonly deleteType: FieldRef<"Message", 'String'>
+    readonly replyToId: FieldRef<"Message", 'String'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * Message findUnique
+   */
+  export type MessageFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Message
+     */
+    select?: MessageSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Message
+     */
+    omit?: MessageOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: MessageInclude<ExtArgs> | null
+    /**
+     * Filter, which Message to fetch.
+     */
+    where: MessageWhereUniqueInput
+  }
+
+  /**
+   * Message findUniqueOrThrow
+   */
+  export type MessageFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Message
+     */
+    select?: MessageSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Message
+     */
+    omit?: MessageOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: MessageInclude<ExtArgs> | null
+    /**
+     * Filter, which Message to fetch.
+     */
+    where: MessageWhereUniqueInput
+  }
+
+  /**
+   * Message findFirst
+   */
+  export type MessageFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Message
+     */
+    select?: MessageSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Message
+     */
+    omit?: MessageOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: MessageInclude<ExtArgs> | null
+    /**
+     * Filter, which Message to fetch.
+     */
+    where?: MessageWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of Messages to fetch.
+     */
+    orderBy?: MessageOrderByWithRelationInput | MessageOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for Messages.
+     */
+    cursor?: MessageWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` Messages from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` Messages.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of Messages.
+     */
+    distinct?: MessageScalarFieldEnum | MessageScalarFieldEnum[]
+  }
+
+  /**
+   * Message findFirstOrThrow
+   */
+  export type MessageFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Message
+     */
+    select?: MessageSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Message
+     */
+    omit?: MessageOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: MessageInclude<ExtArgs> | null
+    /**
+     * Filter, which Message to fetch.
+     */
+    where?: MessageWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of Messages to fetch.
+     */
+    orderBy?: MessageOrderByWithRelationInput | MessageOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for Messages.
+     */
+    cursor?: MessageWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` Messages from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` Messages.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of Messages.
+     */
+    distinct?: MessageScalarFieldEnum | MessageScalarFieldEnum[]
+  }
+
+  /**
+   * Message findMany
+   */
+  export type MessageFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Message
+     */
+    select?: MessageSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Message
+     */
+    omit?: MessageOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: MessageInclude<ExtArgs> | null
+    /**
+     * Filter, which Messages to fetch.
+     */
+    where?: MessageWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of Messages to fetch.
+     */
+    orderBy?: MessageOrderByWithRelationInput | MessageOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing Messages.
+     */
+    cursor?: MessageWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` Messages from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` Messages.
+     */
+    skip?: number
+    distinct?: MessageScalarFieldEnum | MessageScalarFieldEnum[]
+  }
+
+  /**
+   * Message create
+   */
+  export type MessageCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Message
+     */
+    select?: MessageSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Message
+     */
+    omit?: MessageOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: MessageInclude<ExtArgs> | null
+    /**
+     * The data needed to create a Message.
+     */
+    data: XOR<MessageCreateInput, MessageUncheckedCreateInput>
+  }
+
+  /**
+   * Message createMany
+   */
+  export type MessageCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many Messages.
+     */
+    data: MessageCreateManyInput | MessageCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * Message createManyAndReturn
+   */
+  export type MessageCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Message
+     */
+    select?: MessageSelectCreateManyAndReturn<ExtArgs> | null
+    /**
+     * Omit specific fields from the Message
+     */
+    omit?: MessageOmit<ExtArgs> | null
+    /**
+     * The data used to create many Messages.
+     */
+    data: MessageCreateManyInput | MessageCreateManyInput[]
+    skipDuplicates?: boolean
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: MessageIncludeCreateManyAndReturn<ExtArgs> | null
+  }
+
+  /**
+   * Message update
+   */
+  export type MessageUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Message
+     */
+    select?: MessageSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Message
+     */
+    omit?: MessageOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: MessageInclude<ExtArgs> | null
+    /**
+     * The data needed to update a Message.
+     */
+    data: XOR<MessageUpdateInput, MessageUncheckedUpdateInput>
+    /**
+     * Choose, which Message to update.
+     */
+    where: MessageWhereUniqueInput
+  }
+
+  /**
+   * Message updateMany
+   */
+  export type MessageUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update Messages.
+     */
+    data: XOR<MessageUpdateManyMutationInput, MessageUncheckedUpdateManyInput>
+    /**
+     * Filter which Messages to update
+     */
+    where?: MessageWhereInput
+    /**
+     * Limit how many Messages to update.
+     */
+    limit?: number
+  }
+
+  /**
+   * Message updateManyAndReturn
+   */
+  export type MessageUpdateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Message
+     */
+    select?: MessageSelectUpdateManyAndReturn<ExtArgs> | null
+    /**
+     * Omit specific fields from the Message
+     */
+    omit?: MessageOmit<ExtArgs> | null
+    /**
+     * The data used to update Messages.
+     */
+    data: XOR<MessageUpdateManyMutationInput, MessageUncheckedUpdateManyInput>
+    /**
+     * Filter which Messages to update
+     */
+    where?: MessageWhereInput
+    /**
+     * Limit how many Messages to update.
+     */
+    limit?: number
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: MessageIncludeUpdateManyAndReturn<ExtArgs> | null
+  }
+
+  /**
+   * Message upsert
+   */
+  export type MessageUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Message
+     */
+    select?: MessageSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Message
+     */
+    omit?: MessageOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: MessageInclude<ExtArgs> | null
+    /**
+     * The filter to search for the Message to update in case it exists.
+     */
+    where: MessageWhereUniqueInput
+    /**
+     * In case the Message found by the `where` argument doesn't exist, create a new Message with this data.
+     */
+    create: XOR<MessageCreateInput, MessageUncheckedCreateInput>
+    /**
+     * In case the Message was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<MessageUpdateInput, MessageUncheckedUpdateInput>
+  }
+
+  /**
+   * Message delete
+   */
+  export type MessageDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Message
+     */
+    select?: MessageSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Message
+     */
+    omit?: MessageOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: MessageInclude<ExtArgs> | null
+    /**
+     * Filter which Message to delete.
+     */
+    where: MessageWhereUniqueInput
+  }
+
+  /**
+   * Message deleteMany
+   */
+  export type MessageDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which Messages to delete
+     */
+    where?: MessageWhereInput
+    /**
+     * Limit how many Messages to delete.
+     */
+    limit?: number
+  }
+
+  /**
+   * Message.replyTo
+   */
+  export type Message$replyToArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Message
+     */
+    select?: MessageSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Message
+     */
+    omit?: MessageOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: MessageInclude<ExtArgs> | null
+    where?: MessageWhereInput
+  }
+
+  /**
+   * Message.replies
+   */
+  export type Message$repliesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Message
+     */
+    select?: MessageSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Message
+     */
+    omit?: MessageOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: MessageInclude<ExtArgs> | null
+    where?: MessageWhereInput
+    orderBy?: MessageOrderByWithRelationInput | MessageOrderByWithRelationInput[]
+    cursor?: MessageWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: MessageScalarFieldEnum | MessageScalarFieldEnum[]
+  }
+
+  /**
+   * Message.messageKeys
+   */
+  export type Message$messageKeysArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the MessageKey
+     */
+    select?: MessageKeySelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the MessageKey
+     */
+    omit?: MessageKeyOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: MessageKeyInclude<ExtArgs> | null
+    where?: MessageKeyWhereInput
+    orderBy?: MessageKeyOrderByWithRelationInput | MessageKeyOrderByWithRelationInput[]
+    cursor?: MessageKeyWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: MessageKeyScalarFieldEnum | MessageKeyScalarFieldEnum[]
+  }
+
+  /**
+   * Message without action
+   */
+  export type MessageDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Message
+     */
+    select?: MessageSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Message
+     */
+    omit?: MessageOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: MessageInclude<ExtArgs> | null
+  }
+
+
+  /**
+   * Model MessageKey
+   */
+
+  export type AggregateMessageKey = {
+    _count: MessageKeyCountAggregateOutputType | null
+    _avg: MessageKeyAvgAggregateOutputType | null
+    _sum: MessageKeySumAggregateOutputType | null
+    _min: MessageKeyMinAggregateOutputType | null
+    _max: MessageKeyMaxAggregateOutputType | null
+  }
+
+  export type MessageKeyAvgAggregateOutputType = {
+    keyIndex: number | null
+  }
+
+  export type MessageKeySumAggregateOutputType = {
+    keyIndex: number | null
+  }
+
+  export type MessageKeyMinAggregateOutputType = {
+    id: string | null
+    messageId: string | null
+    userId: string | null
+    encryptedKey: string | null
+    ephemeralPublicKey: string | null
+    chainKeySnapshot: string | null
+    keyIndex: number | null
+    createdAt: Date | null
+  }
+
+  export type MessageKeyMaxAggregateOutputType = {
+    id: string | null
+    messageId: string | null
+    userId: string | null
+    encryptedKey: string | null
+    ephemeralPublicKey: string | null
+    chainKeySnapshot: string | null
+    keyIndex: number | null
+    createdAt: Date | null
+  }
+
+  export type MessageKeyCountAggregateOutputType = {
+    id: number
+    messageId: number
+    userId: number
+    encryptedKey: number
+    ephemeralPublicKey: number
+    chainKeySnapshot: number
+    keyIndex: number
+    createdAt: number
+    _all: number
+  }
+
+
+  export type MessageKeyAvgAggregateInputType = {
+    keyIndex?: true
+  }
+
+  export type MessageKeySumAggregateInputType = {
+    keyIndex?: true
+  }
+
+  export type MessageKeyMinAggregateInputType = {
+    id?: true
+    messageId?: true
+    userId?: true
+    encryptedKey?: true
+    ephemeralPublicKey?: true
+    chainKeySnapshot?: true
+    keyIndex?: true
+    createdAt?: true
+  }
+
+  export type MessageKeyMaxAggregateInputType = {
+    id?: true
+    messageId?: true
+    userId?: true
+    encryptedKey?: true
+    ephemeralPublicKey?: true
+    chainKeySnapshot?: true
+    keyIndex?: true
+    createdAt?: true
+  }
+
+  export type MessageKeyCountAggregateInputType = {
+    id?: true
+    messageId?: true
+    userId?: true
+    encryptedKey?: true
+    ephemeralPublicKey?: true
+    chainKeySnapshot?: true
+    keyIndex?: true
+    createdAt?: true
+    _all?: true
+  }
+
+  export type MessageKeyAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which MessageKey to aggregate.
+     */
+    where?: MessageKeyWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of MessageKeys to fetch.
+     */
+    orderBy?: MessageKeyOrderByWithRelationInput | MessageKeyOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: MessageKeyWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` MessageKeys from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` MessageKeys.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned MessageKeys
+    **/
+    _count?: true | MessageKeyCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: MessageKeyAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: MessageKeySumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: MessageKeyMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: MessageKeyMaxAggregateInputType
+  }
+
+  export type GetMessageKeyAggregateType<T extends MessageKeyAggregateArgs> = {
+        [P in keyof T & keyof AggregateMessageKey]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateMessageKey[P]>
+      : GetScalarType<T[P], AggregateMessageKey[P]>
+  }
+
+
+
+
+  export type MessageKeyGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: MessageKeyWhereInput
+    orderBy?: MessageKeyOrderByWithAggregationInput | MessageKeyOrderByWithAggregationInput[]
+    by: MessageKeyScalarFieldEnum[] | MessageKeyScalarFieldEnum
+    having?: MessageKeyScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: MessageKeyCountAggregateInputType | true
+    _avg?: MessageKeyAvgAggregateInputType
+    _sum?: MessageKeySumAggregateInputType
+    _min?: MessageKeyMinAggregateInputType
+    _max?: MessageKeyMaxAggregateInputType
+  }
+
+  export type MessageKeyGroupByOutputType = {
+    id: string
+    messageId: string
+    userId: string
+    encryptedKey: string
+    ephemeralPublicKey: string | null
+    chainKeySnapshot: string
+    keyIndex: number
+    createdAt: Date
+    _count: MessageKeyCountAggregateOutputType | null
+    _avg: MessageKeyAvgAggregateOutputType | null
+    _sum: MessageKeySumAggregateOutputType | null
+    _min: MessageKeyMinAggregateOutputType | null
+    _max: MessageKeyMaxAggregateOutputType | null
+  }
+
+  type GetMessageKeyGroupByPayload<T extends MessageKeyGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<MessageKeyGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof MessageKeyGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], MessageKeyGroupByOutputType[P]>
+            : GetScalarType<T[P], MessageKeyGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type MessageKeySelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    messageId?: boolean
+    userId?: boolean
+    encryptedKey?: boolean
+    ephemeralPublicKey?: boolean
+    chainKeySnapshot?: boolean
+    keyIndex?: boolean
+    createdAt?: boolean
+    message?: boolean | MessageDefaultArgs<ExtArgs>
+    user?: boolean | UserDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["messageKey"]>
+
+  export type MessageKeySelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    messageId?: boolean
+    userId?: boolean
+    encryptedKey?: boolean
+    ephemeralPublicKey?: boolean
+    chainKeySnapshot?: boolean
+    keyIndex?: boolean
+    createdAt?: boolean
+    message?: boolean | MessageDefaultArgs<ExtArgs>
+    user?: boolean | UserDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["messageKey"]>
+
+  export type MessageKeySelectUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    messageId?: boolean
+    userId?: boolean
+    encryptedKey?: boolean
+    ephemeralPublicKey?: boolean
+    chainKeySnapshot?: boolean
+    keyIndex?: boolean
+    createdAt?: boolean
+    message?: boolean | MessageDefaultArgs<ExtArgs>
+    user?: boolean | UserDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["messageKey"]>
+
+  export type MessageKeySelectScalar = {
+    id?: boolean
+    messageId?: boolean
+    userId?: boolean
+    encryptedKey?: boolean
+    ephemeralPublicKey?: boolean
+    chainKeySnapshot?: boolean
+    keyIndex?: boolean
+    createdAt?: boolean
+  }
+
+  export type MessageKeyOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "messageId" | "userId" | "encryptedKey" | "ephemeralPublicKey" | "chainKeySnapshot" | "keyIndex" | "createdAt", ExtArgs["result"]["messageKey"]>
+  export type MessageKeyInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    message?: boolean | MessageDefaultArgs<ExtArgs>
+    user?: boolean | UserDefaultArgs<ExtArgs>
+  }
+  export type MessageKeyIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    message?: boolean | MessageDefaultArgs<ExtArgs>
+    user?: boolean | UserDefaultArgs<ExtArgs>
+  }
+  export type MessageKeyIncludeUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    message?: boolean | MessageDefaultArgs<ExtArgs>
+    user?: boolean | UserDefaultArgs<ExtArgs>
+  }
+
+  export type $MessageKeyPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "MessageKey"
+    objects: {
+      message: Prisma.$MessagePayload<ExtArgs>
+      user: Prisma.$UserPayload<ExtArgs>
+    }
+    scalars: $Extensions.GetPayloadResult<{
+      id: string
+      messageId: string
+      userId: string
+      encryptedKey: string
+      ephemeralPublicKey: string | null
+      chainKeySnapshot: string
+      keyIndex: number
+      createdAt: Date
+    }, ExtArgs["result"]["messageKey"]>
+    composites: {}
+  }
+
+  type MessageKeyGetPayload<S extends boolean | null | undefined | MessageKeyDefaultArgs> = $Result.GetResult<Prisma.$MessageKeyPayload, S>
+
+  type MessageKeyCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
+    Omit<MessageKeyFindManyArgs, 'select' | 'include' | 'distinct' | 'omit'> & {
+      select?: MessageKeyCountAggregateInputType | true
+    }
+
+  export interface MessageKeyDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['MessageKey'], meta: { name: 'MessageKey' } }
+    /**
+     * Find zero or one MessageKey that matches the filter.
+     * @param {MessageKeyFindUniqueArgs} args - Arguments to find a MessageKey
+     * @example
+     * // Get one MessageKey
+     * const messageKey = await prisma.messageKey.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends MessageKeyFindUniqueArgs>(args: SelectSubset<T, MessageKeyFindUniqueArgs<ExtArgs>>): Prisma__MessageKeyClient<$Result.GetResult<Prisma.$MessageKeyPayload<ExtArgs>, T, "findUnique", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find one MessageKey that matches the filter or throw an error with `error.code='P2025'`
+     * if no matches were found.
+     * @param {MessageKeyFindUniqueOrThrowArgs} args - Arguments to find a MessageKey
+     * @example
+     * // Get one MessageKey
+     * const messageKey = await prisma.messageKey.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends MessageKeyFindUniqueOrThrowArgs>(args: SelectSubset<T, MessageKeyFindUniqueOrThrowArgs<ExtArgs>>): Prisma__MessageKeyClient<$Result.GetResult<Prisma.$MessageKeyPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first MessageKey that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {MessageKeyFindFirstArgs} args - Arguments to find a MessageKey
+     * @example
+     * // Get one MessageKey
+     * const messageKey = await prisma.messageKey.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends MessageKeyFindFirstArgs>(args?: SelectSubset<T, MessageKeyFindFirstArgs<ExtArgs>>): Prisma__MessageKeyClient<$Result.GetResult<Prisma.$MessageKeyPayload<ExtArgs>, T, "findFirst", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first MessageKey that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {MessageKeyFindFirstOrThrowArgs} args - Arguments to find a MessageKey
+     * @example
+     * // Get one MessageKey
+     * const messageKey = await prisma.messageKey.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends MessageKeyFindFirstOrThrowArgs>(args?: SelectSubset<T, MessageKeyFindFirstOrThrowArgs<ExtArgs>>): Prisma__MessageKeyClient<$Result.GetResult<Prisma.$MessageKeyPayload<ExtArgs>, T, "findFirstOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find zero or more MessageKeys that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {MessageKeyFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all MessageKeys
+     * const messageKeys = await prisma.messageKey.findMany()
+     * 
+     * // Get first 10 MessageKeys
+     * const messageKeys = await prisma.messageKey.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const messageKeyWithIdOnly = await prisma.messageKey.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends MessageKeyFindManyArgs>(args?: SelectSubset<T, MessageKeyFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$MessageKeyPayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
+
+    /**
+     * Create a MessageKey.
+     * @param {MessageKeyCreateArgs} args - Arguments to create a MessageKey.
+     * @example
+     * // Create one MessageKey
+     * const MessageKey = await prisma.messageKey.create({
+     *   data: {
+     *     // ... data to create a MessageKey
+     *   }
+     * })
+     * 
+     */
+    create<T extends MessageKeyCreateArgs>(args: SelectSubset<T, MessageKeyCreateArgs<ExtArgs>>): Prisma__MessageKeyClient<$Result.GetResult<Prisma.$MessageKeyPayload<ExtArgs>, T, "create", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Create many MessageKeys.
+     * @param {MessageKeyCreateManyArgs} args - Arguments to create many MessageKeys.
+     * @example
+     * // Create many MessageKeys
+     * const messageKey = await prisma.messageKey.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends MessageKeyCreateManyArgs>(args?: SelectSubset<T, MessageKeyCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create many MessageKeys and returns the data saved in the database.
+     * @param {MessageKeyCreateManyAndReturnArgs} args - Arguments to create many MessageKeys.
+     * @example
+     * // Create many MessageKeys
+     * const messageKey = await prisma.messageKey.createManyAndReturn({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Create many MessageKeys and only return the `id`
+     * const messageKeyWithIdOnly = await prisma.messageKey.createManyAndReturn({
+     *   select: { id: true },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    createManyAndReturn<T extends MessageKeyCreateManyAndReturnArgs>(args?: SelectSubset<T, MessageKeyCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$MessageKeyPayload<ExtArgs>, T, "createManyAndReturn", GlobalOmitOptions>>
+
+    /**
+     * Delete a MessageKey.
+     * @param {MessageKeyDeleteArgs} args - Arguments to delete one MessageKey.
+     * @example
+     * // Delete one MessageKey
+     * const MessageKey = await prisma.messageKey.delete({
+     *   where: {
+     *     // ... filter to delete one MessageKey
+     *   }
+     * })
+     * 
+     */
+    delete<T extends MessageKeyDeleteArgs>(args: SelectSubset<T, MessageKeyDeleteArgs<ExtArgs>>): Prisma__MessageKeyClient<$Result.GetResult<Prisma.$MessageKeyPayload<ExtArgs>, T, "delete", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Update one MessageKey.
+     * @param {MessageKeyUpdateArgs} args - Arguments to update one MessageKey.
+     * @example
+     * // Update one MessageKey
+     * const messageKey = await prisma.messageKey.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends MessageKeyUpdateArgs>(args: SelectSubset<T, MessageKeyUpdateArgs<ExtArgs>>): Prisma__MessageKeyClient<$Result.GetResult<Prisma.$MessageKeyPayload<ExtArgs>, T, "update", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Delete zero or more MessageKeys.
+     * @param {MessageKeyDeleteManyArgs} args - Arguments to filter MessageKeys to delete.
+     * @example
+     * // Delete a few MessageKeys
+     * const { count } = await prisma.messageKey.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends MessageKeyDeleteManyArgs>(args?: SelectSubset<T, MessageKeyDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more MessageKeys.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {MessageKeyUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many MessageKeys
+     * const messageKey = await prisma.messageKey.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends MessageKeyUpdateManyArgs>(args: SelectSubset<T, MessageKeyUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more MessageKeys and returns the data updated in the database.
+     * @param {MessageKeyUpdateManyAndReturnArgs} args - Arguments to update many MessageKeys.
+     * @example
+     * // Update many MessageKeys
+     * const messageKey = await prisma.messageKey.updateManyAndReturn({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Update zero or more MessageKeys and only return the `id`
+     * const messageKeyWithIdOnly = await prisma.messageKey.updateManyAndReturn({
+     *   select: { id: true },
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    updateManyAndReturn<T extends MessageKeyUpdateManyAndReturnArgs>(args: SelectSubset<T, MessageKeyUpdateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$MessageKeyPayload<ExtArgs>, T, "updateManyAndReturn", GlobalOmitOptions>>
+
+    /**
+     * Create or update one MessageKey.
+     * @param {MessageKeyUpsertArgs} args - Arguments to update or create a MessageKey.
+     * @example
+     * // Update or create a MessageKey
+     * const messageKey = await prisma.messageKey.upsert({
+     *   create: {
+     *     // ... data to create a MessageKey
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the MessageKey we want to update
+     *   }
+     * })
+     */
+    upsert<T extends MessageKeyUpsertArgs>(args: SelectSubset<T, MessageKeyUpsertArgs<ExtArgs>>): Prisma__MessageKeyClient<$Result.GetResult<Prisma.$MessageKeyPayload<ExtArgs>, T, "upsert", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+
+    /**
+     * Count the number of MessageKeys.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {MessageKeyCountArgs} args - Arguments to filter MessageKeys to count.
+     * @example
+     * // Count the number of MessageKeys
+     * const count = await prisma.messageKey.count({
+     *   where: {
+     *     // ... the filter for the MessageKeys we want to count
+     *   }
+     * })
+    **/
+    count<T extends MessageKeyCountArgs>(
+      args?: Subset<T, MessageKeyCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], MessageKeyCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a MessageKey.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {MessageKeyAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends MessageKeyAggregateArgs>(args: Subset<T, MessageKeyAggregateArgs>): Prisma.PrismaPromise<GetMessageKeyAggregateType<T>>
+
+    /**
+     * Group by MessageKey.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {MessageKeyGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends MessageKeyGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: MessageKeyGroupByArgs['orderBy'] }
+        : { orderBy?: MessageKeyGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, MessageKeyGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetMessageKeyGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the MessageKey model
+   */
+  readonly fields: MessageKeyFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for MessageKey.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__MessageKeyClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    message<T extends MessageDefaultArgs<ExtArgs> = {}>(args?: Subset<T, MessageDefaultArgs<ExtArgs>>): Prisma__MessageClient<$Result.GetResult<Prisma.$MessagePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+    user<T extends UserDefaultArgs<ExtArgs> = {}>(args?: Subset<T, UserDefaultArgs<ExtArgs>>): Prisma__UserClient<$Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the MessageKey model
+   */
+  interface MessageKeyFieldRefs {
+    readonly id: FieldRef<"MessageKey", 'String'>
+    readonly messageId: FieldRef<"MessageKey", 'String'>
+    readonly userId: FieldRef<"MessageKey", 'String'>
+    readonly encryptedKey: FieldRef<"MessageKey", 'String'>
+    readonly ephemeralPublicKey: FieldRef<"MessageKey", 'String'>
+    readonly chainKeySnapshot: FieldRef<"MessageKey", 'String'>
+    readonly keyIndex: FieldRef<"MessageKey", 'Int'>
+    readonly createdAt: FieldRef<"MessageKey", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * MessageKey findUnique
+   */
+  export type MessageKeyFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the MessageKey
+     */
+    select?: MessageKeySelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the MessageKey
+     */
+    omit?: MessageKeyOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: MessageKeyInclude<ExtArgs> | null
+    /**
+     * Filter, which MessageKey to fetch.
+     */
+    where: MessageKeyWhereUniqueInput
+  }
+
+  /**
+   * MessageKey findUniqueOrThrow
+   */
+  export type MessageKeyFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the MessageKey
+     */
+    select?: MessageKeySelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the MessageKey
+     */
+    omit?: MessageKeyOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: MessageKeyInclude<ExtArgs> | null
+    /**
+     * Filter, which MessageKey to fetch.
+     */
+    where: MessageKeyWhereUniqueInput
+  }
+
+  /**
+   * MessageKey findFirst
+   */
+  export type MessageKeyFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the MessageKey
+     */
+    select?: MessageKeySelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the MessageKey
+     */
+    omit?: MessageKeyOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: MessageKeyInclude<ExtArgs> | null
+    /**
+     * Filter, which MessageKey to fetch.
+     */
+    where?: MessageKeyWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of MessageKeys to fetch.
+     */
+    orderBy?: MessageKeyOrderByWithRelationInput | MessageKeyOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for MessageKeys.
+     */
+    cursor?: MessageKeyWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` MessageKeys from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` MessageKeys.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of MessageKeys.
+     */
+    distinct?: MessageKeyScalarFieldEnum | MessageKeyScalarFieldEnum[]
+  }
+
+  /**
+   * MessageKey findFirstOrThrow
+   */
+  export type MessageKeyFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the MessageKey
+     */
+    select?: MessageKeySelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the MessageKey
+     */
+    omit?: MessageKeyOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: MessageKeyInclude<ExtArgs> | null
+    /**
+     * Filter, which MessageKey to fetch.
+     */
+    where?: MessageKeyWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of MessageKeys to fetch.
+     */
+    orderBy?: MessageKeyOrderByWithRelationInput | MessageKeyOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for MessageKeys.
+     */
+    cursor?: MessageKeyWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` MessageKeys from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` MessageKeys.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of MessageKeys.
+     */
+    distinct?: MessageKeyScalarFieldEnum | MessageKeyScalarFieldEnum[]
+  }
+
+  /**
+   * MessageKey findMany
+   */
+  export type MessageKeyFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the MessageKey
+     */
+    select?: MessageKeySelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the MessageKey
+     */
+    omit?: MessageKeyOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: MessageKeyInclude<ExtArgs> | null
+    /**
+     * Filter, which MessageKeys to fetch.
+     */
+    where?: MessageKeyWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of MessageKeys to fetch.
+     */
+    orderBy?: MessageKeyOrderByWithRelationInput | MessageKeyOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing MessageKeys.
+     */
+    cursor?: MessageKeyWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` MessageKeys from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` MessageKeys.
+     */
+    skip?: number
+    distinct?: MessageKeyScalarFieldEnum | MessageKeyScalarFieldEnum[]
+  }
+
+  /**
+   * MessageKey create
+   */
+  export type MessageKeyCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the MessageKey
+     */
+    select?: MessageKeySelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the MessageKey
+     */
+    omit?: MessageKeyOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: MessageKeyInclude<ExtArgs> | null
+    /**
+     * The data needed to create a MessageKey.
+     */
+    data: XOR<MessageKeyCreateInput, MessageKeyUncheckedCreateInput>
+  }
+
+  /**
+   * MessageKey createMany
+   */
+  export type MessageKeyCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many MessageKeys.
+     */
+    data: MessageKeyCreateManyInput | MessageKeyCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * MessageKey createManyAndReturn
+   */
+  export type MessageKeyCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the MessageKey
+     */
+    select?: MessageKeySelectCreateManyAndReturn<ExtArgs> | null
+    /**
+     * Omit specific fields from the MessageKey
+     */
+    omit?: MessageKeyOmit<ExtArgs> | null
+    /**
+     * The data used to create many MessageKeys.
+     */
+    data: MessageKeyCreateManyInput | MessageKeyCreateManyInput[]
+    skipDuplicates?: boolean
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: MessageKeyIncludeCreateManyAndReturn<ExtArgs> | null
+  }
+
+  /**
+   * MessageKey update
+   */
+  export type MessageKeyUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the MessageKey
+     */
+    select?: MessageKeySelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the MessageKey
+     */
+    omit?: MessageKeyOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: MessageKeyInclude<ExtArgs> | null
+    /**
+     * The data needed to update a MessageKey.
+     */
+    data: XOR<MessageKeyUpdateInput, MessageKeyUncheckedUpdateInput>
+    /**
+     * Choose, which MessageKey to update.
+     */
+    where: MessageKeyWhereUniqueInput
+  }
+
+  /**
+   * MessageKey updateMany
+   */
+  export type MessageKeyUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update MessageKeys.
+     */
+    data: XOR<MessageKeyUpdateManyMutationInput, MessageKeyUncheckedUpdateManyInput>
+    /**
+     * Filter which MessageKeys to update
+     */
+    where?: MessageKeyWhereInput
+    /**
+     * Limit how many MessageKeys to update.
+     */
+    limit?: number
+  }
+
+  /**
+   * MessageKey updateManyAndReturn
+   */
+  export type MessageKeyUpdateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the MessageKey
+     */
+    select?: MessageKeySelectUpdateManyAndReturn<ExtArgs> | null
+    /**
+     * Omit specific fields from the MessageKey
+     */
+    omit?: MessageKeyOmit<ExtArgs> | null
+    /**
+     * The data used to update MessageKeys.
+     */
+    data: XOR<MessageKeyUpdateManyMutationInput, MessageKeyUncheckedUpdateManyInput>
+    /**
+     * Filter which MessageKeys to update
+     */
+    where?: MessageKeyWhereInput
+    /**
+     * Limit how many MessageKeys to update.
+     */
+    limit?: number
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: MessageKeyIncludeUpdateManyAndReturn<ExtArgs> | null
+  }
+
+  /**
+   * MessageKey upsert
+   */
+  export type MessageKeyUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the MessageKey
+     */
+    select?: MessageKeySelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the MessageKey
+     */
+    omit?: MessageKeyOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: MessageKeyInclude<ExtArgs> | null
+    /**
+     * The filter to search for the MessageKey to update in case it exists.
+     */
+    where: MessageKeyWhereUniqueInput
+    /**
+     * In case the MessageKey found by the `where` argument doesn't exist, create a new MessageKey with this data.
+     */
+    create: XOR<MessageKeyCreateInput, MessageKeyUncheckedCreateInput>
+    /**
+     * In case the MessageKey was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<MessageKeyUpdateInput, MessageKeyUncheckedUpdateInput>
+  }
+
+  /**
+   * MessageKey delete
+   */
+  export type MessageKeyDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the MessageKey
+     */
+    select?: MessageKeySelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the MessageKey
+     */
+    omit?: MessageKeyOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: MessageKeyInclude<ExtArgs> | null
+    /**
+     * Filter which MessageKey to delete.
+     */
+    where: MessageKeyWhereUniqueInput
+  }
+
+  /**
+   * MessageKey deleteMany
+   */
+  export type MessageKeyDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which MessageKeys to delete
+     */
+    where?: MessageKeyWhereInput
+    /**
+     * Limit how many MessageKeys to delete.
+     */
+    limit?: number
+  }
+
+  /**
+   * MessageKey without action
+   */
+  export type MessageKeyDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the MessageKey
+     */
+    select?: MessageKeySelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the MessageKey
+     */
+    omit?: MessageKeyOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: MessageKeyInclude<ExtArgs> | null
+  }
+
+
+  /**
+   * Model RatchetState
+   */
+
+  export type AggregateRatchetState = {
+    _count: RatchetStateCountAggregateOutputType | null
+    _avg: RatchetStateAvgAggregateOutputType | null
+    _sum: RatchetStateSumAggregateOutputType | null
+    _min: RatchetStateMinAggregateOutputType | null
+    _max: RatchetStateMaxAggregateOutputType | null
+  }
+
+  export type RatchetStateAvgAggregateOutputType = {
+    sendMessageNumber: number | null
+    recvMessageNumber: number | null
+  }
+
+  export type RatchetStateSumAggregateOutputType = {
+    sendMessageNumber: number | null
+    recvMessageNumber: number | null
+  }
+
+  export type RatchetStateMinAggregateOutputType = {
+    id: string | null
+    userId: string | null
+    contactId: string | null
+    rootKey: string | null
+    sendingChainKey: string | null
+    receivingChainKey: string | null
+    sendMessageNumber: number | null
+    recvMessageNumber: number | null
+    dhRatchetPrivate: string | null
+    dhRatchetPublic: string | null
+    remotePublicKey: string | null
+    updatedAt: Date | null
+  }
+
+  export type RatchetStateMaxAggregateOutputType = {
+    id: string | null
+    userId: string | null
+    contactId: string | null
+    rootKey: string | null
+    sendingChainKey: string | null
+    receivingChainKey: string | null
+    sendMessageNumber: number | null
+    recvMessageNumber: number | null
+    dhRatchetPrivate: string | null
+    dhRatchetPublic: string | null
+    remotePublicKey: string | null
+    updatedAt: Date | null
+  }
+
+  export type RatchetStateCountAggregateOutputType = {
+    id: number
+    userId: number
+    contactId: number
+    rootKey: number
+    sendingChainKey: number
+    receivingChainKey: number
+    sendMessageNumber: number
+    recvMessageNumber: number
+    dhRatchetPrivate: number
+    dhRatchetPublic: number
+    remotePublicKey: number
+    updatedAt: number
+    _all: number
+  }
+
+
+  export type RatchetStateAvgAggregateInputType = {
+    sendMessageNumber?: true
+    recvMessageNumber?: true
+  }
+
+  export type RatchetStateSumAggregateInputType = {
+    sendMessageNumber?: true
+    recvMessageNumber?: true
+  }
+
+  export type RatchetStateMinAggregateInputType = {
+    id?: true
+    userId?: true
+    contactId?: true
+    rootKey?: true
+    sendingChainKey?: true
+    receivingChainKey?: true
+    sendMessageNumber?: true
+    recvMessageNumber?: true
+    dhRatchetPrivate?: true
+    dhRatchetPublic?: true
+    remotePublicKey?: true
+    updatedAt?: true
+  }
+
+  export type RatchetStateMaxAggregateInputType = {
+    id?: true
+    userId?: true
+    contactId?: true
+    rootKey?: true
+    sendingChainKey?: true
+    receivingChainKey?: true
+    sendMessageNumber?: true
+    recvMessageNumber?: true
+    dhRatchetPrivate?: true
+    dhRatchetPublic?: true
+    remotePublicKey?: true
+    updatedAt?: true
+  }
+
+  export type RatchetStateCountAggregateInputType = {
+    id?: true
+    userId?: true
+    contactId?: true
+    rootKey?: true
+    sendingChainKey?: true
+    receivingChainKey?: true
+    sendMessageNumber?: true
+    recvMessageNumber?: true
+    dhRatchetPrivate?: true
+    dhRatchetPublic?: true
+    remotePublicKey?: true
+    updatedAt?: true
+    _all?: true
+  }
+
+  export type RatchetStateAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which RatchetState to aggregate.
+     */
+    where?: RatchetStateWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of RatchetStates to fetch.
+     */
+    orderBy?: RatchetStateOrderByWithRelationInput | RatchetStateOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: RatchetStateWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` RatchetStates from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` RatchetStates.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned RatchetStates
+    **/
+    _count?: true | RatchetStateCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: RatchetStateAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: RatchetStateSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: RatchetStateMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: RatchetStateMaxAggregateInputType
+  }
+
+  export type GetRatchetStateAggregateType<T extends RatchetStateAggregateArgs> = {
+        [P in keyof T & keyof AggregateRatchetState]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateRatchetState[P]>
+      : GetScalarType<T[P], AggregateRatchetState[P]>
+  }
+
+
+
+
+  export type RatchetStateGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: RatchetStateWhereInput
+    orderBy?: RatchetStateOrderByWithAggregationInput | RatchetStateOrderByWithAggregationInput[]
+    by: RatchetStateScalarFieldEnum[] | RatchetStateScalarFieldEnum
+    having?: RatchetStateScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: RatchetStateCountAggregateInputType | true
+    _avg?: RatchetStateAvgAggregateInputType
+    _sum?: RatchetStateSumAggregateInputType
+    _min?: RatchetStateMinAggregateInputType
+    _max?: RatchetStateMaxAggregateInputType
+  }
+
+  export type RatchetStateGroupByOutputType = {
+    id: string
+    userId: string
+    contactId: string
+    rootKey: string
+    sendingChainKey: string
+    receivingChainKey: string
+    sendMessageNumber: number
+    recvMessageNumber: number
+    dhRatchetPrivate: string
+    dhRatchetPublic: string
+    remotePublicKey: string | null
+    updatedAt: Date
+    _count: RatchetStateCountAggregateOutputType | null
+    _avg: RatchetStateAvgAggregateOutputType | null
+    _sum: RatchetStateSumAggregateOutputType | null
+    _min: RatchetStateMinAggregateOutputType | null
+    _max: RatchetStateMaxAggregateOutputType | null
+  }
+
+  type GetRatchetStateGroupByPayload<T extends RatchetStateGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<RatchetStateGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof RatchetStateGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], RatchetStateGroupByOutputType[P]>
+            : GetScalarType<T[P], RatchetStateGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type RatchetStateSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    userId?: boolean
+    contactId?: boolean
+    rootKey?: boolean
+    sendingChainKey?: boolean
+    receivingChainKey?: boolean
+    sendMessageNumber?: boolean
+    recvMessageNumber?: boolean
+    dhRatchetPrivate?: boolean
+    dhRatchetPublic?: boolean
+    remotePublicKey?: boolean
+    updatedAt?: boolean
+  }, ExtArgs["result"]["ratchetState"]>
+
+  export type RatchetStateSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    userId?: boolean
+    contactId?: boolean
+    rootKey?: boolean
+    sendingChainKey?: boolean
+    receivingChainKey?: boolean
+    sendMessageNumber?: boolean
+    recvMessageNumber?: boolean
+    dhRatchetPrivate?: boolean
+    dhRatchetPublic?: boolean
+    remotePublicKey?: boolean
+    updatedAt?: boolean
+  }, ExtArgs["result"]["ratchetState"]>
+
+  export type RatchetStateSelectUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    userId?: boolean
+    contactId?: boolean
+    rootKey?: boolean
+    sendingChainKey?: boolean
+    receivingChainKey?: boolean
+    sendMessageNumber?: boolean
+    recvMessageNumber?: boolean
+    dhRatchetPrivate?: boolean
+    dhRatchetPublic?: boolean
+    remotePublicKey?: boolean
+    updatedAt?: boolean
+  }, ExtArgs["result"]["ratchetState"]>
+
+  export type RatchetStateSelectScalar = {
+    id?: boolean
+    userId?: boolean
+    contactId?: boolean
+    rootKey?: boolean
+    sendingChainKey?: boolean
+    receivingChainKey?: boolean
+    sendMessageNumber?: boolean
+    recvMessageNumber?: boolean
+    dhRatchetPrivate?: boolean
+    dhRatchetPublic?: boolean
+    remotePublicKey?: boolean
+    updatedAt?: boolean
+  }
+
+  export type RatchetStateOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "userId" | "contactId" | "rootKey" | "sendingChainKey" | "receivingChainKey" | "sendMessageNumber" | "recvMessageNumber" | "dhRatchetPrivate" | "dhRatchetPublic" | "remotePublicKey" | "updatedAt", ExtArgs["result"]["ratchetState"]>
+
+  export type $RatchetStatePayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "RatchetState"
+    objects: {}
+    scalars: $Extensions.GetPayloadResult<{
+      id: string
+      userId: string
+      contactId: string
+      rootKey: string
+      sendingChainKey: string
+      receivingChainKey: string
+      sendMessageNumber: number
+      recvMessageNumber: number
+      dhRatchetPrivate: string
+      dhRatchetPublic: string
+      remotePublicKey: string | null
+      updatedAt: Date
+    }, ExtArgs["result"]["ratchetState"]>
+    composites: {}
+  }
+
+  type RatchetStateGetPayload<S extends boolean | null | undefined | RatchetStateDefaultArgs> = $Result.GetResult<Prisma.$RatchetStatePayload, S>
+
+  type RatchetStateCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
+    Omit<RatchetStateFindManyArgs, 'select' | 'include' | 'distinct' | 'omit'> & {
+      select?: RatchetStateCountAggregateInputType | true
+    }
+
+  export interface RatchetStateDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['RatchetState'], meta: { name: 'RatchetState' } }
+    /**
+     * Find zero or one RatchetState that matches the filter.
+     * @param {RatchetStateFindUniqueArgs} args - Arguments to find a RatchetState
+     * @example
+     * // Get one RatchetState
+     * const ratchetState = await prisma.ratchetState.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends RatchetStateFindUniqueArgs>(args: SelectSubset<T, RatchetStateFindUniqueArgs<ExtArgs>>): Prisma__RatchetStateClient<$Result.GetResult<Prisma.$RatchetStatePayload<ExtArgs>, T, "findUnique", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find one RatchetState that matches the filter or throw an error with `error.code='P2025'`
+     * if no matches were found.
+     * @param {RatchetStateFindUniqueOrThrowArgs} args - Arguments to find a RatchetState
+     * @example
+     * // Get one RatchetState
+     * const ratchetState = await prisma.ratchetState.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends RatchetStateFindUniqueOrThrowArgs>(args: SelectSubset<T, RatchetStateFindUniqueOrThrowArgs<ExtArgs>>): Prisma__RatchetStateClient<$Result.GetResult<Prisma.$RatchetStatePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first RatchetState that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {RatchetStateFindFirstArgs} args - Arguments to find a RatchetState
+     * @example
+     * // Get one RatchetState
+     * const ratchetState = await prisma.ratchetState.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends RatchetStateFindFirstArgs>(args?: SelectSubset<T, RatchetStateFindFirstArgs<ExtArgs>>): Prisma__RatchetStateClient<$Result.GetResult<Prisma.$RatchetStatePayload<ExtArgs>, T, "findFirst", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first RatchetState that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {RatchetStateFindFirstOrThrowArgs} args - Arguments to find a RatchetState
+     * @example
+     * // Get one RatchetState
+     * const ratchetState = await prisma.ratchetState.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends RatchetStateFindFirstOrThrowArgs>(args?: SelectSubset<T, RatchetStateFindFirstOrThrowArgs<ExtArgs>>): Prisma__RatchetStateClient<$Result.GetResult<Prisma.$RatchetStatePayload<ExtArgs>, T, "findFirstOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find zero or more RatchetStates that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {RatchetStateFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all RatchetStates
+     * const ratchetStates = await prisma.ratchetState.findMany()
+     * 
+     * // Get first 10 RatchetStates
+     * const ratchetStates = await prisma.ratchetState.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const ratchetStateWithIdOnly = await prisma.ratchetState.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends RatchetStateFindManyArgs>(args?: SelectSubset<T, RatchetStateFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$RatchetStatePayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
+
+    /**
+     * Create a RatchetState.
+     * @param {RatchetStateCreateArgs} args - Arguments to create a RatchetState.
+     * @example
+     * // Create one RatchetState
+     * const RatchetState = await prisma.ratchetState.create({
+     *   data: {
+     *     // ... data to create a RatchetState
+     *   }
+     * })
+     * 
+     */
+    create<T extends RatchetStateCreateArgs>(args: SelectSubset<T, RatchetStateCreateArgs<ExtArgs>>): Prisma__RatchetStateClient<$Result.GetResult<Prisma.$RatchetStatePayload<ExtArgs>, T, "create", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Create many RatchetStates.
+     * @param {RatchetStateCreateManyArgs} args - Arguments to create many RatchetStates.
+     * @example
+     * // Create many RatchetStates
+     * const ratchetState = await prisma.ratchetState.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends RatchetStateCreateManyArgs>(args?: SelectSubset<T, RatchetStateCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create many RatchetStates and returns the data saved in the database.
+     * @param {RatchetStateCreateManyAndReturnArgs} args - Arguments to create many RatchetStates.
+     * @example
+     * // Create many RatchetStates
+     * const ratchetState = await prisma.ratchetState.createManyAndReturn({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Create many RatchetStates and only return the `id`
+     * const ratchetStateWithIdOnly = await prisma.ratchetState.createManyAndReturn({
+     *   select: { id: true },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    createManyAndReturn<T extends RatchetStateCreateManyAndReturnArgs>(args?: SelectSubset<T, RatchetStateCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$RatchetStatePayload<ExtArgs>, T, "createManyAndReturn", GlobalOmitOptions>>
+
+    /**
+     * Delete a RatchetState.
+     * @param {RatchetStateDeleteArgs} args - Arguments to delete one RatchetState.
+     * @example
+     * // Delete one RatchetState
+     * const RatchetState = await prisma.ratchetState.delete({
+     *   where: {
+     *     // ... filter to delete one RatchetState
+     *   }
+     * })
+     * 
+     */
+    delete<T extends RatchetStateDeleteArgs>(args: SelectSubset<T, RatchetStateDeleteArgs<ExtArgs>>): Prisma__RatchetStateClient<$Result.GetResult<Prisma.$RatchetStatePayload<ExtArgs>, T, "delete", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Update one RatchetState.
+     * @param {RatchetStateUpdateArgs} args - Arguments to update one RatchetState.
+     * @example
+     * // Update one RatchetState
+     * const ratchetState = await prisma.ratchetState.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends RatchetStateUpdateArgs>(args: SelectSubset<T, RatchetStateUpdateArgs<ExtArgs>>): Prisma__RatchetStateClient<$Result.GetResult<Prisma.$RatchetStatePayload<ExtArgs>, T, "update", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Delete zero or more RatchetStates.
+     * @param {RatchetStateDeleteManyArgs} args - Arguments to filter RatchetStates to delete.
+     * @example
+     * // Delete a few RatchetStates
+     * const { count } = await prisma.ratchetState.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends RatchetStateDeleteManyArgs>(args?: SelectSubset<T, RatchetStateDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more RatchetStates.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {RatchetStateUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many RatchetStates
+     * const ratchetState = await prisma.ratchetState.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends RatchetStateUpdateManyArgs>(args: SelectSubset<T, RatchetStateUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more RatchetStates and returns the data updated in the database.
+     * @param {RatchetStateUpdateManyAndReturnArgs} args - Arguments to update many RatchetStates.
+     * @example
+     * // Update many RatchetStates
+     * const ratchetState = await prisma.ratchetState.updateManyAndReturn({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Update zero or more RatchetStates and only return the `id`
+     * const ratchetStateWithIdOnly = await prisma.ratchetState.updateManyAndReturn({
+     *   select: { id: true },
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    updateManyAndReturn<T extends RatchetStateUpdateManyAndReturnArgs>(args: SelectSubset<T, RatchetStateUpdateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$RatchetStatePayload<ExtArgs>, T, "updateManyAndReturn", GlobalOmitOptions>>
+
+    /**
+     * Create or update one RatchetState.
+     * @param {RatchetStateUpsertArgs} args - Arguments to update or create a RatchetState.
+     * @example
+     * // Update or create a RatchetState
+     * const ratchetState = await prisma.ratchetState.upsert({
+     *   create: {
+     *     // ... data to create a RatchetState
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the RatchetState we want to update
+     *   }
+     * })
+     */
+    upsert<T extends RatchetStateUpsertArgs>(args: SelectSubset<T, RatchetStateUpsertArgs<ExtArgs>>): Prisma__RatchetStateClient<$Result.GetResult<Prisma.$RatchetStatePayload<ExtArgs>, T, "upsert", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+
+    /**
+     * Count the number of RatchetStates.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {RatchetStateCountArgs} args - Arguments to filter RatchetStates to count.
+     * @example
+     * // Count the number of RatchetStates
+     * const count = await prisma.ratchetState.count({
+     *   where: {
+     *     // ... the filter for the RatchetStates we want to count
+     *   }
+     * })
+    **/
+    count<T extends RatchetStateCountArgs>(
+      args?: Subset<T, RatchetStateCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], RatchetStateCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a RatchetState.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {RatchetStateAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends RatchetStateAggregateArgs>(args: Subset<T, RatchetStateAggregateArgs>): Prisma.PrismaPromise<GetRatchetStateAggregateType<T>>
+
+    /**
+     * Group by RatchetState.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {RatchetStateGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends RatchetStateGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: RatchetStateGroupByArgs['orderBy'] }
+        : { orderBy?: RatchetStateGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, RatchetStateGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetRatchetStateGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the RatchetState model
+   */
+  readonly fields: RatchetStateFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for RatchetState.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__RatchetStateClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the RatchetState model
+   */
+  interface RatchetStateFieldRefs {
+    readonly id: FieldRef<"RatchetState", 'String'>
+    readonly userId: FieldRef<"RatchetState", 'String'>
+    readonly contactId: FieldRef<"RatchetState", 'String'>
+    readonly rootKey: FieldRef<"RatchetState", 'String'>
+    readonly sendingChainKey: FieldRef<"RatchetState", 'String'>
+    readonly receivingChainKey: FieldRef<"RatchetState", 'String'>
+    readonly sendMessageNumber: FieldRef<"RatchetState", 'Int'>
+    readonly recvMessageNumber: FieldRef<"RatchetState", 'Int'>
+    readonly dhRatchetPrivate: FieldRef<"RatchetState", 'String'>
+    readonly dhRatchetPublic: FieldRef<"RatchetState", 'String'>
+    readonly remotePublicKey: FieldRef<"RatchetState", 'String'>
+    readonly updatedAt: FieldRef<"RatchetState", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * RatchetState findUnique
+   */
+  export type RatchetStateFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RatchetState
+     */
+    select?: RatchetStateSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the RatchetState
+     */
+    omit?: RatchetStateOmit<ExtArgs> | null
+    /**
+     * Filter, which RatchetState to fetch.
+     */
+    where: RatchetStateWhereUniqueInput
+  }
+
+  /**
+   * RatchetState findUniqueOrThrow
+   */
+  export type RatchetStateFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RatchetState
+     */
+    select?: RatchetStateSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the RatchetState
+     */
+    omit?: RatchetStateOmit<ExtArgs> | null
+    /**
+     * Filter, which RatchetState to fetch.
+     */
+    where: RatchetStateWhereUniqueInput
+  }
+
+  /**
+   * RatchetState findFirst
+   */
+  export type RatchetStateFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RatchetState
+     */
+    select?: RatchetStateSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the RatchetState
+     */
+    omit?: RatchetStateOmit<ExtArgs> | null
+    /**
+     * Filter, which RatchetState to fetch.
+     */
+    where?: RatchetStateWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of RatchetStates to fetch.
+     */
+    orderBy?: RatchetStateOrderByWithRelationInput | RatchetStateOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for RatchetStates.
+     */
+    cursor?: RatchetStateWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` RatchetStates from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` RatchetStates.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of RatchetStates.
+     */
+    distinct?: RatchetStateScalarFieldEnum | RatchetStateScalarFieldEnum[]
+  }
+
+  /**
+   * RatchetState findFirstOrThrow
+   */
+  export type RatchetStateFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RatchetState
+     */
+    select?: RatchetStateSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the RatchetState
+     */
+    omit?: RatchetStateOmit<ExtArgs> | null
+    /**
+     * Filter, which RatchetState to fetch.
+     */
+    where?: RatchetStateWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of RatchetStates to fetch.
+     */
+    orderBy?: RatchetStateOrderByWithRelationInput | RatchetStateOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for RatchetStates.
+     */
+    cursor?: RatchetStateWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` RatchetStates from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` RatchetStates.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of RatchetStates.
+     */
+    distinct?: RatchetStateScalarFieldEnum | RatchetStateScalarFieldEnum[]
+  }
+
+  /**
+   * RatchetState findMany
+   */
+  export type RatchetStateFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RatchetState
+     */
+    select?: RatchetStateSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the RatchetState
+     */
+    omit?: RatchetStateOmit<ExtArgs> | null
+    /**
+     * Filter, which RatchetStates to fetch.
+     */
+    where?: RatchetStateWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of RatchetStates to fetch.
+     */
+    orderBy?: RatchetStateOrderByWithRelationInput | RatchetStateOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing RatchetStates.
+     */
+    cursor?: RatchetStateWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` RatchetStates from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` RatchetStates.
+     */
+    skip?: number
+    distinct?: RatchetStateScalarFieldEnum | RatchetStateScalarFieldEnum[]
+  }
+
+  /**
+   * RatchetState create
+   */
+  export type RatchetStateCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RatchetState
+     */
+    select?: RatchetStateSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the RatchetState
+     */
+    omit?: RatchetStateOmit<ExtArgs> | null
+    /**
+     * The data needed to create a RatchetState.
+     */
+    data: XOR<RatchetStateCreateInput, RatchetStateUncheckedCreateInput>
+  }
+
+  /**
+   * RatchetState createMany
+   */
+  export type RatchetStateCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many RatchetStates.
+     */
+    data: RatchetStateCreateManyInput | RatchetStateCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * RatchetState createManyAndReturn
+   */
+  export type RatchetStateCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RatchetState
+     */
+    select?: RatchetStateSelectCreateManyAndReturn<ExtArgs> | null
+    /**
+     * Omit specific fields from the RatchetState
+     */
+    omit?: RatchetStateOmit<ExtArgs> | null
+    /**
+     * The data used to create many RatchetStates.
+     */
+    data: RatchetStateCreateManyInput | RatchetStateCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * RatchetState update
+   */
+  export type RatchetStateUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RatchetState
+     */
+    select?: RatchetStateSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the RatchetState
+     */
+    omit?: RatchetStateOmit<ExtArgs> | null
+    /**
+     * The data needed to update a RatchetState.
+     */
+    data: XOR<RatchetStateUpdateInput, RatchetStateUncheckedUpdateInput>
+    /**
+     * Choose, which RatchetState to update.
+     */
+    where: RatchetStateWhereUniqueInput
+  }
+
+  /**
+   * RatchetState updateMany
+   */
+  export type RatchetStateUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update RatchetStates.
+     */
+    data: XOR<RatchetStateUpdateManyMutationInput, RatchetStateUncheckedUpdateManyInput>
+    /**
+     * Filter which RatchetStates to update
+     */
+    where?: RatchetStateWhereInput
+    /**
+     * Limit how many RatchetStates to update.
+     */
+    limit?: number
+  }
+
+  /**
+   * RatchetState updateManyAndReturn
+   */
+  export type RatchetStateUpdateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RatchetState
+     */
+    select?: RatchetStateSelectUpdateManyAndReturn<ExtArgs> | null
+    /**
+     * Omit specific fields from the RatchetState
+     */
+    omit?: RatchetStateOmit<ExtArgs> | null
+    /**
+     * The data used to update RatchetStates.
+     */
+    data: XOR<RatchetStateUpdateManyMutationInput, RatchetStateUncheckedUpdateManyInput>
+    /**
+     * Filter which RatchetStates to update
+     */
+    where?: RatchetStateWhereInput
+    /**
+     * Limit how many RatchetStates to update.
+     */
+    limit?: number
+  }
+
+  /**
+   * RatchetState upsert
+   */
+  export type RatchetStateUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RatchetState
+     */
+    select?: RatchetStateSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the RatchetState
+     */
+    omit?: RatchetStateOmit<ExtArgs> | null
+    /**
+     * The filter to search for the RatchetState to update in case it exists.
+     */
+    where: RatchetStateWhereUniqueInput
+    /**
+     * In case the RatchetState found by the `where` argument doesn't exist, create a new RatchetState with this data.
+     */
+    create: XOR<RatchetStateCreateInput, RatchetStateUncheckedCreateInput>
+    /**
+     * In case the RatchetState was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<RatchetStateUpdateInput, RatchetStateUncheckedUpdateInput>
+  }
+
+  /**
+   * RatchetState delete
+   */
+  export type RatchetStateDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RatchetState
+     */
+    select?: RatchetStateSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the RatchetState
+     */
+    omit?: RatchetStateOmit<ExtArgs> | null
+    /**
+     * Filter which RatchetState to delete.
+     */
+    where: RatchetStateWhereUniqueInput
+  }
+
+  /**
+   * RatchetState deleteMany
+   */
+  export type RatchetStateDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which RatchetStates to delete
+     */
+    where?: RatchetStateWhereInput
+    /**
+     * Limit how many RatchetStates to delete.
+     */
+    limit?: number
+  }
+
+  /**
+   * RatchetState without action
+   */
+  export type RatchetStateDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RatchetState
+     */
+    select?: RatchetStateSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the RatchetState
+     */
+    omit?: RatchetStateOmit<ExtArgs> | null
   }
 
 
@@ -1867,6 +5915,57 @@ export namespace Prisma {
   export type UserScalarFieldEnum = (typeof UserScalarFieldEnum)[keyof typeof UserScalarFieldEnum]
 
 
+  export const MessageScalarFieldEnum: {
+    id: 'id',
+    senderId: 'senderId',
+    recipientId: 'recipientId',
+    encryptedContent: 'encryptedContent',
+    ephemeralKey: 'ephemeralKey',
+    nonce: 'nonce',
+    messageNumber: 'messageNumber',
+    previousChainN: 'previousChainN',
+    timestamp: 'timestamp',
+    editedAt: 'editedAt',
+    deletedAt: 'deletedAt',
+    deleteType: 'deleteType',
+    replyToId: 'replyToId'
+  };
+
+  export type MessageScalarFieldEnum = (typeof MessageScalarFieldEnum)[keyof typeof MessageScalarFieldEnum]
+
+
+  export const MessageKeyScalarFieldEnum: {
+    id: 'id',
+    messageId: 'messageId',
+    userId: 'userId',
+    encryptedKey: 'encryptedKey',
+    ephemeralPublicKey: 'ephemeralPublicKey',
+    chainKeySnapshot: 'chainKeySnapshot',
+    keyIndex: 'keyIndex',
+    createdAt: 'createdAt'
+  };
+
+  export type MessageKeyScalarFieldEnum = (typeof MessageKeyScalarFieldEnum)[keyof typeof MessageKeyScalarFieldEnum]
+
+
+  export const RatchetStateScalarFieldEnum: {
+    id: 'id',
+    userId: 'userId',
+    contactId: 'contactId',
+    rootKey: 'rootKey',
+    sendingChainKey: 'sendingChainKey',
+    receivingChainKey: 'receivingChainKey',
+    sendMessageNumber: 'sendMessageNumber',
+    recvMessageNumber: 'recvMessageNumber',
+    dhRatchetPrivate: 'dhRatchetPrivate',
+    dhRatchetPublic: 'dhRatchetPublic',
+    remotePublicKey: 'remotePublicKey',
+    updatedAt: 'updatedAt'
+  };
+
+  export type RatchetStateScalarFieldEnum = (typeof RatchetStateScalarFieldEnum)[keyof typeof RatchetStateScalarFieldEnum]
+
+
   export const SortOrder: {
     asc: 'asc',
     desc: 'desc'
@@ -1881,6 +5980,14 @@ export namespace Prisma {
   };
 
   export type QueryMode = (typeof QueryMode)[keyof typeof QueryMode]
+
+
+  export const NullsOrder: {
+    first: 'first',
+    last: 'last'
+  };
+
+  export type NullsOrder = (typeof NullsOrder)[keyof typeof NullsOrder]
 
 
   /**
@@ -1928,6 +6035,20 @@ export namespace Prisma {
    */
   export type ListIntFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Int[]'>
     
+
+
+  /**
+   * Reference to a field of type 'Float'
+   */
+  export type FloatFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Float'>
+    
+
+
+  /**
+   * Reference to a field of type 'Float[]'
+   */
+  export type ListFloatFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Float[]'>
+    
   /**
    * Deep Input Types
    */
@@ -1941,6 +6062,9 @@ export namespace Prisma {
     nickName?: StringFilter<"User"> | string
     key?: StringFilter<"User"> | string
     createdAt?: DateTimeFilter<"User"> | Date | string
+    sentMessages?: MessageListRelationFilter
+    receivedMessages?: MessageListRelationFilter
+    messageKeys?: MessageKeyListRelationFilter
   }
 
   export type UserOrderByWithRelationInput = {
@@ -1948,6 +6072,9 @@ export namespace Prisma {
     nickName?: SortOrder
     key?: SortOrder
     createdAt?: SortOrder
+    sentMessages?: MessageOrderByRelationAggregateInput
+    receivedMessages?: MessageOrderByRelationAggregateInput
+    messageKeys?: MessageKeyOrderByRelationAggregateInput
   }
 
   export type UserWhereUniqueInput = Prisma.AtLeast<{
@@ -1958,6 +6085,9 @@ export namespace Prisma {
     OR?: UserWhereInput[]
     NOT?: UserWhereInput | UserWhereInput[]
     createdAt?: DateTimeFilter<"User"> | Date | string
+    sentMessages?: MessageListRelationFilter
+    receivedMessages?: MessageListRelationFilter
+    messageKeys?: MessageKeyListRelationFilter
   }, "id" | "nickName" | "key">
 
   export type UserOrderByWithAggregationInput = {
@@ -1980,11 +6110,289 @@ export namespace Prisma {
     createdAt?: DateTimeWithAggregatesFilter<"User"> | Date | string
   }
 
+  export type MessageWhereInput = {
+    AND?: MessageWhereInput | MessageWhereInput[]
+    OR?: MessageWhereInput[]
+    NOT?: MessageWhereInput | MessageWhereInput[]
+    id?: StringFilter<"Message"> | string
+    senderId?: StringFilter<"Message"> | string
+    recipientId?: StringFilter<"Message"> | string
+    encryptedContent?: StringFilter<"Message"> | string
+    ephemeralKey?: StringFilter<"Message"> | string
+    nonce?: StringFilter<"Message"> | string
+    messageNumber?: IntFilter<"Message"> | number
+    previousChainN?: IntFilter<"Message"> | number
+    timestamp?: DateTimeFilter<"Message"> | Date | string
+    editedAt?: DateTimeNullableFilter<"Message"> | Date | string | null
+    deletedAt?: DateTimeNullableFilter<"Message"> | Date | string | null
+    deleteType?: StringNullableFilter<"Message"> | string | null
+    replyToId?: StringNullableFilter<"Message"> | string | null
+    sender?: XOR<UserScalarRelationFilter, UserWhereInput>
+    recipient?: XOR<UserScalarRelationFilter, UserWhereInput>
+    replyTo?: XOR<MessageNullableScalarRelationFilter, MessageWhereInput> | null
+    replies?: MessageListRelationFilter
+    messageKeys?: MessageKeyListRelationFilter
+  }
+
+  export type MessageOrderByWithRelationInput = {
+    id?: SortOrder
+    senderId?: SortOrder
+    recipientId?: SortOrder
+    encryptedContent?: SortOrder
+    ephemeralKey?: SortOrder
+    nonce?: SortOrder
+    messageNumber?: SortOrder
+    previousChainN?: SortOrder
+    timestamp?: SortOrder
+    editedAt?: SortOrderInput | SortOrder
+    deletedAt?: SortOrderInput | SortOrder
+    deleteType?: SortOrderInput | SortOrder
+    replyToId?: SortOrderInput | SortOrder
+    sender?: UserOrderByWithRelationInput
+    recipient?: UserOrderByWithRelationInput
+    replyTo?: MessageOrderByWithRelationInput
+    replies?: MessageOrderByRelationAggregateInput
+    messageKeys?: MessageKeyOrderByRelationAggregateInput
+  }
+
+  export type MessageWhereUniqueInput = Prisma.AtLeast<{
+    id?: string
+    AND?: MessageWhereInput | MessageWhereInput[]
+    OR?: MessageWhereInput[]
+    NOT?: MessageWhereInput | MessageWhereInput[]
+    senderId?: StringFilter<"Message"> | string
+    recipientId?: StringFilter<"Message"> | string
+    encryptedContent?: StringFilter<"Message"> | string
+    ephemeralKey?: StringFilter<"Message"> | string
+    nonce?: StringFilter<"Message"> | string
+    messageNumber?: IntFilter<"Message"> | number
+    previousChainN?: IntFilter<"Message"> | number
+    timestamp?: DateTimeFilter<"Message"> | Date | string
+    editedAt?: DateTimeNullableFilter<"Message"> | Date | string | null
+    deletedAt?: DateTimeNullableFilter<"Message"> | Date | string | null
+    deleteType?: StringNullableFilter<"Message"> | string | null
+    replyToId?: StringNullableFilter<"Message"> | string | null
+    sender?: XOR<UserScalarRelationFilter, UserWhereInput>
+    recipient?: XOR<UserScalarRelationFilter, UserWhereInput>
+    replyTo?: XOR<MessageNullableScalarRelationFilter, MessageWhereInput> | null
+    replies?: MessageListRelationFilter
+    messageKeys?: MessageKeyListRelationFilter
+  }, "id">
+
+  export type MessageOrderByWithAggregationInput = {
+    id?: SortOrder
+    senderId?: SortOrder
+    recipientId?: SortOrder
+    encryptedContent?: SortOrder
+    ephemeralKey?: SortOrder
+    nonce?: SortOrder
+    messageNumber?: SortOrder
+    previousChainN?: SortOrder
+    timestamp?: SortOrder
+    editedAt?: SortOrderInput | SortOrder
+    deletedAt?: SortOrderInput | SortOrder
+    deleteType?: SortOrderInput | SortOrder
+    replyToId?: SortOrderInput | SortOrder
+    _count?: MessageCountOrderByAggregateInput
+    _avg?: MessageAvgOrderByAggregateInput
+    _max?: MessageMaxOrderByAggregateInput
+    _min?: MessageMinOrderByAggregateInput
+    _sum?: MessageSumOrderByAggregateInput
+  }
+
+  export type MessageScalarWhereWithAggregatesInput = {
+    AND?: MessageScalarWhereWithAggregatesInput | MessageScalarWhereWithAggregatesInput[]
+    OR?: MessageScalarWhereWithAggregatesInput[]
+    NOT?: MessageScalarWhereWithAggregatesInput | MessageScalarWhereWithAggregatesInput[]
+    id?: StringWithAggregatesFilter<"Message"> | string
+    senderId?: StringWithAggregatesFilter<"Message"> | string
+    recipientId?: StringWithAggregatesFilter<"Message"> | string
+    encryptedContent?: StringWithAggregatesFilter<"Message"> | string
+    ephemeralKey?: StringWithAggregatesFilter<"Message"> | string
+    nonce?: StringWithAggregatesFilter<"Message"> | string
+    messageNumber?: IntWithAggregatesFilter<"Message"> | number
+    previousChainN?: IntWithAggregatesFilter<"Message"> | number
+    timestamp?: DateTimeWithAggregatesFilter<"Message"> | Date | string
+    editedAt?: DateTimeNullableWithAggregatesFilter<"Message"> | Date | string | null
+    deletedAt?: DateTimeNullableWithAggregatesFilter<"Message"> | Date | string | null
+    deleteType?: StringNullableWithAggregatesFilter<"Message"> | string | null
+    replyToId?: StringNullableWithAggregatesFilter<"Message"> | string | null
+  }
+
+  export type MessageKeyWhereInput = {
+    AND?: MessageKeyWhereInput | MessageKeyWhereInput[]
+    OR?: MessageKeyWhereInput[]
+    NOT?: MessageKeyWhereInput | MessageKeyWhereInput[]
+    id?: StringFilter<"MessageKey"> | string
+    messageId?: StringFilter<"MessageKey"> | string
+    userId?: StringFilter<"MessageKey"> | string
+    encryptedKey?: StringFilter<"MessageKey"> | string
+    ephemeralPublicKey?: StringNullableFilter<"MessageKey"> | string | null
+    chainKeySnapshot?: StringFilter<"MessageKey"> | string
+    keyIndex?: IntFilter<"MessageKey"> | number
+    createdAt?: DateTimeFilter<"MessageKey"> | Date | string
+    message?: XOR<MessageScalarRelationFilter, MessageWhereInput>
+    user?: XOR<UserScalarRelationFilter, UserWhereInput>
+  }
+
+  export type MessageKeyOrderByWithRelationInput = {
+    id?: SortOrder
+    messageId?: SortOrder
+    userId?: SortOrder
+    encryptedKey?: SortOrder
+    ephemeralPublicKey?: SortOrderInput | SortOrder
+    chainKeySnapshot?: SortOrder
+    keyIndex?: SortOrder
+    createdAt?: SortOrder
+    message?: MessageOrderByWithRelationInput
+    user?: UserOrderByWithRelationInput
+  }
+
+  export type MessageKeyWhereUniqueInput = Prisma.AtLeast<{
+    id?: string
+    messageId_userId?: MessageKeyMessageIdUserIdCompoundUniqueInput
+    AND?: MessageKeyWhereInput | MessageKeyWhereInput[]
+    OR?: MessageKeyWhereInput[]
+    NOT?: MessageKeyWhereInput | MessageKeyWhereInput[]
+    messageId?: StringFilter<"MessageKey"> | string
+    userId?: StringFilter<"MessageKey"> | string
+    encryptedKey?: StringFilter<"MessageKey"> | string
+    ephemeralPublicKey?: StringNullableFilter<"MessageKey"> | string | null
+    chainKeySnapshot?: StringFilter<"MessageKey"> | string
+    keyIndex?: IntFilter<"MessageKey"> | number
+    createdAt?: DateTimeFilter<"MessageKey"> | Date | string
+    message?: XOR<MessageScalarRelationFilter, MessageWhereInput>
+    user?: XOR<UserScalarRelationFilter, UserWhereInput>
+  }, "id" | "messageId_userId">
+
+  export type MessageKeyOrderByWithAggregationInput = {
+    id?: SortOrder
+    messageId?: SortOrder
+    userId?: SortOrder
+    encryptedKey?: SortOrder
+    ephemeralPublicKey?: SortOrderInput | SortOrder
+    chainKeySnapshot?: SortOrder
+    keyIndex?: SortOrder
+    createdAt?: SortOrder
+    _count?: MessageKeyCountOrderByAggregateInput
+    _avg?: MessageKeyAvgOrderByAggregateInput
+    _max?: MessageKeyMaxOrderByAggregateInput
+    _min?: MessageKeyMinOrderByAggregateInput
+    _sum?: MessageKeySumOrderByAggregateInput
+  }
+
+  export type MessageKeyScalarWhereWithAggregatesInput = {
+    AND?: MessageKeyScalarWhereWithAggregatesInput | MessageKeyScalarWhereWithAggregatesInput[]
+    OR?: MessageKeyScalarWhereWithAggregatesInput[]
+    NOT?: MessageKeyScalarWhereWithAggregatesInput | MessageKeyScalarWhereWithAggregatesInput[]
+    id?: StringWithAggregatesFilter<"MessageKey"> | string
+    messageId?: StringWithAggregatesFilter<"MessageKey"> | string
+    userId?: StringWithAggregatesFilter<"MessageKey"> | string
+    encryptedKey?: StringWithAggregatesFilter<"MessageKey"> | string
+    ephemeralPublicKey?: StringNullableWithAggregatesFilter<"MessageKey"> | string | null
+    chainKeySnapshot?: StringWithAggregatesFilter<"MessageKey"> | string
+    keyIndex?: IntWithAggregatesFilter<"MessageKey"> | number
+    createdAt?: DateTimeWithAggregatesFilter<"MessageKey"> | Date | string
+  }
+
+  export type RatchetStateWhereInput = {
+    AND?: RatchetStateWhereInput | RatchetStateWhereInput[]
+    OR?: RatchetStateWhereInput[]
+    NOT?: RatchetStateWhereInput | RatchetStateWhereInput[]
+    id?: StringFilter<"RatchetState"> | string
+    userId?: StringFilter<"RatchetState"> | string
+    contactId?: StringFilter<"RatchetState"> | string
+    rootKey?: StringFilter<"RatchetState"> | string
+    sendingChainKey?: StringFilter<"RatchetState"> | string
+    receivingChainKey?: StringFilter<"RatchetState"> | string
+    sendMessageNumber?: IntFilter<"RatchetState"> | number
+    recvMessageNumber?: IntFilter<"RatchetState"> | number
+    dhRatchetPrivate?: StringFilter<"RatchetState"> | string
+    dhRatchetPublic?: StringFilter<"RatchetState"> | string
+    remotePublicKey?: StringNullableFilter<"RatchetState"> | string | null
+    updatedAt?: DateTimeFilter<"RatchetState"> | Date | string
+  }
+
+  export type RatchetStateOrderByWithRelationInput = {
+    id?: SortOrder
+    userId?: SortOrder
+    contactId?: SortOrder
+    rootKey?: SortOrder
+    sendingChainKey?: SortOrder
+    receivingChainKey?: SortOrder
+    sendMessageNumber?: SortOrder
+    recvMessageNumber?: SortOrder
+    dhRatchetPrivate?: SortOrder
+    dhRatchetPublic?: SortOrder
+    remotePublicKey?: SortOrderInput | SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type RatchetStateWhereUniqueInput = Prisma.AtLeast<{
+    id?: string
+    userId_contactId?: RatchetStateUserIdContactIdCompoundUniqueInput
+    AND?: RatchetStateWhereInput | RatchetStateWhereInput[]
+    OR?: RatchetStateWhereInput[]
+    NOT?: RatchetStateWhereInput | RatchetStateWhereInput[]
+    userId?: StringFilter<"RatchetState"> | string
+    contactId?: StringFilter<"RatchetState"> | string
+    rootKey?: StringFilter<"RatchetState"> | string
+    sendingChainKey?: StringFilter<"RatchetState"> | string
+    receivingChainKey?: StringFilter<"RatchetState"> | string
+    sendMessageNumber?: IntFilter<"RatchetState"> | number
+    recvMessageNumber?: IntFilter<"RatchetState"> | number
+    dhRatchetPrivate?: StringFilter<"RatchetState"> | string
+    dhRatchetPublic?: StringFilter<"RatchetState"> | string
+    remotePublicKey?: StringNullableFilter<"RatchetState"> | string | null
+    updatedAt?: DateTimeFilter<"RatchetState"> | Date | string
+  }, "id" | "userId_contactId">
+
+  export type RatchetStateOrderByWithAggregationInput = {
+    id?: SortOrder
+    userId?: SortOrder
+    contactId?: SortOrder
+    rootKey?: SortOrder
+    sendingChainKey?: SortOrder
+    receivingChainKey?: SortOrder
+    sendMessageNumber?: SortOrder
+    recvMessageNumber?: SortOrder
+    dhRatchetPrivate?: SortOrder
+    dhRatchetPublic?: SortOrder
+    remotePublicKey?: SortOrderInput | SortOrder
+    updatedAt?: SortOrder
+    _count?: RatchetStateCountOrderByAggregateInput
+    _avg?: RatchetStateAvgOrderByAggregateInput
+    _max?: RatchetStateMaxOrderByAggregateInput
+    _min?: RatchetStateMinOrderByAggregateInput
+    _sum?: RatchetStateSumOrderByAggregateInput
+  }
+
+  export type RatchetStateScalarWhereWithAggregatesInput = {
+    AND?: RatchetStateScalarWhereWithAggregatesInput | RatchetStateScalarWhereWithAggregatesInput[]
+    OR?: RatchetStateScalarWhereWithAggregatesInput[]
+    NOT?: RatchetStateScalarWhereWithAggregatesInput | RatchetStateScalarWhereWithAggregatesInput[]
+    id?: StringWithAggregatesFilter<"RatchetState"> | string
+    userId?: StringWithAggregatesFilter<"RatchetState"> | string
+    contactId?: StringWithAggregatesFilter<"RatchetState"> | string
+    rootKey?: StringWithAggregatesFilter<"RatchetState"> | string
+    sendingChainKey?: StringWithAggregatesFilter<"RatchetState"> | string
+    receivingChainKey?: StringWithAggregatesFilter<"RatchetState"> | string
+    sendMessageNumber?: IntWithAggregatesFilter<"RatchetState"> | number
+    recvMessageNumber?: IntWithAggregatesFilter<"RatchetState"> | number
+    dhRatchetPrivate?: StringWithAggregatesFilter<"RatchetState"> | string
+    dhRatchetPublic?: StringWithAggregatesFilter<"RatchetState"> | string
+    remotePublicKey?: StringNullableWithAggregatesFilter<"RatchetState"> | string | null
+    updatedAt?: DateTimeWithAggregatesFilter<"RatchetState"> | Date | string
+  }
+
   export type UserCreateInput = {
     id?: string
     nickName: string
     key: string
     createdAt?: Date | string
+    sentMessages?: MessageCreateNestedManyWithoutSenderInput
+    receivedMessages?: MessageCreateNestedManyWithoutRecipientInput
+    messageKeys?: MessageKeyCreateNestedManyWithoutUserInput
   }
 
   export type UserUncheckedCreateInput = {
@@ -1992,6 +6400,9 @@ export namespace Prisma {
     nickName: string
     key: string
     createdAt?: Date | string
+    sentMessages?: MessageUncheckedCreateNestedManyWithoutSenderInput
+    receivedMessages?: MessageUncheckedCreateNestedManyWithoutRecipientInput
+    messageKeys?: MessageKeyUncheckedCreateNestedManyWithoutUserInput
   }
 
   export type UserUpdateInput = {
@@ -1999,6 +6410,9 @@ export namespace Prisma {
     nickName?: StringFieldUpdateOperationsInput | string
     key?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    sentMessages?: MessageUpdateManyWithoutSenderNestedInput
+    receivedMessages?: MessageUpdateManyWithoutRecipientNestedInput
+    messageKeys?: MessageKeyUpdateManyWithoutUserNestedInput
   }
 
   export type UserUncheckedUpdateInput = {
@@ -2006,6 +6420,9 @@ export namespace Prisma {
     nickName?: StringFieldUpdateOperationsInput | string
     key?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    sentMessages?: MessageUncheckedUpdateManyWithoutSenderNestedInput
+    receivedMessages?: MessageUncheckedUpdateManyWithoutRecipientNestedInput
+    messageKeys?: MessageKeyUncheckedUpdateManyWithoutUserNestedInput
   }
 
   export type UserCreateManyInput = {
@@ -2027,6 +6444,303 @@ export namespace Prisma {
     nickName?: StringFieldUpdateOperationsInput | string
     key?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type MessageCreateInput = {
+    id?: string
+    encryptedContent: string
+    ephemeralKey: string
+    nonce: string
+    messageNumber: number
+    previousChainN: number
+    timestamp?: Date | string
+    editedAt?: Date | string | null
+    deletedAt?: Date | string | null
+    deleteType?: string | null
+    sender: UserCreateNestedOneWithoutSentMessagesInput
+    recipient: UserCreateNestedOneWithoutReceivedMessagesInput
+    replyTo?: MessageCreateNestedOneWithoutRepliesInput
+    replies?: MessageCreateNestedManyWithoutReplyToInput
+    messageKeys?: MessageKeyCreateNestedManyWithoutMessageInput
+  }
+
+  export type MessageUncheckedCreateInput = {
+    id?: string
+    senderId: string
+    recipientId: string
+    encryptedContent: string
+    ephemeralKey: string
+    nonce: string
+    messageNumber: number
+    previousChainN: number
+    timestamp?: Date | string
+    editedAt?: Date | string | null
+    deletedAt?: Date | string | null
+    deleteType?: string | null
+    replyToId?: string | null
+    replies?: MessageUncheckedCreateNestedManyWithoutReplyToInput
+    messageKeys?: MessageKeyUncheckedCreateNestedManyWithoutMessageInput
+  }
+
+  export type MessageUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    encryptedContent?: StringFieldUpdateOperationsInput | string
+    ephemeralKey?: StringFieldUpdateOperationsInput | string
+    nonce?: StringFieldUpdateOperationsInput | string
+    messageNumber?: IntFieldUpdateOperationsInput | number
+    previousChainN?: IntFieldUpdateOperationsInput | number
+    timestamp?: DateTimeFieldUpdateOperationsInput | Date | string
+    editedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    deleteType?: NullableStringFieldUpdateOperationsInput | string | null
+    sender?: UserUpdateOneRequiredWithoutSentMessagesNestedInput
+    recipient?: UserUpdateOneRequiredWithoutReceivedMessagesNestedInput
+    replyTo?: MessageUpdateOneWithoutRepliesNestedInput
+    replies?: MessageUpdateManyWithoutReplyToNestedInput
+    messageKeys?: MessageKeyUpdateManyWithoutMessageNestedInput
+  }
+
+  export type MessageUncheckedUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    senderId?: StringFieldUpdateOperationsInput | string
+    recipientId?: StringFieldUpdateOperationsInput | string
+    encryptedContent?: StringFieldUpdateOperationsInput | string
+    ephemeralKey?: StringFieldUpdateOperationsInput | string
+    nonce?: StringFieldUpdateOperationsInput | string
+    messageNumber?: IntFieldUpdateOperationsInput | number
+    previousChainN?: IntFieldUpdateOperationsInput | number
+    timestamp?: DateTimeFieldUpdateOperationsInput | Date | string
+    editedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    deleteType?: NullableStringFieldUpdateOperationsInput | string | null
+    replyToId?: NullableStringFieldUpdateOperationsInput | string | null
+    replies?: MessageUncheckedUpdateManyWithoutReplyToNestedInput
+    messageKeys?: MessageKeyUncheckedUpdateManyWithoutMessageNestedInput
+  }
+
+  export type MessageCreateManyInput = {
+    id?: string
+    senderId: string
+    recipientId: string
+    encryptedContent: string
+    ephemeralKey: string
+    nonce: string
+    messageNumber: number
+    previousChainN: number
+    timestamp?: Date | string
+    editedAt?: Date | string | null
+    deletedAt?: Date | string | null
+    deleteType?: string | null
+    replyToId?: string | null
+  }
+
+  export type MessageUpdateManyMutationInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    encryptedContent?: StringFieldUpdateOperationsInput | string
+    ephemeralKey?: StringFieldUpdateOperationsInput | string
+    nonce?: StringFieldUpdateOperationsInput | string
+    messageNumber?: IntFieldUpdateOperationsInput | number
+    previousChainN?: IntFieldUpdateOperationsInput | number
+    timestamp?: DateTimeFieldUpdateOperationsInput | Date | string
+    editedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    deleteType?: NullableStringFieldUpdateOperationsInput | string | null
+  }
+
+  export type MessageUncheckedUpdateManyInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    senderId?: StringFieldUpdateOperationsInput | string
+    recipientId?: StringFieldUpdateOperationsInput | string
+    encryptedContent?: StringFieldUpdateOperationsInput | string
+    ephemeralKey?: StringFieldUpdateOperationsInput | string
+    nonce?: StringFieldUpdateOperationsInput | string
+    messageNumber?: IntFieldUpdateOperationsInput | number
+    previousChainN?: IntFieldUpdateOperationsInput | number
+    timestamp?: DateTimeFieldUpdateOperationsInput | Date | string
+    editedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    deleteType?: NullableStringFieldUpdateOperationsInput | string | null
+    replyToId?: NullableStringFieldUpdateOperationsInput | string | null
+  }
+
+  export type MessageKeyCreateInput = {
+    id?: string
+    encryptedKey: string
+    ephemeralPublicKey?: string | null
+    chainKeySnapshot: string
+    keyIndex: number
+    createdAt?: Date | string
+    message: MessageCreateNestedOneWithoutMessageKeysInput
+    user: UserCreateNestedOneWithoutMessageKeysInput
+  }
+
+  export type MessageKeyUncheckedCreateInput = {
+    id?: string
+    messageId: string
+    userId: string
+    encryptedKey: string
+    ephemeralPublicKey?: string | null
+    chainKeySnapshot: string
+    keyIndex: number
+    createdAt?: Date | string
+  }
+
+  export type MessageKeyUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    encryptedKey?: StringFieldUpdateOperationsInput | string
+    ephemeralPublicKey?: NullableStringFieldUpdateOperationsInput | string | null
+    chainKeySnapshot?: StringFieldUpdateOperationsInput | string
+    keyIndex?: IntFieldUpdateOperationsInput | number
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    message?: MessageUpdateOneRequiredWithoutMessageKeysNestedInput
+    user?: UserUpdateOneRequiredWithoutMessageKeysNestedInput
+  }
+
+  export type MessageKeyUncheckedUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    messageId?: StringFieldUpdateOperationsInput | string
+    userId?: StringFieldUpdateOperationsInput | string
+    encryptedKey?: StringFieldUpdateOperationsInput | string
+    ephemeralPublicKey?: NullableStringFieldUpdateOperationsInput | string | null
+    chainKeySnapshot?: StringFieldUpdateOperationsInput | string
+    keyIndex?: IntFieldUpdateOperationsInput | number
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type MessageKeyCreateManyInput = {
+    id?: string
+    messageId: string
+    userId: string
+    encryptedKey: string
+    ephemeralPublicKey?: string | null
+    chainKeySnapshot: string
+    keyIndex: number
+    createdAt?: Date | string
+  }
+
+  export type MessageKeyUpdateManyMutationInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    encryptedKey?: StringFieldUpdateOperationsInput | string
+    ephemeralPublicKey?: NullableStringFieldUpdateOperationsInput | string | null
+    chainKeySnapshot?: StringFieldUpdateOperationsInput | string
+    keyIndex?: IntFieldUpdateOperationsInput | number
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type MessageKeyUncheckedUpdateManyInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    messageId?: StringFieldUpdateOperationsInput | string
+    userId?: StringFieldUpdateOperationsInput | string
+    encryptedKey?: StringFieldUpdateOperationsInput | string
+    ephemeralPublicKey?: NullableStringFieldUpdateOperationsInput | string | null
+    chainKeySnapshot?: StringFieldUpdateOperationsInput | string
+    keyIndex?: IntFieldUpdateOperationsInput | number
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type RatchetStateCreateInput = {
+    id?: string
+    userId: string
+    contactId: string
+    rootKey: string
+    sendingChainKey: string
+    receivingChainKey: string
+    sendMessageNumber: number
+    recvMessageNumber: number
+    dhRatchetPrivate: string
+    dhRatchetPublic: string
+    remotePublicKey?: string | null
+    updatedAt?: Date | string
+  }
+
+  export type RatchetStateUncheckedCreateInput = {
+    id?: string
+    userId: string
+    contactId: string
+    rootKey: string
+    sendingChainKey: string
+    receivingChainKey: string
+    sendMessageNumber: number
+    recvMessageNumber: number
+    dhRatchetPrivate: string
+    dhRatchetPublic: string
+    remotePublicKey?: string | null
+    updatedAt?: Date | string
+  }
+
+  export type RatchetStateUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    userId?: StringFieldUpdateOperationsInput | string
+    contactId?: StringFieldUpdateOperationsInput | string
+    rootKey?: StringFieldUpdateOperationsInput | string
+    sendingChainKey?: StringFieldUpdateOperationsInput | string
+    receivingChainKey?: StringFieldUpdateOperationsInput | string
+    sendMessageNumber?: IntFieldUpdateOperationsInput | number
+    recvMessageNumber?: IntFieldUpdateOperationsInput | number
+    dhRatchetPrivate?: StringFieldUpdateOperationsInput | string
+    dhRatchetPublic?: StringFieldUpdateOperationsInput | string
+    remotePublicKey?: NullableStringFieldUpdateOperationsInput | string | null
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type RatchetStateUncheckedUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    userId?: StringFieldUpdateOperationsInput | string
+    contactId?: StringFieldUpdateOperationsInput | string
+    rootKey?: StringFieldUpdateOperationsInput | string
+    sendingChainKey?: StringFieldUpdateOperationsInput | string
+    receivingChainKey?: StringFieldUpdateOperationsInput | string
+    sendMessageNumber?: IntFieldUpdateOperationsInput | number
+    recvMessageNumber?: IntFieldUpdateOperationsInput | number
+    dhRatchetPrivate?: StringFieldUpdateOperationsInput | string
+    dhRatchetPublic?: StringFieldUpdateOperationsInput | string
+    remotePublicKey?: NullableStringFieldUpdateOperationsInput | string | null
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type RatchetStateCreateManyInput = {
+    id?: string
+    userId: string
+    contactId: string
+    rootKey: string
+    sendingChainKey: string
+    receivingChainKey: string
+    sendMessageNumber: number
+    recvMessageNumber: number
+    dhRatchetPrivate: string
+    dhRatchetPublic: string
+    remotePublicKey?: string | null
+    updatedAt?: Date | string
+  }
+
+  export type RatchetStateUpdateManyMutationInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    userId?: StringFieldUpdateOperationsInput | string
+    contactId?: StringFieldUpdateOperationsInput | string
+    rootKey?: StringFieldUpdateOperationsInput | string
+    sendingChainKey?: StringFieldUpdateOperationsInput | string
+    receivingChainKey?: StringFieldUpdateOperationsInput | string
+    sendMessageNumber?: IntFieldUpdateOperationsInput | number
+    recvMessageNumber?: IntFieldUpdateOperationsInput | number
+    dhRatchetPrivate?: StringFieldUpdateOperationsInput | string
+    dhRatchetPublic?: StringFieldUpdateOperationsInput | string
+    remotePublicKey?: NullableStringFieldUpdateOperationsInput | string | null
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type RatchetStateUncheckedUpdateManyInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    userId?: StringFieldUpdateOperationsInput | string
+    contactId?: StringFieldUpdateOperationsInput | string
+    rootKey?: StringFieldUpdateOperationsInput | string
+    sendingChainKey?: StringFieldUpdateOperationsInput | string
+    receivingChainKey?: StringFieldUpdateOperationsInput | string
+    sendMessageNumber?: IntFieldUpdateOperationsInput | number
+    recvMessageNumber?: IntFieldUpdateOperationsInput | number
+    dhRatchetPrivate?: StringFieldUpdateOperationsInput | string
+    dhRatchetPublic?: StringFieldUpdateOperationsInput | string
+    remotePublicKey?: NullableStringFieldUpdateOperationsInput | string | null
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type StringFilter<$PrismaModel = never> = {
@@ -2053,6 +6767,26 @@ export namespace Prisma {
     gt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
     gte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
     not?: NestedDateTimeFilter<$PrismaModel> | Date | string
+  }
+
+  export type MessageListRelationFilter = {
+    every?: MessageWhereInput
+    some?: MessageWhereInput
+    none?: MessageWhereInput
+  }
+
+  export type MessageKeyListRelationFilter = {
+    every?: MessageKeyWhereInput
+    some?: MessageKeyWhereInput
+    none?: MessageKeyWhereInput
+  }
+
+  export type MessageOrderByRelationAggregateInput = {
+    _count?: SortOrder
+  }
+
+  export type MessageKeyOrderByRelationAggregateInput = {
+    _count?: SortOrder
   }
 
   export type UserCountOrderByAggregateInput = {
@@ -2108,12 +6842,579 @@ export namespace Prisma {
     _max?: NestedDateTimeFilter<$PrismaModel>
   }
 
+  export type IntFilter<$PrismaModel = never> = {
+    equals?: number | IntFieldRefInput<$PrismaModel>
+    in?: number[] | ListIntFieldRefInput<$PrismaModel>
+    notIn?: number[] | ListIntFieldRefInput<$PrismaModel>
+    lt?: number | IntFieldRefInput<$PrismaModel>
+    lte?: number | IntFieldRefInput<$PrismaModel>
+    gt?: number | IntFieldRefInput<$PrismaModel>
+    gte?: number | IntFieldRefInput<$PrismaModel>
+    not?: NestedIntFilter<$PrismaModel> | number
+  }
+
+  export type DateTimeNullableFilter<$PrismaModel = never> = {
+    equals?: Date | string | DateTimeFieldRefInput<$PrismaModel> | null
+    in?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel> | null
+    notIn?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel> | null
+    lt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    lte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    gt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    gte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    not?: NestedDateTimeNullableFilter<$PrismaModel> | Date | string | null
+  }
+
+  export type StringNullableFilter<$PrismaModel = never> = {
+    equals?: string | StringFieldRefInput<$PrismaModel> | null
+    in?: string[] | ListStringFieldRefInput<$PrismaModel> | null
+    notIn?: string[] | ListStringFieldRefInput<$PrismaModel> | null
+    lt?: string | StringFieldRefInput<$PrismaModel>
+    lte?: string | StringFieldRefInput<$PrismaModel>
+    gt?: string | StringFieldRefInput<$PrismaModel>
+    gte?: string | StringFieldRefInput<$PrismaModel>
+    contains?: string | StringFieldRefInput<$PrismaModel>
+    startsWith?: string | StringFieldRefInput<$PrismaModel>
+    endsWith?: string | StringFieldRefInput<$PrismaModel>
+    mode?: QueryMode
+    not?: NestedStringNullableFilter<$PrismaModel> | string | null
+  }
+
+  export type UserScalarRelationFilter = {
+    is?: UserWhereInput
+    isNot?: UserWhereInput
+  }
+
+  export type MessageNullableScalarRelationFilter = {
+    is?: MessageWhereInput | null
+    isNot?: MessageWhereInput | null
+  }
+
+  export type SortOrderInput = {
+    sort: SortOrder
+    nulls?: NullsOrder
+  }
+
+  export type MessageCountOrderByAggregateInput = {
+    id?: SortOrder
+    senderId?: SortOrder
+    recipientId?: SortOrder
+    encryptedContent?: SortOrder
+    ephemeralKey?: SortOrder
+    nonce?: SortOrder
+    messageNumber?: SortOrder
+    previousChainN?: SortOrder
+    timestamp?: SortOrder
+    editedAt?: SortOrder
+    deletedAt?: SortOrder
+    deleteType?: SortOrder
+    replyToId?: SortOrder
+  }
+
+  export type MessageAvgOrderByAggregateInput = {
+    messageNumber?: SortOrder
+    previousChainN?: SortOrder
+  }
+
+  export type MessageMaxOrderByAggregateInput = {
+    id?: SortOrder
+    senderId?: SortOrder
+    recipientId?: SortOrder
+    encryptedContent?: SortOrder
+    ephemeralKey?: SortOrder
+    nonce?: SortOrder
+    messageNumber?: SortOrder
+    previousChainN?: SortOrder
+    timestamp?: SortOrder
+    editedAt?: SortOrder
+    deletedAt?: SortOrder
+    deleteType?: SortOrder
+    replyToId?: SortOrder
+  }
+
+  export type MessageMinOrderByAggregateInput = {
+    id?: SortOrder
+    senderId?: SortOrder
+    recipientId?: SortOrder
+    encryptedContent?: SortOrder
+    ephemeralKey?: SortOrder
+    nonce?: SortOrder
+    messageNumber?: SortOrder
+    previousChainN?: SortOrder
+    timestamp?: SortOrder
+    editedAt?: SortOrder
+    deletedAt?: SortOrder
+    deleteType?: SortOrder
+    replyToId?: SortOrder
+  }
+
+  export type MessageSumOrderByAggregateInput = {
+    messageNumber?: SortOrder
+    previousChainN?: SortOrder
+  }
+
+  export type IntWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: number | IntFieldRefInput<$PrismaModel>
+    in?: number[] | ListIntFieldRefInput<$PrismaModel>
+    notIn?: number[] | ListIntFieldRefInput<$PrismaModel>
+    lt?: number | IntFieldRefInput<$PrismaModel>
+    lte?: number | IntFieldRefInput<$PrismaModel>
+    gt?: number | IntFieldRefInput<$PrismaModel>
+    gte?: number | IntFieldRefInput<$PrismaModel>
+    not?: NestedIntWithAggregatesFilter<$PrismaModel> | number
+    _count?: NestedIntFilter<$PrismaModel>
+    _avg?: NestedFloatFilter<$PrismaModel>
+    _sum?: NestedIntFilter<$PrismaModel>
+    _min?: NestedIntFilter<$PrismaModel>
+    _max?: NestedIntFilter<$PrismaModel>
+  }
+
+  export type DateTimeNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: Date | string | DateTimeFieldRefInput<$PrismaModel> | null
+    in?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel> | null
+    notIn?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel> | null
+    lt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    lte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    gt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    gte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    not?: NestedDateTimeNullableWithAggregatesFilter<$PrismaModel> | Date | string | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _min?: NestedDateTimeNullableFilter<$PrismaModel>
+    _max?: NestedDateTimeNullableFilter<$PrismaModel>
+  }
+
+  export type StringNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: string | StringFieldRefInput<$PrismaModel> | null
+    in?: string[] | ListStringFieldRefInput<$PrismaModel> | null
+    notIn?: string[] | ListStringFieldRefInput<$PrismaModel> | null
+    lt?: string | StringFieldRefInput<$PrismaModel>
+    lte?: string | StringFieldRefInput<$PrismaModel>
+    gt?: string | StringFieldRefInput<$PrismaModel>
+    gte?: string | StringFieldRefInput<$PrismaModel>
+    contains?: string | StringFieldRefInput<$PrismaModel>
+    startsWith?: string | StringFieldRefInput<$PrismaModel>
+    endsWith?: string | StringFieldRefInput<$PrismaModel>
+    mode?: QueryMode
+    not?: NestedStringNullableWithAggregatesFilter<$PrismaModel> | string | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _min?: NestedStringNullableFilter<$PrismaModel>
+    _max?: NestedStringNullableFilter<$PrismaModel>
+  }
+
+  export type MessageScalarRelationFilter = {
+    is?: MessageWhereInput
+    isNot?: MessageWhereInput
+  }
+
+  export type MessageKeyMessageIdUserIdCompoundUniqueInput = {
+    messageId: string
+    userId: string
+  }
+
+  export type MessageKeyCountOrderByAggregateInput = {
+    id?: SortOrder
+    messageId?: SortOrder
+    userId?: SortOrder
+    encryptedKey?: SortOrder
+    ephemeralPublicKey?: SortOrder
+    chainKeySnapshot?: SortOrder
+    keyIndex?: SortOrder
+    createdAt?: SortOrder
+  }
+
+  export type MessageKeyAvgOrderByAggregateInput = {
+    keyIndex?: SortOrder
+  }
+
+  export type MessageKeyMaxOrderByAggregateInput = {
+    id?: SortOrder
+    messageId?: SortOrder
+    userId?: SortOrder
+    encryptedKey?: SortOrder
+    ephemeralPublicKey?: SortOrder
+    chainKeySnapshot?: SortOrder
+    keyIndex?: SortOrder
+    createdAt?: SortOrder
+  }
+
+  export type MessageKeyMinOrderByAggregateInput = {
+    id?: SortOrder
+    messageId?: SortOrder
+    userId?: SortOrder
+    encryptedKey?: SortOrder
+    ephemeralPublicKey?: SortOrder
+    chainKeySnapshot?: SortOrder
+    keyIndex?: SortOrder
+    createdAt?: SortOrder
+  }
+
+  export type MessageKeySumOrderByAggregateInput = {
+    keyIndex?: SortOrder
+  }
+
+  export type RatchetStateUserIdContactIdCompoundUniqueInput = {
+    userId: string
+    contactId: string
+  }
+
+  export type RatchetStateCountOrderByAggregateInput = {
+    id?: SortOrder
+    userId?: SortOrder
+    contactId?: SortOrder
+    rootKey?: SortOrder
+    sendingChainKey?: SortOrder
+    receivingChainKey?: SortOrder
+    sendMessageNumber?: SortOrder
+    recvMessageNumber?: SortOrder
+    dhRatchetPrivate?: SortOrder
+    dhRatchetPublic?: SortOrder
+    remotePublicKey?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type RatchetStateAvgOrderByAggregateInput = {
+    sendMessageNumber?: SortOrder
+    recvMessageNumber?: SortOrder
+  }
+
+  export type RatchetStateMaxOrderByAggregateInput = {
+    id?: SortOrder
+    userId?: SortOrder
+    contactId?: SortOrder
+    rootKey?: SortOrder
+    sendingChainKey?: SortOrder
+    receivingChainKey?: SortOrder
+    sendMessageNumber?: SortOrder
+    recvMessageNumber?: SortOrder
+    dhRatchetPrivate?: SortOrder
+    dhRatchetPublic?: SortOrder
+    remotePublicKey?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type RatchetStateMinOrderByAggregateInput = {
+    id?: SortOrder
+    userId?: SortOrder
+    contactId?: SortOrder
+    rootKey?: SortOrder
+    sendingChainKey?: SortOrder
+    receivingChainKey?: SortOrder
+    sendMessageNumber?: SortOrder
+    recvMessageNumber?: SortOrder
+    dhRatchetPrivate?: SortOrder
+    dhRatchetPublic?: SortOrder
+    remotePublicKey?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type RatchetStateSumOrderByAggregateInput = {
+    sendMessageNumber?: SortOrder
+    recvMessageNumber?: SortOrder
+  }
+
+  export type MessageCreateNestedManyWithoutSenderInput = {
+    create?: XOR<MessageCreateWithoutSenderInput, MessageUncheckedCreateWithoutSenderInput> | MessageCreateWithoutSenderInput[] | MessageUncheckedCreateWithoutSenderInput[]
+    connectOrCreate?: MessageCreateOrConnectWithoutSenderInput | MessageCreateOrConnectWithoutSenderInput[]
+    createMany?: MessageCreateManySenderInputEnvelope
+    connect?: MessageWhereUniqueInput | MessageWhereUniqueInput[]
+  }
+
+  export type MessageCreateNestedManyWithoutRecipientInput = {
+    create?: XOR<MessageCreateWithoutRecipientInput, MessageUncheckedCreateWithoutRecipientInput> | MessageCreateWithoutRecipientInput[] | MessageUncheckedCreateWithoutRecipientInput[]
+    connectOrCreate?: MessageCreateOrConnectWithoutRecipientInput | MessageCreateOrConnectWithoutRecipientInput[]
+    createMany?: MessageCreateManyRecipientInputEnvelope
+    connect?: MessageWhereUniqueInput | MessageWhereUniqueInput[]
+  }
+
+  export type MessageKeyCreateNestedManyWithoutUserInput = {
+    create?: XOR<MessageKeyCreateWithoutUserInput, MessageKeyUncheckedCreateWithoutUserInput> | MessageKeyCreateWithoutUserInput[] | MessageKeyUncheckedCreateWithoutUserInput[]
+    connectOrCreate?: MessageKeyCreateOrConnectWithoutUserInput | MessageKeyCreateOrConnectWithoutUserInput[]
+    createMany?: MessageKeyCreateManyUserInputEnvelope
+    connect?: MessageKeyWhereUniqueInput | MessageKeyWhereUniqueInput[]
+  }
+
+  export type MessageUncheckedCreateNestedManyWithoutSenderInput = {
+    create?: XOR<MessageCreateWithoutSenderInput, MessageUncheckedCreateWithoutSenderInput> | MessageCreateWithoutSenderInput[] | MessageUncheckedCreateWithoutSenderInput[]
+    connectOrCreate?: MessageCreateOrConnectWithoutSenderInput | MessageCreateOrConnectWithoutSenderInput[]
+    createMany?: MessageCreateManySenderInputEnvelope
+    connect?: MessageWhereUniqueInput | MessageWhereUniqueInput[]
+  }
+
+  export type MessageUncheckedCreateNestedManyWithoutRecipientInput = {
+    create?: XOR<MessageCreateWithoutRecipientInput, MessageUncheckedCreateWithoutRecipientInput> | MessageCreateWithoutRecipientInput[] | MessageUncheckedCreateWithoutRecipientInput[]
+    connectOrCreate?: MessageCreateOrConnectWithoutRecipientInput | MessageCreateOrConnectWithoutRecipientInput[]
+    createMany?: MessageCreateManyRecipientInputEnvelope
+    connect?: MessageWhereUniqueInput | MessageWhereUniqueInput[]
+  }
+
+  export type MessageKeyUncheckedCreateNestedManyWithoutUserInput = {
+    create?: XOR<MessageKeyCreateWithoutUserInput, MessageKeyUncheckedCreateWithoutUserInput> | MessageKeyCreateWithoutUserInput[] | MessageKeyUncheckedCreateWithoutUserInput[]
+    connectOrCreate?: MessageKeyCreateOrConnectWithoutUserInput | MessageKeyCreateOrConnectWithoutUserInput[]
+    createMany?: MessageKeyCreateManyUserInputEnvelope
+    connect?: MessageKeyWhereUniqueInput | MessageKeyWhereUniqueInput[]
+  }
+
   export type StringFieldUpdateOperationsInput = {
     set?: string
   }
 
   export type DateTimeFieldUpdateOperationsInput = {
     set?: Date | string
+  }
+
+  export type MessageUpdateManyWithoutSenderNestedInput = {
+    create?: XOR<MessageCreateWithoutSenderInput, MessageUncheckedCreateWithoutSenderInput> | MessageCreateWithoutSenderInput[] | MessageUncheckedCreateWithoutSenderInput[]
+    connectOrCreate?: MessageCreateOrConnectWithoutSenderInput | MessageCreateOrConnectWithoutSenderInput[]
+    upsert?: MessageUpsertWithWhereUniqueWithoutSenderInput | MessageUpsertWithWhereUniqueWithoutSenderInput[]
+    createMany?: MessageCreateManySenderInputEnvelope
+    set?: MessageWhereUniqueInput | MessageWhereUniqueInput[]
+    disconnect?: MessageWhereUniqueInput | MessageWhereUniqueInput[]
+    delete?: MessageWhereUniqueInput | MessageWhereUniqueInput[]
+    connect?: MessageWhereUniqueInput | MessageWhereUniqueInput[]
+    update?: MessageUpdateWithWhereUniqueWithoutSenderInput | MessageUpdateWithWhereUniqueWithoutSenderInput[]
+    updateMany?: MessageUpdateManyWithWhereWithoutSenderInput | MessageUpdateManyWithWhereWithoutSenderInput[]
+    deleteMany?: MessageScalarWhereInput | MessageScalarWhereInput[]
+  }
+
+  export type MessageUpdateManyWithoutRecipientNestedInput = {
+    create?: XOR<MessageCreateWithoutRecipientInput, MessageUncheckedCreateWithoutRecipientInput> | MessageCreateWithoutRecipientInput[] | MessageUncheckedCreateWithoutRecipientInput[]
+    connectOrCreate?: MessageCreateOrConnectWithoutRecipientInput | MessageCreateOrConnectWithoutRecipientInput[]
+    upsert?: MessageUpsertWithWhereUniqueWithoutRecipientInput | MessageUpsertWithWhereUniqueWithoutRecipientInput[]
+    createMany?: MessageCreateManyRecipientInputEnvelope
+    set?: MessageWhereUniqueInput | MessageWhereUniqueInput[]
+    disconnect?: MessageWhereUniqueInput | MessageWhereUniqueInput[]
+    delete?: MessageWhereUniqueInput | MessageWhereUniqueInput[]
+    connect?: MessageWhereUniqueInput | MessageWhereUniqueInput[]
+    update?: MessageUpdateWithWhereUniqueWithoutRecipientInput | MessageUpdateWithWhereUniqueWithoutRecipientInput[]
+    updateMany?: MessageUpdateManyWithWhereWithoutRecipientInput | MessageUpdateManyWithWhereWithoutRecipientInput[]
+    deleteMany?: MessageScalarWhereInput | MessageScalarWhereInput[]
+  }
+
+  export type MessageKeyUpdateManyWithoutUserNestedInput = {
+    create?: XOR<MessageKeyCreateWithoutUserInput, MessageKeyUncheckedCreateWithoutUserInput> | MessageKeyCreateWithoutUserInput[] | MessageKeyUncheckedCreateWithoutUserInput[]
+    connectOrCreate?: MessageKeyCreateOrConnectWithoutUserInput | MessageKeyCreateOrConnectWithoutUserInput[]
+    upsert?: MessageKeyUpsertWithWhereUniqueWithoutUserInput | MessageKeyUpsertWithWhereUniqueWithoutUserInput[]
+    createMany?: MessageKeyCreateManyUserInputEnvelope
+    set?: MessageKeyWhereUniqueInput | MessageKeyWhereUniqueInput[]
+    disconnect?: MessageKeyWhereUniqueInput | MessageKeyWhereUniqueInput[]
+    delete?: MessageKeyWhereUniqueInput | MessageKeyWhereUniqueInput[]
+    connect?: MessageKeyWhereUniqueInput | MessageKeyWhereUniqueInput[]
+    update?: MessageKeyUpdateWithWhereUniqueWithoutUserInput | MessageKeyUpdateWithWhereUniqueWithoutUserInput[]
+    updateMany?: MessageKeyUpdateManyWithWhereWithoutUserInput | MessageKeyUpdateManyWithWhereWithoutUserInput[]
+    deleteMany?: MessageKeyScalarWhereInput | MessageKeyScalarWhereInput[]
+  }
+
+  export type MessageUncheckedUpdateManyWithoutSenderNestedInput = {
+    create?: XOR<MessageCreateWithoutSenderInput, MessageUncheckedCreateWithoutSenderInput> | MessageCreateWithoutSenderInput[] | MessageUncheckedCreateWithoutSenderInput[]
+    connectOrCreate?: MessageCreateOrConnectWithoutSenderInput | MessageCreateOrConnectWithoutSenderInput[]
+    upsert?: MessageUpsertWithWhereUniqueWithoutSenderInput | MessageUpsertWithWhereUniqueWithoutSenderInput[]
+    createMany?: MessageCreateManySenderInputEnvelope
+    set?: MessageWhereUniqueInput | MessageWhereUniqueInput[]
+    disconnect?: MessageWhereUniqueInput | MessageWhereUniqueInput[]
+    delete?: MessageWhereUniqueInput | MessageWhereUniqueInput[]
+    connect?: MessageWhereUniqueInput | MessageWhereUniqueInput[]
+    update?: MessageUpdateWithWhereUniqueWithoutSenderInput | MessageUpdateWithWhereUniqueWithoutSenderInput[]
+    updateMany?: MessageUpdateManyWithWhereWithoutSenderInput | MessageUpdateManyWithWhereWithoutSenderInput[]
+    deleteMany?: MessageScalarWhereInput | MessageScalarWhereInput[]
+  }
+
+  export type MessageUncheckedUpdateManyWithoutRecipientNestedInput = {
+    create?: XOR<MessageCreateWithoutRecipientInput, MessageUncheckedCreateWithoutRecipientInput> | MessageCreateWithoutRecipientInput[] | MessageUncheckedCreateWithoutRecipientInput[]
+    connectOrCreate?: MessageCreateOrConnectWithoutRecipientInput | MessageCreateOrConnectWithoutRecipientInput[]
+    upsert?: MessageUpsertWithWhereUniqueWithoutRecipientInput | MessageUpsertWithWhereUniqueWithoutRecipientInput[]
+    createMany?: MessageCreateManyRecipientInputEnvelope
+    set?: MessageWhereUniqueInput | MessageWhereUniqueInput[]
+    disconnect?: MessageWhereUniqueInput | MessageWhereUniqueInput[]
+    delete?: MessageWhereUniqueInput | MessageWhereUniqueInput[]
+    connect?: MessageWhereUniqueInput | MessageWhereUniqueInput[]
+    update?: MessageUpdateWithWhereUniqueWithoutRecipientInput | MessageUpdateWithWhereUniqueWithoutRecipientInput[]
+    updateMany?: MessageUpdateManyWithWhereWithoutRecipientInput | MessageUpdateManyWithWhereWithoutRecipientInput[]
+    deleteMany?: MessageScalarWhereInput | MessageScalarWhereInput[]
+  }
+
+  export type MessageKeyUncheckedUpdateManyWithoutUserNestedInput = {
+    create?: XOR<MessageKeyCreateWithoutUserInput, MessageKeyUncheckedCreateWithoutUserInput> | MessageKeyCreateWithoutUserInput[] | MessageKeyUncheckedCreateWithoutUserInput[]
+    connectOrCreate?: MessageKeyCreateOrConnectWithoutUserInput | MessageKeyCreateOrConnectWithoutUserInput[]
+    upsert?: MessageKeyUpsertWithWhereUniqueWithoutUserInput | MessageKeyUpsertWithWhereUniqueWithoutUserInput[]
+    createMany?: MessageKeyCreateManyUserInputEnvelope
+    set?: MessageKeyWhereUniqueInput | MessageKeyWhereUniqueInput[]
+    disconnect?: MessageKeyWhereUniqueInput | MessageKeyWhereUniqueInput[]
+    delete?: MessageKeyWhereUniqueInput | MessageKeyWhereUniqueInput[]
+    connect?: MessageKeyWhereUniqueInput | MessageKeyWhereUniqueInput[]
+    update?: MessageKeyUpdateWithWhereUniqueWithoutUserInput | MessageKeyUpdateWithWhereUniqueWithoutUserInput[]
+    updateMany?: MessageKeyUpdateManyWithWhereWithoutUserInput | MessageKeyUpdateManyWithWhereWithoutUserInput[]
+    deleteMany?: MessageKeyScalarWhereInput | MessageKeyScalarWhereInput[]
+  }
+
+  export type UserCreateNestedOneWithoutSentMessagesInput = {
+    create?: XOR<UserCreateWithoutSentMessagesInput, UserUncheckedCreateWithoutSentMessagesInput>
+    connectOrCreate?: UserCreateOrConnectWithoutSentMessagesInput
+    connect?: UserWhereUniqueInput
+  }
+
+  export type UserCreateNestedOneWithoutReceivedMessagesInput = {
+    create?: XOR<UserCreateWithoutReceivedMessagesInput, UserUncheckedCreateWithoutReceivedMessagesInput>
+    connectOrCreate?: UserCreateOrConnectWithoutReceivedMessagesInput
+    connect?: UserWhereUniqueInput
+  }
+
+  export type MessageCreateNestedOneWithoutRepliesInput = {
+    create?: XOR<MessageCreateWithoutRepliesInput, MessageUncheckedCreateWithoutRepliesInput>
+    connectOrCreate?: MessageCreateOrConnectWithoutRepliesInput
+    connect?: MessageWhereUniqueInput
+  }
+
+  export type MessageCreateNestedManyWithoutReplyToInput = {
+    create?: XOR<MessageCreateWithoutReplyToInput, MessageUncheckedCreateWithoutReplyToInput> | MessageCreateWithoutReplyToInput[] | MessageUncheckedCreateWithoutReplyToInput[]
+    connectOrCreate?: MessageCreateOrConnectWithoutReplyToInput | MessageCreateOrConnectWithoutReplyToInput[]
+    createMany?: MessageCreateManyReplyToInputEnvelope
+    connect?: MessageWhereUniqueInput | MessageWhereUniqueInput[]
+  }
+
+  export type MessageKeyCreateNestedManyWithoutMessageInput = {
+    create?: XOR<MessageKeyCreateWithoutMessageInput, MessageKeyUncheckedCreateWithoutMessageInput> | MessageKeyCreateWithoutMessageInput[] | MessageKeyUncheckedCreateWithoutMessageInput[]
+    connectOrCreate?: MessageKeyCreateOrConnectWithoutMessageInput | MessageKeyCreateOrConnectWithoutMessageInput[]
+    createMany?: MessageKeyCreateManyMessageInputEnvelope
+    connect?: MessageKeyWhereUniqueInput | MessageKeyWhereUniqueInput[]
+  }
+
+  export type MessageUncheckedCreateNestedManyWithoutReplyToInput = {
+    create?: XOR<MessageCreateWithoutReplyToInput, MessageUncheckedCreateWithoutReplyToInput> | MessageCreateWithoutReplyToInput[] | MessageUncheckedCreateWithoutReplyToInput[]
+    connectOrCreate?: MessageCreateOrConnectWithoutReplyToInput | MessageCreateOrConnectWithoutReplyToInput[]
+    createMany?: MessageCreateManyReplyToInputEnvelope
+    connect?: MessageWhereUniqueInput | MessageWhereUniqueInput[]
+  }
+
+  export type MessageKeyUncheckedCreateNestedManyWithoutMessageInput = {
+    create?: XOR<MessageKeyCreateWithoutMessageInput, MessageKeyUncheckedCreateWithoutMessageInput> | MessageKeyCreateWithoutMessageInput[] | MessageKeyUncheckedCreateWithoutMessageInput[]
+    connectOrCreate?: MessageKeyCreateOrConnectWithoutMessageInput | MessageKeyCreateOrConnectWithoutMessageInput[]
+    createMany?: MessageKeyCreateManyMessageInputEnvelope
+    connect?: MessageKeyWhereUniqueInput | MessageKeyWhereUniqueInput[]
+  }
+
+  export type IntFieldUpdateOperationsInput = {
+    set?: number
+    increment?: number
+    decrement?: number
+    multiply?: number
+    divide?: number
+  }
+
+  export type NullableDateTimeFieldUpdateOperationsInput = {
+    set?: Date | string | null
+  }
+
+  export type NullableStringFieldUpdateOperationsInput = {
+    set?: string | null
+  }
+
+  export type UserUpdateOneRequiredWithoutSentMessagesNestedInput = {
+    create?: XOR<UserCreateWithoutSentMessagesInput, UserUncheckedCreateWithoutSentMessagesInput>
+    connectOrCreate?: UserCreateOrConnectWithoutSentMessagesInput
+    upsert?: UserUpsertWithoutSentMessagesInput
+    connect?: UserWhereUniqueInput
+    update?: XOR<XOR<UserUpdateToOneWithWhereWithoutSentMessagesInput, UserUpdateWithoutSentMessagesInput>, UserUncheckedUpdateWithoutSentMessagesInput>
+  }
+
+  export type UserUpdateOneRequiredWithoutReceivedMessagesNestedInput = {
+    create?: XOR<UserCreateWithoutReceivedMessagesInput, UserUncheckedCreateWithoutReceivedMessagesInput>
+    connectOrCreate?: UserCreateOrConnectWithoutReceivedMessagesInput
+    upsert?: UserUpsertWithoutReceivedMessagesInput
+    connect?: UserWhereUniqueInput
+    update?: XOR<XOR<UserUpdateToOneWithWhereWithoutReceivedMessagesInput, UserUpdateWithoutReceivedMessagesInput>, UserUncheckedUpdateWithoutReceivedMessagesInput>
+  }
+
+  export type MessageUpdateOneWithoutRepliesNestedInput = {
+    create?: XOR<MessageCreateWithoutRepliesInput, MessageUncheckedCreateWithoutRepliesInput>
+    connectOrCreate?: MessageCreateOrConnectWithoutRepliesInput
+    upsert?: MessageUpsertWithoutRepliesInput
+    disconnect?: MessageWhereInput | boolean
+    delete?: MessageWhereInput | boolean
+    connect?: MessageWhereUniqueInput
+    update?: XOR<XOR<MessageUpdateToOneWithWhereWithoutRepliesInput, MessageUpdateWithoutRepliesInput>, MessageUncheckedUpdateWithoutRepliesInput>
+  }
+
+  export type MessageUpdateManyWithoutReplyToNestedInput = {
+    create?: XOR<MessageCreateWithoutReplyToInput, MessageUncheckedCreateWithoutReplyToInput> | MessageCreateWithoutReplyToInput[] | MessageUncheckedCreateWithoutReplyToInput[]
+    connectOrCreate?: MessageCreateOrConnectWithoutReplyToInput | MessageCreateOrConnectWithoutReplyToInput[]
+    upsert?: MessageUpsertWithWhereUniqueWithoutReplyToInput | MessageUpsertWithWhereUniqueWithoutReplyToInput[]
+    createMany?: MessageCreateManyReplyToInputEnvelope
+    set?: MessageWhereUniqueInput | MessageWhereUniqueInput[]
+    disconnect?: MessageWhereUniqueInput | MessageWhereUniqueInput[]
+    delete?: MessageWhereUniqueInput | MessageWhereUniqueInput[]
+    connect?: MessageWhereUniqueInput | MessageWhereUniqueInput[]
+    update?: MessageUpdateWithWhereUniqueWithoutReplyToInput | MessageUpdateWithWhereUniqueWithoutReplyToInput[]
+    updateMany?: MessageUpdateManyWithWhereWithoutReplyToInput | MessageUpdateManyWithWhereWithoutReplyToInput[]
+    deleteMany?: MessageScalarWhereInput | MessageScalarWhereInput[]
+  }
+
+  export type MessageKeyUpdateManyWithoutMessageNestedInput = {
+    create?: XOR<MessageKeyCreateWithoutMessageInput, MessageKeyUncheckedCreateWithoutMessageInput> | MessageKeyCreateWithoutMessageInput[] | MessageKeyUncheckedCreateWithoutMessageInput[]
+    connectOrCreate?: MessageKeyCreateOrConnectWithoutMessageInput | MessageKeyCreateOrConnectWithoutMessageInput[]
+    upsert?: MessageKeyUpsertWithWhereUniqueWithoutMessageInput | MessageKeyUpsertWithWhereUniqueWithoutMessageInput[]
+    createMany?: MessageKeyCreateManyMessageInputEnvelope
+    set?: MessageKeyWhereUniqueInput | MessageKeyWhereUniqueInput[]
+    disconnect?: MessageKeyWhereUniqueInput | MessageKeyWhereUniqueInput[]
+    delete?: MessageKeyWhereUniqueInput | MessageKeyWhereUniqueInput[]
+    connect?: MessageKeyWhereUniqueInput | MessageKeyWhereUniqueInput[]
+    update?: MessageKeyUpdateWithWhereUniqueWithoutMessageInput | MessageKeyUpdateWithWhereUniqueWithoutMessageInput[]
+    updateMany?: MessageKeyUpdateManyWithWhereWithoutMessageInput | MessageKeyUpdateManyWithWhereWithoutMessageInput[]
+    deleteMany?: MessageKeyScalarWhereInput | MessageKeyScalarWhereInput[]
+  }
+
+  export type MessageUncheckedUpdateManyWithoutReplyToNestedInput = {
+    create?: XOR<MessageCreateWithoutReplyToInput, MessageUncheckedCreateWithoutReplyToInput> | MessageCreateWithoutReplyToInput[] | MessageUncheckedCreateWithoutReplyToInput[]
+    connectOrCreate?: MessageCreateOrConnectWithoutReplyToInput | MessageCreateOrConnectWithoutReplyToInput[]
+    upsert?: MessageUpsertWithWhereUniqueWithoutReplyToInput | MessageUpsertWithWhereUniqueWithoutReplyToInput[]
+    createMany?: MessageCreateManyReplyToInputEnvelope
+    set?: MessageWhereUniqueInput | MessageWhereUniqueInput[]
+    disconnect?: MessageWhereUniqueInput | MessageWhereUniqueInput[]
+    delete?: MessageWhereUniqueInput | MessageWhereUniqueInput[]
+    connect?: MessageWhereUniqueInput | MessageWhereUniqueInput[]
+    update?: MessageUpdateWithWhereUniqueWithoutReplyToInput | MessageUpdateWithWhereUniqueWithoutReplyToInput[]
+    updateMany?: MessageUpdateManyWithWhereWithoutReplyToInput | MessageUpdateManyWithWhereWithoutReplyToInput[]
+    deleteMany?: MessageScalarWhereInput | MessageScalarWhereInput[]
+  }
+
+  export type MessageKeyUncheckedUpdateManyWithoutMessageNestedInput = {
+    create?: XOR<MessageKeyCreateWithoutMessageInput, MessageKeyUncheckedCreateWithoutMessageInput> | MessageKeyCreateWithoutMessageInput[] | MessageKeyUncheckedCreateWithoutMessageInput[]
+    connectOrCreate?: MessageKeyCreateOrConnectWithoutMessageInput | MessageKeyCreateOrConnectWithoutMessageInput[]
+    upsert?: MessageKeyUpsertWithWhereUniqueWithoutMessageInput | MessageKeyUpsertWithWhereUniqueWithoutMessageInput[]
+    createMany?: MessageKeyCreateManyMessageInputEnvelope
+    set?: MessageKeyWhereUniqueInput | MessageKeyWhereUniqueInput[]
+    disconnect?: MessageKeyWhereUniqueInput | MessageKeyWhereUniqueInput[]
+    delete?: MessageKeyWhereUniqueInput | MessageKeyWhereUniqueInput[]
+    connect?: MessageKeyWhereUniqueInput | MessageKeyWhereUniqueInput[]
+    update?: MessageKeyUpdateWithWhereUniqueWithoutMessageInput | MessageKeyUpdateWithWhereUniqueWithoutMessageInput[]
+    updateMany?: MessageKeyUpdateManyWithWhereWithoutMessageInput | MessageKeyUpdateManyWithWhereWithoutMessageInput[]
+    deleteMany?: MessageKeyScalarWhereInput | MessageKeyScalarWhereInput[]
+  }
+
+  export type MessageCreateNestedOneWithoutMessageKeysInput = {
+    create?: XOR<MessageCreateWithoutMessageKeysInput, MessageUncheckedCreateWithoutMessageKeysInput>
+    connectOrCreate?: MessageCreateOrConnectWithoutMessageKeysInput
+    connect?: MessageWhereUniqueInput
+  }
+
+  export type UserCreateNestedOneWithoutMessageKeysInput = {
+    create?: XOR<UserCreateWithoutMessageKeysInput, UserUncheckedCreateWithoutMessageKeysInput>
+    connectOrCreate?: UserCreateOrConnectWithoutMessageKeysInput
+    connect?: UserWhereUniqueInput
+  }
+
+  export type MessageUpdateOneRequiredWithoutMessageKeysNestedInput = {
+    create?: XOR<MessageCreateWithoutMessageKeysInput, MessageUncheckedCreateWithoutMessageKeysInput>
+    connectOrCreate?: MessageCreateOrConnectWithoutMessageKeysInput
+    upsert?: MessageUpsertWithoutMessageKeysInput
+    connect?: MessageWhereUniqueInput
+    update?: XOR<XOR<MessageUpdateToOneWithWhereWithoutMessageKeysInput, MessageUpdateWithoutMessageKeysInput>, MessageUncheckedUpdateWithoutMessageKeysInput>
+  }
+
+  export type UserUpdateOneRequiredWithoutMessageKeysNestedInput = {
+    create?: XOR<UserCreateWithoutMessageKeysInput, UserUncheckedCreateWithoutMessageKeysInput>
+    connectOrCreate?: UserCreateOrConnectWithoutMessageKeysInput
+    upsert?: UserUpsertWithoutMessageKeysInput
+    connect?: UserWhereUniqueInput
+    update?: XOR<XOR<UserUpdateToOneWithWhereWithoutMessageKeysInput, UserUpdateWithoutMessageKeysInput>, UserUncheckedUpdateWithoutMessageKeysInput>
   }
 
   export type NestedStringFilter<$PrismaModel = never> = {
@@ -2181,6 +7482,1001 @@ export namespace Prisma {
     _count?: NestedIntFilter<$PrismaModel>
     _min?: NestedDateTimeFilter<$PrismaModel>
     _max?: NestedDateTimeFilter<$PrismaModel>
+  }
+
+  export type NestedDateTimeNullableFilter<$PrismaModel = never> = {
+    equals?: Date | string | DateTimeFieldRefInput<$PrismaModel> | null
+    in?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel> | null
+    notIn?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel> | null
+    lt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    lte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    gt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    gte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    not?: NestedDateTimeNullableFilter<$PrismaModel> | Date | string | null
+  }
+
+  export type NestedStringNullableFilter<$PrismaModel = never> = {
+    equals?: string | StringFieldRefInput<$PrismaModel> | null
+    in?: string[] | ListStringFieldRefInput<$PrismaModel> | null
+    notIn?: string[] | ListStringFieldRefInput<$PrismaModel> | null
+    lt?: string | StringFieldRefInput<$PrismaModel>
+    lte?: string | StringFieldRefInput<$PrismaModel>
+    gt?: string | StringFieldRefInput<$PrismaModel>
+    gte?: string | StringFieldRefInput<$PrismaModel>
+    contains?: string | StringFieldRefInput<$PrismaModel>
+    startsWith?: string | StringFieldRefInput<$PrismaModel>
+    endsWith?: string | StringFieldRefInput<$PrismaModel>
+    not?: NestedStringNullableFilter<$PrismaModel> | string | null
+  }
+
+  export type NestedIntWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: number | IntFieldRefInput<$PrismaModel>
+    in?: number[] | ListIntFieldRefInput<$PrismaModel>
+    notIn?: number[] | ListIntFieldRefInput<$PrismaModel>
+    lt?: number | IntFieldRefInput<$PrismaModel>
+    lte?: number | IntFieldRefInput<$PrismaModel>
+    gt?: number | IntFieldRefInput<$PrismaModel>
+    gte?: number | IntFieldRefInput<$PrismaModel>
+    not?: NestedIntWithAggregatesFilter<$PrismaModel> | number
+    _count?: NestedIntFilter<$PrismaModel>
+    _avg?: NestedFloatFilter<$PrismaModel>
+    _sum?: NestedIntFilter<$PrismaModel>
+    _min?: NestedIntFilter<$PrismaModel>
+    _max?: NestedIntFilter<$PrismaModel>
+  }
+
+  export type NestedFloatFilter<$PrismaModel = never> = {
+    equals?: number | FloatFieldRefInput<$PrismaModel>
+    in?: number[] | ListFloatFieldRefInput<$PrismaModel>
+    notIn?: number[] | ListFloatFieldRefInput<$PrismaModel>
+    lt?: number | FloatFieldRefInput<$PrismaModel>
+    lte?: number | FloatFieldRefInput<$PrismaModel>
+    gt?: number | FloatFieldRefInput<$PrismaModel>
+    gte?: number | FloatFieldRefInput<$PrismaModel>
+    not?: NestedFloatFilter<$PrismaModel> | number
+  }
+
+  export type NestedDateTimeNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: Date | string | DateTimeFieldRefInput<$PrismaModel> | null
+    in?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel> | null
+    notIn?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel> | null
+    lt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    lte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    gt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    gte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    not?: NestedDateTimeNullableWithAggregatesFilter<$PrismaModel> | Date | string | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _min?: NestedDateTimeNullableFilter<$PrismaModel>
+    _max?: NestedDateTimeNullableFilter<$PrismaModel>
+  }
+
+  export type NestedIntNullableFilter<$PrismaModel = never> = {
+    equals?: number | IntFieldRefInput<$PrismaModel> | null
+    in?: number[] | ListIntFieldRefInput<$PrismaModel> | null
+    notIn?: number[] | ListIntFieldRefInput<$PrismaModel> | null
+    lt?: number | IntFieldRefInput<$PrismaModel>
+    lte?: number | IntFieldRefInput<$PrismaModel>
+    gt?: number | IntFieldRefInput<$PrismaModel>
+    gte?: number | IntFieldRefInput<$PrismaModel>
+    not?: NestedIntNullableFilter<$PrismaModel> | number | null
+  }
+
+  export type NestedStringNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: string | StringFieldRefInput<$PrismaModel> | null
+    in?: string[] | ListStringFieldRefInput<$PrismaModel> | null
+    notIn?: string[] | ListStringFieldRefInput<$PrismaModel> | null
+    lt?: string | StringFieldRefInput<$PrismaModel>
+    lte?: string | StringFieldRefInput<$PrismaModel>
+    gt?: string | StringFieldRefInput<$PrismaModel>
+    gte?: string | StringFieldRefInput<$PrismaModel>
+    contains?: string | StringFieldRefInput<$PrismaModel>
+    startsWith?: string | StringFieldRefInput<$PrismaModel>
+    endsWith?: string | StringFieldRefInput<$PrismaModel>
+    not?: NestedStringNullableWithAggregatesFilter<$PrismaModel> | string | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _min?: NestedStringNullableFilter<$PrismaModel>
+    _max?: NestedStringNullableFilter<$PrismaModel>
+  }
+
+  export type MessageCreateWithoutSenderInput = {
+    id?: string
+    encryptedContent: string
+    ephemeralKey: string
+    nonce: string
+    messageNumber: number
+    previousChainN: number
+    timestamp?: Date | string
+    editedAt?: Date | string | null
+    deletedAt?: Date | string | null
+    deleteType?: string | null
+    recipient: UserCreateNestedOneWithoutReceivedMessagesInput
+    replyTo?: MessageCreateNestedOneWithoutRepliesInput
+    replies?: MessageCreateNestedManyWithoutReplyToInput
+    messageKeys?: MessageKeyCreateNestedManyWithoutMessageInput
+  }
+
+  export type MessageUncheckedCreateWithoutSenderInput = {
+    id?: string
+    recipientId: string
+    encryptedContent: string
+    ephemeralKey: string
+    nonce: string
+    messageNumber: number
+    previousChainN: number
+    timestamp?: Date | string
+    editedAt?: Date | string | null
+    deletedAt?: Date | string | null
+    deleteType?: string | null
+    replyToId?: string | null
+    replies?: MessageUncheckedCreateNestedManyWithoutReplyToInput
+    messageKeys?: MessageKeyUncheckedCreateNestedManyWithoutMessageInput
+  }
+
+  export type MessageCreateOrConnectWithoutSenderInput = {
+    where: MessageWhereUniqueInput
+    create: XOR<MessageCreateWithoutSenderInput, MessageUncheckedCreateWithoutSenderInput>
+  }
+
+  export type MessageCreateManySenderInputEnvelope = {
+    data: MessageCreateManySenderInput | MessageCreateManySenderInput[]
+    skipDuplicates?: boolean
+  }
+
+  export type MessageCreateWithoutRecipientInput = {
+    id?: string
+    encryptedContent: string
+    ephemeralKey: string
+    nonce: string
+    messageNumber: number
+    previousChainN: number
+    timestamp?: Date | string
+    editedAt?: Date | string | null
+    deletedAt?: Date | string | null
+    deleteType?: string | null
+    sender: UserCreateNestedOneWithoutSentMessagesInput
+    replyTo?: MessageCreateNestedOneWithoutRepliesInput
+    replies?: MessageCreateNestedManyWithoutReplyToInput
+    messageKeys?: MessageKeyCreateNestedManyWithoutMessageInput
+  }
+
+  export type MessageUncheckedCreateWithoutRecipientInput = {
+    id?: string
+    senderId: string
+    encryptedContent: string
+    ephemeralKey: string
+    nonce: string
+    messageNumber: number
+    previousChainN: number
+    timestamp?: Date | string
+    editedAt?: Date | string | null
+    deletedAt?: Date | string | null
+    deleteType?: string | null
+    replyToId?: string | null
+    replies?: MessageUncheckedCreateNestedManyWithoutReplyToInput
+    messageKeys?: MessageKeyUncheckedCreateNestedManyWithoutMessageInput
+  }
+
+  export type MessageCreateOrConnectWithoutRecipientInput = {
+    where: MessageWhereUniqueInput
+    create: XOR<MessageCreateWithoutRecipientInput, MessageUncheckedCreateWithoutRecipientInput>
+  }
+
+  export type MessageCreateManyRecipientInputEnvelope = {
+    data: MessageCreateManyRecipientInput | MessageCreateManyRecipientInput[]
+    skipDuplicates?: boolean
+  }
+
+  export type MessageKeyCreateWithoutUserInput = {
+    id?: string
+    encryptedKey: string
+    ephemeralPublicKey?: string | null
+    chainKeySnapshot: string
+    keyIndex: number
+    createdAt?: Date | string
+    message: MessageCreateNestedOneWithoutMessageKeysInput
+  }
+
+  export type MessageKeyUncheckedCreateWithoutUserInput = {
+    id?: string
+    messageId: string
+    encryptedKey: string
+    ephemeralPublicKey?: string | null
+    chainKeySnapshot: string
+    keyIndex: number
+    createdAt?: Date | string
+  }
+
+  export type MessageKeyCreateOrConnectWithoutUserInput = {
+    where: MessageKeyWhereUniqueInput
+    create: XOR<MessageKeyCreateWithoutUserInput, MessageKeyUncheckedCreateWithoutUserInput>
+  }
+
+  export type MessageKeyCreateManyUserInputEnvelope = {
+    data: MessageKeyCreateManyUserInput | MessageKeyCreateManyUserInput[]
+    skipDuplicates?: boolean
+  }
+
+  export type MessageUpsertWithWhereUniqueWithoutSenderInput = {
+    where: MessageWhereUniqueInput
+    update: XOR<MessageUpdateWithoutSenderInput, MessageUncheckedUpdateWithoutSenderInput>
+    create: XOR<MessageCreateWithoutSenderInput, MessageUncheckedCreateWithoutSenderInput>
+  }
+
+  export type MessageUpdateWithWhereUniqueWithoutSenderInput = {
+    where: MessageWhereUniqueInput
+    data: XOR<MessageUpdateWithoutSenderInput, MessageUncheckedUpdateWithoutSenderInput>
+  }
+
+  export type MessageUpdateManyWithWhereWithoutSenderInput = {
+    where: MessageScalarWhereInput
+    data: XOR<MessageUpdateManyMutationInput, MessageUncheckedUpdateManyWithoutSenderInput>
+  }
+
+  export type MessageScalarWhereInput = {
+    AND?: MessageScalarWhereInput | MessageScalarWhereInput[]
+    OR?: MessageScalarWhereInput[]
+    NOT?: MessageScalarWhereInput | MessageScalarWhereInput[]
+    id?: StringFilter<"Message"> | string
+    senderId?: StringFilter<"Message"> | string
+    recipientId?: StringFilter<"Message"> | string
+    encryptedContent?: StringFilter<"Message"> | string
+    ephemeralKey?: StringFilter<"Message"> | string
+    nonce?: StringFilter<"Message"> | string
+    messageNumber?: IntFilter<"Message"> | number
+    previousChainN?: IntFilter<"Message"> | number
+    timestamp?: DateTimeFilter<"Message"> | Date | string
+    editedAt?: DateTimeNullableFilter<"Message"> | Date | string | null
+    deletedAt?: DateTimeNullableFilter<"Message"> | Date | string | null
+    deleteType?: StringNullableFilter<"Message"> | string | null
+    replyToId?: StringNullableFilter<"Message"> | string | null
+  }
+
+  export type MessageUpsertWithWhereUniqueWithoutRecipientInput = {
+    where: MessageWhereUniqueInput
+    update: XOR<MessageUpdateWithoutRecipientInput, MessageUncheckedUpdateWithoutRecipientInput>
+    create: XOR<MessageCreateWithoutRecipientInput, MessageUncheckedCreateWithoutRecipientInput>
+  }
+
+  export type MessageUpdateWithWhereUniqueWithoutRecipientInput = {
+    where: MessageWhereUniqueInput
+    data: XOR<MessageUpdateWithoutRecipientInput, MessageUncheckedUpdateWithoutRecipientInput>
+  }
+
+  export type MessageUpdateManyWithWhereWithoutRecipientInput = {
+    where: MessageScalarWhereInput
+    data: XOR<MessageUpdateManyMutationInput, MessageUncheckedUpdateManyWithoutRecipientInput>
+  }
+
+  export type MessageKeyUpsertWithWhereUniqueWithoutUserInput = {
+    where: MessageKeyWhereUniqueInput
+    update: XOR<MessageKeyUpdateWithoutUserInput, MessageKeyUncheckedUpdateWithoutUserInput>
+    create: XOR<MessageKeyCreateWithoutUserInput, MessageKeyUncheckedCreateWithoutUserInput>
+  }
+
+  export type MessageKeyUpdateWithWhereUniqueWithoutUserInput = {
+    where: MessageKeyWhereUniqueInput
+    data: XOR<MessageKeyUpdateWithoutUserInput, MessageKeyUncheckedUpdateWithoutUserInput>
+  }
+
+  export type MessageKeyUpdateManyWithWhereWithoutUserInput = {
+    where: MessageKeyScalarWhereInput
+    data: XOR<MessageKeyUpdateManyMutationInput, MessageKeyUncheckedUpdateManyWithoutUserInput>
+  }
+
+  export type MessageKeyScalarWhereInput = {
+    AND?: MessageKeyScalarWhereInput | MessageKeyScalarWhereInput[]
+    OR?: MessageKeyScalarWhereInput[]
+    NOT?: MessageKeyScalarWhereInput | MessageKeyScalarWhereInput[]
+    id?: StringFilter<"MessageKey"> | string
+    messageId?: StringFilter<"MessageKey"> | string
+    userId?: StringFilter<"MessageKey"> | string
+    encryptedKey?: StringFilter<"MessageKey"> | string
+    ephemeralPublicKey?: StringNullableFilter<"MessageKey"> | string | null
+    chainKeySnapshot?: StringFilter<"MessageKey"> | string
+    keyIndex?: IntFilter<"MessageKey"> | number
+    createdAt?: DateTimeFilter<"MessageKey"> | Date | string
+  }
+
+  export type UserCreateWithoutSentMessagesInput = {
+    id?: string
+    nickName: string
+    key: string
+    createdAt?: Date | string
+    receivedMessages?: MessageCreateNestedManyWithoutRecipientInput
+    messageKeys?: MessageKeyCreateNestedManyWithoutUserInput
+  }
+
+  export type UserUncheckedCreateWithoutSentMessagesInput = {
+    id?: string
+    nickName: string
+    key: string
+    createdAt?: Date | string
+    receivedMessages?: MessageUncheckedCreateNestedManyWithoutRecipientInput
+    messageKeys?: MessageKeyUncheckedCreateNestedManyWithoutUserInput
+  }
+
+  export type UserCreateOrConnectWithoutSentMessagesInput = {
+    where: UserWhereUniqueInput
+    create: XOR<UserCreateWithoutSentMessagesInput, UserUncheckedCreateWithoutSentMessagesInput>
+  }
+
+  export type UserCreateWithoutReceivedMessagesInput = {
+    id?: string
+    nickName: string
+    key: string
+    createdAt?: Date | string
+    sentMessages?: MessageCreateNestedManyWithoutSenderInput
+    messageKeys?: MessageKeyCreateNestedManyWithoutUserInput
+  }
+
+  export type UserUncheckedCreateWithoutReceivedMessagesInput = {
+    id?: string
+    nickName: string
+    key: string
+    createdAt?: Date | string
+    sentMessages?: MessageUncheckedCreateNestedManyWithoutSenderInput
+    messageKeys?: MessageKeyUncheckedCreateNestedManyWithoutUserInput
+  }
+
+  export type UserCreateOrConnectWithoutReceivedMessagesInput = {
+    where: UserWhereUniqueInput
+    create: XOR<UserCreateWithoutReceivedMessagesInput, UserUncheckedCreateWithoutReceivedMessagesInput>
+  }
+
+  export type MessageCreateWithoutRepliesInput = {
+    id?: string
+    encryptedContent: string
+    ephemeralKey: string
+    nonce: string
+    messageNumber: number
+    previousChainN: number
+    timestamp?: Date | string
+    editedAt?: Date | string | null
+    deletedAt?: Date | string | null
+    deleteType?: string | null
+    sender: UserCreateNestedOneWithoutSentMessagesInput
+    recipient: UserCreateNestedOneWithoutReceivedMessagesInput
+    replyTo?: MessageCreateNestedOneWithoutRepliesInput
+    messageKeys?: MessageKeyCreateNestedManyWithoutMessageInput
+  }
+
+  export type MessageUncheckedCreateWithoutRepliesInput = {
+    id?: string
+    senderId: string
+    recipientId: string
+    encryptedContent: string
+    ephemeralKey: string
+    nonce: string
+    messageNumber: number
+    previousChainN: number
+    timestamp?: Date | string
+    editedAt?: Date | string | null
+    deletedAt?: Date | string | null
+    deleteType?: string | null
+    replyToId?: string | null
+    messageKeys?: MessageKeyUncheckedCreateNestedManyWithoutMessageInput
+  }
+
+  export type MessageCreateOrConnectWithoutRepliesInput = {
+    where: MessageWhereUniqueInput
+    create: XOR<MessageCreateWithoutRepliesInput, MessageUncheckedCreateWithoutRepliesInput>
+  }
+
+  export type MessageCreateWithoutReplyToInput = {
+    id?: string
+    encryptedContent: string
+    ephemeralKey: string
+    nonce: string
+    messageNumber: number
+    previousChainN: number
+    timestamp?: Date | string
+    editedAt?: Date | string | null
+    deletedAt?: Date | string | null
+    deleteType?: string | null
+    sender: UserCreateNestedOneWithoutSentMessagesInput
+    recipient: UserCreateNestedOneWithoutReceivedMessagesInput
+    replies?: MessageCreateNestedManyWithoutReplyToInput
+    messageKeys?: MessageKeyCreateNestedManyWithoutMessageInput
+  }
+
+  export type MessageUncheckedCreateWithoutReplyToInput = {
+    id?: string
+    senderId: string
+    recipientId: string
+    encryptedContent: string
+    ephemeralKey: string
+    nonce: string
+    messageNumber: number
+    previousChainN: number
+    timestamp?: Date | string
+    editedAt?: Date | string | null
+    deletedAt?: Date | string | null
+    deleteType?: string | null
+    replies?: MessageUncheckedCreateNestedManyWithoutReplyToInput
+    messageKeys?: MessageKeyUncheckedCreateNestedManyWithoutMessageInput
+  }
+
+  export type MessageCreateOrConnectWithoutReplyToInput = {
+    where: MessageWhereUniqueInput
+    create: XOR<MessageCreateWithoutReplyToInput, MessageUncheckedCreateWithoutReplyToInput>
+  }
+
+  export type MessageCreateManyReplyToInputEnvelope = {
+    data: MessageCreateManyReplyToInput | MessageCreateManyReplyToInput[]
+    skipDuplicates?: boolean
+  }
+
+  export type MessageKeyCreateWithoutMessageInput = {
+    id?: string
+    encryptedKey: string
+    ephemeralPublicKey?: string | null
+    chainKeySnapshot: string
+    keyIndex: number
+    createdAt?: Date | string
+    user: UserCreateNestedOneWithoutMessageKeysInput
+  }
+
+  export type MessageKeyUncheckedCreateWithoutMessageInput = {
+    id?: string
+    userId: string
+    encryptedKey: string
+    ephemeralPublicKey?: string | null
+    chainKeySnapshot: string
+    keyIndex: number
+    createdAt?: Date | string
+  }
+
+  export type MessageKeyCreateOrConnectWithoutMessageInput = {
+    where: MessageKeyWhereUniqueInput
+    create: XOR<MessageKeyCreateWithoutMessageInput, MessageKeyUncheckedCreateWithoutMessageInput>
+  }
+
+  export type MessageKeyCreateManyMessageInputEnvelope = {
+    data: MessageKeyCreateManyMessageInput | MessageKeyCreateManyMessageInput[]
+    skipDuplicates?: boolean
+  }
+
+  export type UserUpsertWithoutSentMessagesInput = {
+    update: XOR<UserUpdateWithoutSentMessagesInput, UserUncheckedUpdateWithoutSentMessagesInput>
+    create: XOR<UserCreateWithoutSentMessagesInput, UserUncheckedCreateWithoutSentMessagesInput>
+    where?: UserWhereInput
+  }
+
+  export type UserUpdateToOneWithWhereWithoutSentMessagesInput = {
+    where?: UserWhereInput
+    data: XOR<UserUpdateWithoutSentMessagesInput, UserUncheckedUpdateWithoutSentMessagesInput>
+  }
+
+  export type UserUpdateWithoutSentMessagesInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    nickName?: StringFieldUpdateOperationsInput | string
+    key?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    receivedMessages?: MessageUpdateManyWithoutRecipientNestedInput
+    messageKeys?: MessageKeyUpdateManyWithoutUserNestedInput
+  }
+
+  export type UserUncheckedUpdateWithoutSentMessagesInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    nickName?: StringFieldUpdateOperationsInput | string
+    key?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    receivedMessages?: MessageUncheckedUpdateManyWithoutRecipientNestedInput
+    messageKeys?: MessageKeyUncheckedUpdateManyWithoutUserNestedInput
+  }
+
+  export type UserUpsertWithoutReceivedMessagesInput = {
+    update: XOR<UserUpdateWithoutReceivedMessagesInput, UserUncheckedUpdateWithoutReceivedMessagesInput>
+    create: XOR<UserCreateWithoutReceivedMessagesInput, UserUncheckedCreateWithoutReceivedMessagesInput>
+    where?: UserWhereInput
+  }
+
+  export type UserUpdateToOneWithWhereWithoutReceivedMessagesInput = {
+    where?: UserWhereInput
+    data: XOR<UserUpdateWithoutReceivedMessagesInput, UserUncheckedUpdateWithoutReceivedMessagesInput>
+  }
+
+  export type UserUpdateWithoutReceivedMessagesInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    nickName?: StringFieldUpdateOperationsInput | string
+    key?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    sentMessages?: MessageUpdateManyWithoutSenderNestedInput
+    messageKeys?: MessageKeyUpdateManyWithoutUserNestedInput
+  }
+
+  export type UserUncheckedUpdateWithoutReceivedMessagesInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    nickName?: StringFieldUpdateOperationsInput | string
+    key?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    sentMessages?: MessageUncheckedUpdateManyWithoutSenderNestedInput
+    messageKeys?: MessageKeyUncheckedUpdateManyWithoutUserNestedInput
+  }
+
+  export type MessageUpsertWithoutRepliesInput = {
+    update: XOR<MessageUpdateWithoutRepliesInput, MessageUncheckedUpdateWithoutRepliesInput>
+    create: XOR<MessageCreateWithoutRepliesInput, MessageUncheckedCreateWithoutRepliesInput>
+    where?: MessageWhereInput
+  }
+
+  export type MessageUpdateToOneWithWhereWithoutRepliesInput = {
+    where?: MessageWhereInput
+    data: XOR<MessageUpdateWithoutRepliesInput, MessageUncheckedUpdateWithoutRepliesInput>
+  }
+
+  export type MessageUpdateWithoutRepliesInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    encryptedContent?: StringFieldUpdateOperationsInput | string
+    ephemeralKey?: StringFieldUpdateOperationsInput | string
+    nonce?: StringFieldUpdateOperationsInput | string
+    messageNumber?: IntFieldUpdateOperationsInput | number
+    previousChainN?: IntFieldUpdateOperationsInput | number
+    timestamp?: DateTimeFieldUpdateOperationsInput | Date | string
+    editedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    deleteType?: NullableStringFieldUpdateOperationsInput | string | null
+    sender?: UserUpdateOneRequiredWithoutSentMessagesNestedInput
+    recipient?: UserUpdateOneRequiredWithoutReceivedMessagesNestedInput
+    replyTo?: MessageUpdateOneWithoutRepliesNestedInput
+    messageKeys?: MessageKeyUpdateManyWithoutMessageNestedInput
+  }
+
+  export type MessageUncheckedUpdateWithoutRepliesInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    senderId?: StringFieldUpdateOperationsInput | string
+    recipientId?: StringFieldUpdateOperationsInput | string
+    encryptedContent?: StringFieldUpdateOperationsInput | string
+    ephemeralKey?: StringFieldUpdateOperationsInput | string
+    nonce?: StringFieldUpdateOperationsInput | string
+    messageNumber?: IntFieldUpdateOperationsInput | number
+    previousChainN?: IntFieldUpdateOperationsInput | number
+    timestamp?: DateTimeFieldUpdateOperationsInput | Date | string
+    editedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    deleteType?: NullableStringFieldUpdateOperationsInput | string | null
+    replyToId?: NullableStringFieldUpdateOperationsInput | string | null
+    messageKeys?: MessageKeyUncheckedUpdateManyWithoutMessageNestedInput
+  }
+
+  export type MessageUpsertWithWhereUniqueWithoutReplyToInput = {
+    where: MessageWhereUniqueInput
+    update: XOR<MessageUpdateWithoutReplyToInput, MessageUncheckedUpdateWithoutReplyToInput>
+    create: XOR<MessageCreateWithoutReplyToInput, MessageUncheckedCreateWithoutReplyToInput>
+  }
+
+  export type MessageUpdateWithWhereUniqueWithoutReplyToInput = {
+    where: MessageWhereUniqueInput
+    data: XOR<MessageUpdateWithoutReplyToInput, MessageUncheckedUpdateWithoutReplyToInput>
+  }
+
+  export type MessageUpdateManyWithWhereWithoutReplyToInput = {
+    where: MessageScalarWhereInput
+    data: XOR<MessageUpdateManyMutationInput, MessageUncheckedUpdateManyWithoutReplyToInput>
+  }
+
+  export type MessageKeyUpsertWithWhereUniqueWithoutMessageInput = {
+    where: MessageKeyWhereUniqueInput
+    update: XOR<MessageKeyUpdateWithoutMessageInput, MessageKeyUncheckedUpdateWithoutMessageInput>
+    create: XOR<MessageKeyCreateWithoutMessageInput, MessageKeyUncheckedCreateWithoutMessageInput>
+  }
+
+  export type MessageKeyUpdateWithWhereUniqueWithoutMessageInput = {
+    where: MessageKeyWhereUniqueInput
+    data: XOR<MessageKeyUpdateWithoutMessageInput, MessageKeyUncheckedUpdateWithoutMessageInput>
+  }
+
+  export type MessageKeyUpdateManyWithWhereWithoutMessageInput = {
+    where: MessageKeyScalarWhereInput
+    data: XOR<MessageKeyUpdateManyMutationInput, MessageKeyUncheckedUpdateManyWithoutMessageInput>
+  }
+
+  export type MessageCreateWithoutMessageKeysInput = {
+    id?: string
+    encryptedContent: string
+    ephemeralKey: string
+    nonce: string
+    messageNumber: number
+    previousChainN: number
+    timestamp?: Date | string
+    editedAt?: Date | string | null
+    deletedAt?: Date | string | null
+    deleteType?: string | null
+    sender: UserCreateNestedOneWithoutSentMessagesInput
+    recipient: UserCreateNestedOneWithoutReceivedMessagesInput
+    replyTo?: MessageCreateNestedOneWithoutRepliesInput
+    replies?: MessageCreateNestedManyWithoutReplyToInput
+  }
+
+  export type MessageUncheckedCreateWithoutMessageKeysInput = {
+    id?: string
+    senderId: string
+    recipientId: string
+    encryptedContent: string
+    ephemeralKey: string
+    nonce: string
+    messageNumber: number
+    previousChainN: number
+    timestamp?: Date | string
+    editedAt?: Date | string | null
+    deletedAt?: Date | string | null
+    deleteType?: string | null
+    replyToId?: string | null
+    replies?: MessageUncheckedCreateNestedManyWithoutReplyToInput
+  }
+
+  export type MessageCreateOrConnectWithoutMessageKeysInput = {
+    where: MessageWhereUniqueInput
+    create: XOR<MessageCreateWithoutMessageKeysInput, MessageUncheckedCreateWithoutMessageKeysInput>
+  }
+
+  export type UserCreateWithoutMessageKeysInput = {
+    id?: string
+    nickName: string
+    key: string
+    createdAt?: Date | string
+    sentMessages?: MessageCreateNestedManyWithoutSenderInput
+    receivedMessages?: MessageCreateNestedManyWithoutRecipientInput
+  }
+
+  export type UserUncheckedCreateWithoutMessageKeysInput = {
+    id?: string
+    nickName: string
+    key: string
+    createdAt?: Date | string
+    sentMessages?: MessageUncheckedCreateNestedManyWithoutSenderInput
+    receivedMessages?: MessageUncheckedCreateNestedManyWithoutRecipientInput
+  }
+
+  export type UserCreateOrConnectWithoutMessageKeysInput = {
+    where: UserWhereUniqueInput
+    create: XOR<UserCreateWithoutMessageKeysInput, UserUncheckedCreateWithoutMessageKeysInput>
+  }
+
+  export type MessageUpsertWithoutMessageKeysInput = {
+    update: XOR<MessageUpdateWithoutMessageKeysInput, MessageUncheckedUpdateWithoutMessageKeysInput>
+    create: XOR<MessageCreateWithoutMessageKeysInput, MessageUncheckedCreateWithoutMessageKeysInput>
+    where?: MessageWhereInput
+  }
+
+  export type MessageUpdateToOneWithWhereWithoutMessageKeysInput = {
+    where?: MessageWhereInput
+    data: XOR<MessageUpdateWithoutMessageKeysInput, MessageUncheckedUpdateWithoutMessageKeysInput>
+  }
+
+  export type MessageUpdateWithoutMessageKeysInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    encryptedContent?: StringFieldUpdateOperationsInput | string
+    ephemeralKey?: StringFieldUpdateOperationsInput | string
+    nonce?: StringFieldUpdateOperationsInput | string
+    messageNumber?: IntFieldUpdateOperationsInput | number
+    previousChainN?: IntFieldUpdateOperationsInput | number
+    timestamp?: DateTimeFieldUpdateOperationsInput | Date | string
+    editedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    deleteType?: NullableStringFieldUpdateOperationsInput | string | null
+    sender?: UserUpdateOneRequiredWithoutSentMessagesNestedInput
+    recipient?: UserUpdateOneRequiredWithoutReceivedMessagesNestedInput
+    replyTo?: MessageUpdateOneWithoutRepliesNestedInput
+    replies?: MessageUpdateManyWithoutReplyToNestedInput
+  }
+
+  export type MessageUncheckedUpdateWithoutMessageKeysInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    senderId?: StringFieldUpdateOperationsInput | string
+    recipientId?: StringFieldUpdateOperationsInput | string
+    encryptedContent?: StringFieldUpdateOperationsInput | string
+    ephemeralKey?: StringFieldUpdateOperationsInput | string
+    nonce?: StringFieldUpdateOperationsInput | string
+    messageNumber?: IntFieldUpdateOperationsInput | number
+    previousChainN?: IntFieldUpdateOperationsInput | number
+    timestamp?: DateTimeFieldUpdateOperationsInput | Date | string
+    editedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    deleteType?: NullableStringFieldUpdateOperationsInput | string | null
+    replyToId?: NullableStringFieldUpdateOperationsInput | string | null
+    replies?: MessageUncheckedUpdateManyWithoutReplyToNestedInput
+  }
+
+  export type UserUpsertWithoutMessageKeysInput = {
+    update: XOR<UserUpdateWithoutMessageKeysInput, UserUncheckedUpdateWithoutMessageKeysInput>
+    create: XOR<UserCreateWithoutMessageKeysInput, UserUncheckedCreateWithoutMessageKeysInput>
+    where?: UserWhereInput
+  }
+
+  export type UserUpdateToOneWithWhereWithoutMessageKeysInput = {
+    where?: UserWhereInput
+    data: XOR<UserUpdateWithoutMessageKeysInput, UserUncheckedUpdateWithoutMessageKeysInput>
+  }
+
+  export type UserUpdateWithoutMessageKeysInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    nickName?: StringFieldUpdateOperationsInput | string
+    key?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    sentMessages?: MessageUpdateManyWithoutSenderNestedInput
+    receivedMessages?: MessageUpdateManyWithoutRecipientNestedInput
+  }
+
+  export type UserUncheckedUpdateWithoutMessageKeysInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    nickName?: StringFieldUpdateOperationsInput | string
+    key?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    sentMessages?: MessageUncheckedUpdateManyWithoutSenderNestedInput
+    receivedMessages?: MessageUncheckedUpdateManyWithoutRecipientNestedInput
+  }
+
+  export type MessageCreateManySenderInput = {
+    id?: string
+    recipientId: string
+    encryptedContent: string
+    ephemeralKey: string
+    nonce: string
+    messageNumber: number
+    previousChainN: number
+    timestamp?: Date | string
+    editedAt?: Date | string | null
+    deletedAt?: Date | string | null
+    deleteType?: string | null
+    replyToId?: string | null
+  }
+
+  export type MessageCreateManyRecipientInput = {
+    id?: string
+    senderId: string
+    encryptedContent: string
+    ephemeralKey: string
+    nonce: string
+    messageNumber: number
+    previousChainN: number
+    timestamp?: Date | string
+    editedAt?: Date | string | null
+    deletedAt?: Date | string | null
+    deleteType?: string | null
+    replyToId?: string | null
+  }
+
+  export type MessageKeyCreateManyUserInput = {
+    id?: string
+    messageId: string
+    encryptedKey: string
+    ephemeralPublicKey?: string | null
+    chainKeySnapshot: string
+    keyIndex: number
+    createdAt?: Date | string
+  }
+
+  export type MessageUpdateWithoutSenderInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    encryptedContent?: StringFieldUpdateOperationsInput | string
+    ephemeralKey?: StringFieldUpdateOperationsInput | string
+    nonce?: StringFieldUpdateOperationsInput | string
+    messageNumber?: IntFieldUpdateOperationsInput | number
+    previousChainN?: IntFieldUpdateOperationsInput | number
+    timestamp?: DateTimeFieldUpdateOperationsInput | Date | string
+    editedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    deleteType?: NullableStringFieldUpdateOperationsInput | string | null
+    recipient?: UserUpdateOneRequiredWithoutReceivedMessagesNestedInput
+    replyTo?: MessageUpdateOneWithoutRepliesNestedInput
+    replies?: MessageUpdateManyWithoutReplyToNestedInput
+    messageKeys?: MessageKeyUpdateManyWithoutMessageNestedInput
+  }
+
+  export type MessageUncheckedUpdateWithoutSenderInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    recipientId?: StringFieldUpdateOperationsInput | string
+    encryptedContent?: StringFieldUpdateOperationsInput | string
+    ephemeralKey?: StringFieldUpdateOperationsInput | string
+    nonce?: StringFieldUpdateOperationsInput | string
+    messageNumber?: IntFieldUpdateOperationsInput | number
+    previousChainN?: IntFieldUpdateOperationsInput | number
+    timestamp?: DateTimeFieldUpdateOperationsInput | Date | string
+    editedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    deleteType?: NullableStringFieldUpdateOperationsInput | string | null
+    replyToId?: NullableStringFieldUpdateOperationsInput | string | null
+    replies?: MessageUncheckedUpdateManyWithoutReplyToNestedInput
+    messageKeys?: MessageKeyUncheckedUpdateManyWithoutMessageNestedInput
+  }
+
+  export type MessageUncheckedUpdateManyWithoutSenderInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    recipientId?: StringFieldUpdateOperationsInput | string
+    encryptedContent?: StringFieldUpdateOperationsInput | string
+    ephemeralKey?: StringFieldUpdateOperationsInput | string
+    nonce?: StringFieldUpdateOperationsInput | string
+    messageNumber?: IntFieldUpdateOperationsInput | number
+    previousChainN?: IntFieldUpdateOperationsInput | number
+    timestamp?: DateTimeFieldUpdateOperationsInput | Date | string
+    editedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    deleteType?: NullableStringFieldUpdateOperationsInput | string | null
+    replyToId?: NullableStringFieldUpdateOperationsInput | string | null
+  }
+
+  export type MessageUpdateWithoutRecipientInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    encryptedContent?: StringFieldUpdateOperationsInput | string
+    ephemeralKey?: StringFieldUpdateOperationsInput | string
+    nonce?: StringFieldUpdateOperationsInput | string
+    messageNumber?: IntFieldUpdateOperationsInput | number
+    previousChainN?: IntFieldUpdateOperationsInput | number
+    timestamp?: DateTimeFieldUpdateOperationsInput | Date | string
+    editedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    deleteType?: NullableStringFieldUpdateOperationsInput | string | null
+    sender?: UserUpdateOneRequiredWithoutSentMessagesNestedInput
+    replyTo?: MessageUpdateOneWithoutRepliesNestedInput
+    replies?: MessageUpdateManyWithoutReplyToNestedInput
+    messageKeys?: MessageKeyUpdateManyWithoutMessageNestedInput
+  }
+
+  export type MessageUncheckedUpdateWithoutRecipientInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    senderId?: StringFieldUpdateOperationsInput | string
+    encryptedContent?: StringFieldUpdateOperationsInput | string
+    ephemeralKey?: StringFieldUpdateOperationsInput | string
+    nonce?: StringFieldUpdateOperationsInput | string
+    messageNumber?: IntFieldUpdateOperationsInput | number
+    previousChainN?: IntFieldUpdateOperationsInput | number
+    timestamp?: DateTimeFieldUpdateOperationsInput | Date | string
+    editedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    deleteType?: NullableStringFieldUpdateOperationsInput | string | null
+    replyToId?: NullableStringFieldUpdateOperationsInput | string | null
+    replies?: MessageUncheckedUpdateManyWithoutReplyToNestedInput
+    messageKeys?: MessageKeyUncheckedUpdateManyWithoutMessageNestedInput
+  }
+
+  export type MessageUncheckedUpdateManyWithoutRecipientInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    senderId?: StringFieldUpdateOperationsInput | string
+    encryptedContent?: StringFieldUpdateOperationsInput | string
+    ephemeralKey?: StringFieldUpdateOperationsInput | string
+    nonce?: StringFieldUpdateOperationsInput | string
+    messageNumber?: IntFieldUpdateOperationsInput | number
+    previousChainN?: IntFieldUpdateOperationsInput | number
+    timestamp?: DateTimeFieldUpdateOperationsInput | Date | string
+    editedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    deleteType?: NullableStringFieldUpdateOperationsInput | string | null
+    replyToId?: NullableStringFieldUpdateOperationsInput | string | null
+  }
+
+  export type MessageKeyUpdateWithoutUserInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    encryptedKey?: StringFieldUpdateOperationsInput | string
+    ephemeralPublicKey?: NullableStringFieldUpdateOperationsInput | string | null
+    chainKeySnapshot?: StringFieldUpdateOperationsInput | string
+    keyIndex?: IntFieldUpdateOperationsInput | number
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    message?: MessageUpdateOneRequiredWithoutMessageKeysNestedInput
+  }
+
+  export type MessageKeyUncheckedUpdateWithoutUserInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    messageId?: StringFieldUpdateOperationsInput | string
+    encryptedKey?: StringFieldUpdateOperationsInput | string
+    ephemeralPublicKey?: NullableStringFieldUpdateOperationsInput | string | null
+    chainKeySnapshot?: StringFieldUpdateOperationsInput | string
+    keyIndex?: IntFieldUpdateOperationsInput | number
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type MessageKeyUncheckedUpdateManyWithoutUserInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    messageId?: StringFieldUpdateOperationsInput | string
+    encryptedKey?: StringFieldUpdateOperationsInput | string
+    ephemeralPublicKey?: NullableStringFieldUpdateOperationsInput | string | null
+    chainKeySnapshot?: StringFieldUpdateOperationsInput | string
+    keyIndex?: IntFieldUpdateOperationsInput | number
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type MessageCreateManyReplyToInput = {
+    id?: string
+    senderId: string
+    recipientId: string
+    encryptedContent: string
+    ephemeralKey: string
+    nonce: string
+    messageNumber: number
+    previousChainN: number
+    timestamp?: Date | string
+    editedAt?: Date | string | null
+    deletedAt?: Date | string | null
+    deleteType?: string | null
+  }
+
+  export type MessageKeyCreateManyMessageInput = {
+    id?: string
+    userId: string
+    encryptedKey: string
+    ephemeralPublicKey?: string | null
+    chainKeySnapshot: string
+    keyIndex: number
+    createdAt?: Date | string
+  }
+
+  export type MessageUpdateWithoutReplyToInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    encryptedContent?: StringFieldUpdateOperationsInput | string
+    ephemeralKey?: StringFieldUpdateOperationsInput | string
+    nonce?: StringFieldUpdateOperationsInput | string
+    messageNumber?: IntFieldUpdateOperationsInput | number
+    previousChainN?: IntFieldUpdateOperationsInput | number
+    timestamp?: DateTimeFieldUpdateOperationsInput | Date | string
+    editedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    deleteType?: NullableStringFieldUpdateOperationsInput | string | null
+    sender?: UserUpdateOneRequiredWithoutSentMessagesNestedInput
+    recipient?: UserUpdateOneRequiredWithoutReceivedMessagesNestedInput
+    replies?: MessageUpdateManyWithoutReplyToNestedInput
+    messageKeys?: MessageKeyUpdateManyWithoutMessageNestedInput
+  }
+
+  export type MessageUncheckedUpdateWithoutReplyToInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    senderId?: StringFieldUpdateOperationsInput | string
+    recipientId?: StringFieldUpdateOperationsInput | string
+    encryptedContent?: StringFieldUpdateOperationsInput | string
+    ephemeralKey?: StringFieldUpdateOperationsInput | string
+    nonce?: StringFieldUpdateOperationsInput | string
+    messageNumber?: IntFieldUpdateOperationsInput | number
+    previousChainN?: IntFieldUpdateOperationsInput | number
+    timestamp?: DateTimeFieldUpdateOperationsInput | Date | string
+    editedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    deleteType?: NullableStringFieldUpdateOperationsInput | string | null
+    replies?: MessageUncheckedUpdateManyWithoutReplyToNestedInput
+    messageKeys?: MessageKeyUncheckedUpdateManyWithoutMessageNestedInput
+  }
+
+  export type MessageUncheckedUpdateManyWithoutReplyToInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    senderId?: StringFieldUpdateOperationsInput | string
+    recipientId?: StringFieldUpdateOperationsInput | string
+    encryptedContent?: StringFieldUpdateOperationsInput | string
+    ephemeralKey?: StringFieldUpdateOperationsInput | string
+    nonce?: StringFieldUpdateOperationsInput | string
+    messageNumber?: IntFieldUpdateOperationsInput | number
+    previousChainN?: IntFieldUpdateOperationsInput | number
+    timestamp?: DateTimeFieldUpdateOperationsInput | Date | string
+    editedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    deleteType?: NullableStringFieldUpdateOperationsInput | string | null
+  }
+
+  export type MessageKeyUpdateWithoutMessageInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    encryptedKey?: StringFieldUpdateOperationsInput | string
+    ephemeralPublicKey?: NullableStringFieldUpdateOperationsInput | string | null
+    chainKeySnapshot?: StringFieldUpdateOperationsInput | string
+    keyIndex?: IntFieldUpdateOperationsInput | number
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    user?: UserUpdateOneRequiredWithoutMessageKeysNestedInput
+  }
+
+  export type MessageKeyUncheckedUpdateWithoutMessageInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    userId?: StringFieldUpdateOperationsInput | string
+    encryptedKey?: StringFieldUpdateOperationsInput | string
+    ephemeralPublicKey?: NullableStringFieldUpdateOperationsInput | string | null
+    chainKeySnapshot?: StringFieldUpdateOperationsInput | string
+    keyIndex?: IntFieldUpdateOperationsInput | number
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type MessageKeyUncheckedUpdateManyWithoutMessageInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    userId?: StringFieldUpdateOperationsInput | string
+    encryptedKey?: StringFieldUpdateOperationsInput | string
+    ephemeralPublicKey?: NullableStringFieldUpdateOperationsInput | string | null
+    chainKeySnapshot?: StringFieldUpdateOperationsInput | string
+    keyIndex?: IntFieldUpdateOperationsInput | number
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
 

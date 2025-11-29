@@ -16,7 +16,70 @@ datasource db {
 
 model User {
   id        String   @id @default(uuid())
-  nickName      String @unique
-  key     String   @unique
+  nickName  String   @unique
+  key       String   @unique
   createdAt DateTime @default(now())
+  
+  sentMessages     Message[] @relation("SentMessages")
+  receivedMessages Message[] @relation("ReceivedMessages")
+  messageKeys      MessageKey[]
+}
+
+model Message {
+  id               String   @id @default(uuid())
+  senderId         String
+  recipientId      String
+  encryptedContent String   
+  ephemeralKey     String  
+  nonce            String
+  messageNumber    Int
+  previousChainN   Int
+  timestamp        DateTime @default(now())
+  editedAt         DateTime?
+  deletedAt        DateTime?
+  deleteType       String?  // 'soft' | 'hard' | null
+  replyToId        String?
+  
+  sender    User @relation("SentMessages", fields: [senderId], references: [id])
+  recipient User @relation("ReceivedMessages", fields: [recipientId], references: [id])
+  replyTo   Message? @relation("MessageReplies", fields: [replyToId], references: [id])
+  replies   Message[] @relation("MessageReplies")
+  
+  messageKeys MessageKey[]
+  
+  @@index([senderId, recipientId, timestamp])
+}
+
+model MessageKey {
+  id                 String   @id @default(uuid())
+  messageId          String
+  userId             String   
+  encryptedKey       String   
+  ephemeralPublicKey String?
+  chainKeySnapshot   String   
+  keyIndex           Int      
+  createdAt          DateTime @default(now())
+  
+  message Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id])
+  
+  @@unique([messageId, userId])
+  @@index([userId, createdAt])
+}
+
+model RatchetState {
+  id                  String   @id @default(uuid())
+  userId              String
+  contactId           String
+  rootKey             String
+  sendingChainKey     String
+  receivingChainKey   String
+  sendMessageNumber   Int
+  recvMessageNumber   Int
+  dhRatchetPrivate    String
+  dhRatchetPublic     String
+  remotePublicKey     String?
+  updatedAt           DateTime @updatedAt
+  
+  @@unique([userId, contactId])
 }

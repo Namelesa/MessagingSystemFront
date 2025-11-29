@@ -22,6 +22,7 @@ import { MessageStateService } from '../../model/message-state.service';
 import { FileEditStateService } from '../../model/file-edit-state-service';
 import { ChatFacadeService } from '../../model/chat-facade';
 import { MessageOperationsService } from '../../model/message-operations-service';
+import { E2eeService } from '../../../../features/keys-generator';
 
 @Component({
   selector: 'app-oto-chat-page',
@@ -88,7 +89,8 @@ export class OtoChatPageComponent extends BaseChatPageComponent implements OnIni
     private fileEditStateService: FileEditStateService,
     private chatFacade: ChatFacadeService,
     private messageOpsService: MessageOperationsService,
-    private injector: Injector
+    private injector: Injector,
+    private e2eeService: E2eeService
   ) {
     super();
     this.apiService = this.otoChatApi;
@@ -96,6 +98,7 @@ export class OtoChatPageComponent extends BaseChatPageComponent implements OnIni
     .pipe(takeUntil(this.destroy$))
     .subscribe(() => {
       this.currentUserNickName = this.authService.getNickName() || '';
+      this.messageService.setCurrentUserId(this.currentUserNickName);
     });
   
   this.user$ = this.findUserStore.user$;
@@ -110,6 +113,18 @@ export class OtoChatPageComponent extends BaseChatPageComponent implements OnIni
     this.setupUserDeletionSubscription();
     this.checkForOpenChatUser();
     this.setupMessagesWidgetAfterRender();
+    this.initializeUserKeys();
+  }
+
+  private async initializeUserKeys(): Promise<void> {
+    if (this.e2eeService.hasKeys()) {
+      return;
+    }
+  
+    console.warn('⚠️ No keys in memory - redirecting to login');
+    this.router.navigate(['/login'], { 
+      queryParams: { returnUrl: this.router.url } 
+    });
   }
 
   override ngOnDestroy(): void {
@@ -118,6 +133,14 @@ export class OtoChatPageComponent extends BaseChatPageComponent implements OnIni
     this.destroy$.next();
     this.destroy$.complete();
   }
+
+  decryptMessageMethod(sender: string, content: string, messageId?: string): Promise<string> {    
+    return this.messageService.decryptMessageContent(sender, content, messageId).then(result => result || '');
+  }
+
+  loadHistoryMethod = (nick: string, take: number, skip: number): Observable<OtoMessage[]> => {
+    return this.otoChatApi.loadChatHistory(nick, take, skip);
+  };
 
   private setupUserDeletionSubscription(): void {
     this.apiService.userInfoDeleted$

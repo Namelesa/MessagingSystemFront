@@ -51,18 +51,27 @@ export class UserProfileApi {
   
     const maxRetries = 3;
     const baseDelayMs = 300;
+
     return this.http.put<AuthApiResult>(
-      `${environment.apiUrl}user/edit`,
-      formData,
-      {
-        params: { nickName: oldNickName },
-        withCredentials: true
-      }
+      `${this.apiUrl}/nickName/${encodeURIComponent(oldNickName)}`,
+      { newName: data.nickName }, 
+      { withCredentials: true }
     ).pipe(
       retryWhen(errors => errors.pipe(
         scan((acc, err) => { if (acc >= maxRetries) throw err; return acc + 1; }, 0),
         delay(baseDelayMs)
       )),
+
+      switchMap(() => 
+        this.http.put<AuthApiResult>(
+          `${environment.apiUrl}user/edit`,
+          formData,
+          {
+            params: { nickName: oldNickName },
+            withCredentials: true
+          }
+        )
+      ),
       catchError(err => throwError(() => err))
     );
   }
@@ -75,7 +84,7 @@ export class UserProfileApi {
 
     const maxRetries = 3;
     const baseDelayMs = 300;
-    
+
     return this.http.delete<AuthApiResult>(
       `${this.apiUrl}/nickName/${encodeURIComponent(nickName)}`,
       { withCredentials: true }

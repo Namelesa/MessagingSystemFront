@@ -26,6 +26,7 @@ export class OtoChatMessagesWidget extends BaseChatMessagesWidget<OtoMessage>
   @Input() messages$?: Observable<OtoMessage[]>;
   @Input() userInfoDeleted$?: Observable<{ userName: string }>;
   @Input() loadHistory?: (nick: string, take: number, skip: number) => Observable<OtoMessage[]>;
+  @Input() messageDecryptor?: (sender: string, content: string, messageId?: string) => Promise<string>;
 
   @Output() editMessage = new EventEmitter<OtoMessage>();
   @Output() deleteMessage = new EventEmitter<OtoMessage>();
@@ -36,6 +37,9 @@ export class OtoChatMessagesWidget extends BaseChatMessagesWidget<OtoMessage>
 
   private historyLoadedCount = 0; 
   private latestMessageTime: number = 0; 
+
+  private decryptionQueue: Map<string, Promise<void>> = new Map();
+  private isDecryptingForContact: Map<string, boolean> = new Map();
 
   private urlCheckInterval?: any;
   private fileRefreshQueue = new Map<string, Set<string>>();
@@ -95,6 +99,92 @@ export class OtoChatMessagesWidget extends BaseChatMessagesWidget<OtoMessage>
     }
   }
   
+  private async decryptMessageQueued(msg: OtoMessage): Promise<void> {
+    const contactId = msg.sender;
+    const messageId = msg.messageId;
+    
+    const existingQueue = this.decryptionQueue.get(contactId);
+    if (existingQueue) {
+      await existingQueue;
+    }
+    
+    const decryptionPromise = this.performDecryption(msg);
+    this.decryptionQueue.set(contactId, decryptionPromise);
+    
+    try {
+      await decryptionPromise;
+    } finally {
+      if (this.decryptionQueue.get(contactId) === decryptionPromise) {
+        this.decryptionQueue.delete(contactId);
+      }
+    }
+  }
+  
+  private async performDecryption(msg: OtoMessage): Promise<void> {
+    const currentContent = msg.content;
+    
+    try {
+      const tempParsed = JSON.parse(currentContent);
+      if (tempParsed.messageId) {
+        msg.messageId = tempParsed.messageId;
+      }
+    } catch (e) {
+    }
+    
+    const messageId = msg.messageId;
+
+    let attempts = 0;
+    while (!this.messageDecryptor && attempts < 50) {
+      await new Promise(resolve => setTimeout(resolve, 100));
+      attempts++;
+    }
+    
+    if (!this.messageDecryptor) {      
+      (msg as any)._isDecrypting = false;
+      (msg as any)._decryptionFailed = true;
+      msg.content = '[No decryptor available]';
+      this.cdr.markForCheck();
+      return;
+    }
+    
+    try {
+      const decrypted = await this.messageDecryptor(
+        msg.sender, 
+        currentContent,
+        messageId
+      );
+
+      msg.content = decrypted;
+      (msg as any)._decrypted = true;
+      (msg as any)._isDecrypting = false;
+      delete (msg as any)._decryptionFailed;
+      
+      this.messageContentCache.delete(messageId);
+    
+      this.cdr.markForCheck();
+    
+      setTimeout(() => {
+        try {
+          const parsed = JSON.parse(decrypted);
+          if (parsed.files && parsed.files.length > 0) {
+            this.loadFilesForMessagesBase([msg]);
+          }
+        } catch (e) {
+        }
+      }, 100);
+      
+    } catch (error: any) {
+      msg.content = `[Decryption failed: ${error.message || 'Unknown error'}]`;
+      (msg as any)._isDecrypting = false;
+      (msg as any)._decryptionFailed = true;
+      delete (msg as any)._decrypted;
+      
+      this.messageContentCache.delete(messageId);
+      
+      this.cdr.markForCheck();
+    }
+  }
+
   private startUrlExpirationCheck() {
     this.urlCheckInterval = setInterval(() => {
       this.checkAndRefreshExpiredUrls();
@@ -184,7 +274,6 @@ onImageError(event: Event, file: any) {
   
         this.cdr.markForCheck();
       }).catch(error => {
-        console.error('❌ Failed to refresh expired URLs:', error);
       });
     } else {
     }
@@ -197,8 +286,17 @@ onImageError(event: Event, file: any) {
   }
 
   parseContent(msg: OtoMessage): { text: string; files: any[] } {
-    const messageId = msg.messageId;
     const currentContent = msg.content;
+    try {
+      const parsed = JSON.parse(currentContent);
+      
+      if (parsed.messageId) {
+        msg.messageId = parsed.messageId;
+      }
+    } catch (e) {
+    }
+    
+    const messageId = msg.messageId;
     const cachedData = this.messageContentCache.get(messageId);
   
     const needsReparse = !cachedData ||
@@ -222,10 +320,48 @@ onImageError(event: Event, file: any) {
     try {
       const parsed = JSON.parse(currentContent);
       
+      if (parsed.ciphertext && 
+          parsed.ephemeralKey && 
+          parsed.nonce && 
+          parsed.messageNumber !== undefined) {
+        
+        if (!(msg as any)._isDecrypting &&
+            !(msg as any)._decrypted &&
+            !(msg as any)._decryptionFailed) {
+          
+          (msg as any)._isDecrypting = true;
+          
+          this.decryptMessageQueued(msg).catch(err => {
+          });
+          
+          result = {
+            text: '[Decrypting...]',
+            files: []
+          };
+          
+          return result;
+        }
+        
+        if ((msg as any)._isDecrypting) {
+          return {
+            text: '[Decrypting...]',
+            files: []
+          };
+        }
+        
+        if ((msg as any)._decryptionFailed) {
+          return {
+            text: '[Decryption failed]',
+            files: []
+          };
+        }
+      }
+      
       if (typeof parsed === 'object' && parsed !== null &&
+          !parsed.ciphertext &&
           (parsed.hasOwnProperty('text') || parsed.hasOwnProperty('files'))) {
         
-        const filesWithType = (parsed.files || []).map((file: any, index: number) => {
+        const filesWithType = (parsed.files || []).map((file: any) => {
           const cacheKey = file.uniqueFileName || file.fileName;
           const cachedUrl = this.urlCache.get(cacheKey);
   
@@ -330,7 +466,6 @@ onImageError(event: Event, file: any) {
   
       this.cdr.markForCheck();
     } catch (error) {
-      console.error('Failed to refresh file URLs:', error);
     }
   }
 
@@ -433,7 +568,7 @@ onImageError(event: Event, file: any) {
     this.invalidateAllCache();
   }
 
-  protected initChat() {
+  protected override initChat() {
     this.messages = [];
     this.skip = 0;
     this.allLoaded = false;
@@ -441,6 +576,14 @@ onImageError(event: Event, file: any) {
     this.invalidateAllCache();
     this.historyLoadedCount = 0;
     this.latestMessageTime = 0;
+    this.decryptionQueue.clear();
+    this.isDecryptingForContact.clear();
+  
+    this.messages.forEach(msg => {
+      delete (msg as any)._isDecrypting;
+      delete (msg as any)._decrypted;
+      delete (msg as any)._decryptionFailed;
+    });
   
     if (this.messages$) {
       this.messages$

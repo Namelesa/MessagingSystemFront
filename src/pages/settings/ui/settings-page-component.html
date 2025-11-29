@@ -21,21 +21,6 @@
             (toggled)="toggle('messageNotifications', $event)"
           />
         </div>
-
-        <div class="flex justify-between items-center py-3 px-1">
-          <div class="flex-1">
-            <p class="font-medium" style="color: var(--text-primary);">
-              {{ 'settings.soundNotifications.title' | translate }}
-            </p>
-            <p class="text-sm mt-1" style="color: var(--text-secondary);">
-              {{ 'settings.soundNotifications.desc' | translate }}
-            </p>
-          </div>
-          <shared-switch-toggle
-            [checked]="settings.soundNotifications"
-            (toggled)="toggle('soundNotifications', $event)"
-          />
-        </div>
       </div>
     </div>
 

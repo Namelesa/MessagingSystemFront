@@ -27,7 +27,6 @@ export class GroupModalStateService {
     this.stateSubject.next({ ...this.state, ...updates });
   }
 
-  // Group Info Modal
   get isGroupInfoModalOpen(): boolean {
     return this.state.groupInfoModalOpen;
   }
@@ -44,7 +43,6 @@ export class GroupModalStateService {
     this.update({ groupInfoModalOpen: !this.state.groupInfoModalOpen });
   }
 
-  // Upload Modal
   get isUploadModalOpen(): boolean {
     return this.state.uploadModalOpen;
   }
@@ -61,7 +59,6 @@ export class GroupModalStateService {
     this.update({ uploadModalOpen: !this.state.uploadModalOpen });
   }
 
-  // Delete Modal
   get isDeleteModalOpen(): boolean {
     return this.state.deleteModalOpen;
   }
@@ -78,7 +75,6 @@ export class GroupModalStateService {
     this.update({ deleteModalOpen: !this.state.deleteModalOpen });
   }
 
-  // Close all modals
   closeAllModals(): void {
     this.update({
       groupInfoModalOpen: false,
@@ -87,13 +83,11 @@ export class GroupModalStateService {
     });
   }
 
-  // Check if any modal is open
   isAnyModalOpen(): boolean {
     const { groupInfoModalOpen, uploadModalOpen, deleteModalOpen } = this.state;
     return groupInfoModalOpen || uploadModalOpen || deleteModalOpen;
   }
 
-  // Reset state
   reset(): void {
     this.stateSubject.next({
       groupInfoModalOpen: false,

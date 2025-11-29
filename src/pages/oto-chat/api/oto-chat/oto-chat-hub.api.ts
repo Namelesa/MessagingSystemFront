@@ -4,6 +4,7 @@ import { AuthService } from '../../../../entities/session';
 import { environment } from '../../../../shared/api-urls';
 import { BaseChatApiService } from '../../../../shared/realtime';
 import { SignalRConnectionRegistryService } from '../../../../shared/realtime';
+import { OtoMessagesService } from '../oto-message/oto-messages.api';
 
 @Injectable({
   providedIn: 'root'
@@ -11,7 +12,7 @@ import { SignalRConnectionRegistryService } from '../../../../shared/realtime';
 export class OtoChatApiService extends BaseChatApiService<OtoChat> {
   private isConnected = false;
 
-  constructor(private authService: AuthService, private registry: SignalRConnectionRegistryService) {
+  constructor(private authService: AuthService, private registry: SignalRConnectionRegistryService, private messagesService: OtoMessagesService) {
     super(environment.otoChatHubUrl, 'GetChatsAsync', 'LoadChatHistoryAsync');
   }
 

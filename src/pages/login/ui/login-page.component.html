@@ -63,3 +63,82 @@
     </app-button>
   </form>
 </auth-page-layout>
+
+<div *ngIf="showBackupModal"
+     class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+  <div class="bg-white dark:bg-gray-800 rounded-xl p-6 w-full max-w-md shadow-xl relative">
+    
+    <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-4 text-center">
+      🔐 Restore Your Encryption Keys
+    </h2>
+
+    <p class="text-gray-600 dark:text-gray-400 mb-6 text-center text-sm">
+      Upload your encrypted backup file to enable end-to-end encrypted messaging
+    </p>
+
+    <div class="space-y-4 mb-6">
+      <div>
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+          Backup File
+        </label>
+        <div class="relative">
+          <input
+            type="file"
+            (change)="onFileSelected($event)"
+            accept=".json"
+            class="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg 
+                   bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white
+                   file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0
+                   file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700
+                   hover:file:bg-blue-100 dark:file:bg-gray-600 dark:file:text-gray-200
+                   cursor-pointer transition-colors duration-200" />
+          <lucide-icon 
+            [img]="UploadIcon" 
+            class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none"
+            size="20">
+          </lucide-icon>
+        </div>
+        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+          Select the JSON backup file you downloaded during registration
+        </p>
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+          Backup Password
+        </label>
+        <input
+          type="password"
+          [(ngModel)]="backupPassword"
+          class="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg 
+                 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white
+                 focus:ring-2 focus:ring-blue-500 focus:border-transparent
+                 transition-all duration-200"
+          placeholder="Enter backup password" />
+        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+          Leave empty if you didn't set a password during backup creation
+        </p>
+      </div>
+    </div>
+
+    <div class="flex justify-end">
+      <button
+        type="button"
+        (click)="confirmBackup()"
+        class="w-full px-4 py-3 text-sm font-medium text-white rounded-lg
+               bg-blue-600 hover:bg-blue-700
+               transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500
+               shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+        [disabled]="!selectedFile"
+      >
+        Restore Keys & Continue
+      </button>
+    </div>
+
+    <div class="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+      <p class="text-xs text-blue-800 dark:text-blue-200">
+        🔒 Your encryption keys are required to access encrypted messages and ensure end-to-end security
+      </p>
+    </div>
+  </div>
+</div>

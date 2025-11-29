@@ -31,9 +31,8 @@ export interface UploadResult {
   providedIn: 'root'
 })
 export class GroupFileUploadService {
-  private readonly maxFileSize = 1024 * 1024 * 1024; // 1GB
+  private readonly maxFileSize = 1024 * 1024 * 1024;
 
-  // Modal state
   private isUploadModalOpenSubject = new BehaviorSubject<boolean>(false);
   isUploadModalOpen$ = this.isUploadModalOpenSubject.asObservable();
 
@@ -49,7 +48,6 @@ export class GroupFileUploadService {
   private isEditingWithFilesSubject = new BehaviorSubject<boolean>(false);
   isEditingWithFiles$ = this.isEditingWithFilesSubject.asObservable();
 
-  // Error state
   private fileValidationErrorsSubject = new BehaviorSubject<FileValidationError[]>([]);
   fileValidationErrors$ = this.fileValidationErrorsSubject.asObservable();
 
@@ -58,7 +56,6 @@ export class GroupFileUploadService {
 
   constructor(private fileUploadApi: FileUploadApiService) {}
 
-  // Getters
   get uploadItems(): UploadItem[] {
     return this.uploadItemsSubject.value;
   }
@@ -83,7 +80,6 @@ export class GroupFileUploadService {
     return this.fileValidationErrorsSubject.value;
   }
 
-  // Setters
   setUploadCaption(caption: string): void {
     this.uploadCaptionSubject.next(caption);
   }
@@ -92,7 +88,6 @@ export class GroupFileUploadService {
     this.isEditingWithFilesSubject.next(value);
   }
 
-  // File validation
   validateFiles(files: File[]): {
     validFiles: File[];
     errors: FileValidationError[];
@@ -138,7 +133,6 @@ export class GroupFileUploadService {
     }, 500);
   }
 
-  // File size utilities
   formatFileSize(size: number): string {
     const units = ['B', 'KB', 'MB', 'GB', 'TB'];
     let index = 0;
@@ -176,7 +170,6 @@ export class GroupFileUploadService {
     return file.type.startsWith('image/');
   }
 
-  // Upload items management
   addUploadItems(files: File[], cdr?: ChangeDetectorRef): void {
     const { validFiles, errors } = this.validateFiles(files);
 
@@ -241,7 +234,6 @@ export class GroupFileUploadService {
     this.cancelFileUpload(index);
   }
 
-  // Modal management
   openUploadModal(caption?: string, isEditing: boolean = false): void {
     this.isUploadModalOpenSubject.next(true);
     this.uploadCaptionSubject.next(caption || '');
@@ -249,7 +241,6 @@ export class GroupFileUploadService {
   }
 
   closeUploadModal(): void {
-    // Cancel all ongoing uploads
     const items = this.uploadItems;
     items.forEach((item, index) => {
       if (item.subscription) {
@@ -264,7 +255,6 @@ export class GroupFileUploadService {
     this.isEditingWithFilesSubject.next(false);
   }
 
-  // Upload operations
   async uploadFiles(
     currentUserNickName: string
   ): Promise<UploadResult[]> {
@@ -397,7 +387,6 @@ export class GroupFileUploadService {
     });
   }
 
-  // Delete files
   async deleteFilesFromMessage(
     messageContent: string,
     currentUserNickName: string
@@ -461,7 +450,6 @@ export class GroupFileUploadService {
     }
   }
 
-  // Private helper methods for updating upload items
   private updateItemProgress(index: number, progress: number): void {
     const items = [...this.uploadItems];
     if (items[index]) {
@@ -502,7 +490,6 @@ export class GroupFileUploadService {
     }
   }
 
-  // Cleanup
   reset(): void {
     this.closeUploadModal();
     this.fileValidationErrorsSubject.next([]);

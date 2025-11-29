@@ -27,7 +27,6 @@ export class SettingsService {
   settings$ = this.settingsSubject.asObservable();
 
   constructor() {
-    // Применяем тему сразу при инициализации сервиса
     this.applyTheme(this.settingsSubject.value.theme);
   }
 
@@ -55,13 +54,9 @@ export class SettingsService {
   }
 
   private applyTheme(theme: Theme) {
-    // Удаляем класс dark и все data-theme атрибуты
     document.documentElement.classList.remove('dark');
-    
-    // Устанавливаем новый атрибут темы
     document.documentElement.setAttribute('data-theme', theme);
     
-    // Добавляем класс dark только для темной темы (для совместимости с Tailwind)
     if (theme === 'dark') {
       document.documentElement.classList.add('dark');
     }

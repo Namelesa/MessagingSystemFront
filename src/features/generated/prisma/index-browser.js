@@ -128,6 +128,48 @@ exports.Prisma.UserScalarFieldEnum = {
   createdAt: 'createdAt'
 };
 
+exports.Prisma.MessageScalarFieldEnum = {
+  id: 'id',
+  senderId: 'senderId',
+  recipientId: 'recipientId',
+  encryptedContent: 'encryptedContent',
+  ephemeralKey: 'ephemeralKey',
+  nonce: 'nonce',
+  messageNumber: 'messageNumber',
+  previousChainN: 'previousChainN',
+  timestamp: 'timestamp',
+  editedAt: 'editedAt',
+  deletedAt: 'deletedAt',
+  deleteType: 'deleteType',
+  replyToId: 'replyToId'
+};
+
+exports.Prisma.MessageKeyScalarFieldEnum = {
+  id: 'id',
+  messageId: 'messageId',
+  userId: 'userId',
+  encryptedKey: 'encryptedKey',
+  ephemeralPublicKey: 'ephemeralPublicKey',
+  chainKeySnapshot: 'chainKeySnapshot',
+  keyIndex: 'keyIndex',
+  createdAt: 'createdAt'
+};
+
+exports.Prisma.RatchetStateScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  contactId: 'contactId',
+  rootKey: 'rootKey',
+  sendingChainKey: 'sendingChainKey',
+  receivingChainKey: 'receivingChainKey',
+  sendMessageNumber: 'sendMessageNumber',
+  recvMessageNumber: 'recvMessageNumber',
+  dhRatchetPrivate: 'dhRatchetPrivate',
+  dhRatchetPublic: 'dhRatchetPublic',
+  remotePublicKey: 'remotePublicKey',
+  updatedAt: 'updatedAt'
+};
+
 exports.Prisma.SortOrder = {
   asc: 'asc',
   desc: 'desc'
@@ -138,9 +180,17 @@ exports.Prisma.QueryMode = {
   insensitive: 'insensitive'
 };
 
+exports.Prisma.NullsOrder = {
+  first: 'first',
+  last: 'last'
+};
+
 
 exports.Prisma.ModelName = {
-  User: 'User'
+  User: 'User',
+  Message: 'Message',
+  MessageKey: 'MessageKey',
+  RatchetState: 'RatchetState'
 };
 
 /**
