@@ -24,9 +24,8 @@ try {
     cwd: '../prisma',
     stdio: 'inherit'
   });  
-  console.log('✅ Migrations applied');
 } catch (error) {
-  console.error('❌ Migration failed:', error);
+  console.error('Error applying migrations:', error);   
 }
 
 function hashNickName(nickName) {
@@ -109,7 +108,6 @@ app.put('/api/users/nickName/:nickName', async (req, res) => {
       user: updatedUser 
     });
   } catch (err) {
-    console.error('Error updating nickname:', err);
     res.status(500).json({ error: 'Error with editing nickname' });
   }
 });
@@ -133,15 +131,14 @@ app.delete('/api/users/nickName/:nickName', async (req, res) => {
 
     res.json({ message: 'User deleted successfully' });
   } catch (error) {
-    console.error('Error deleting user:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
 
 app.post('/api/messages', async (req, res) => {
   try {
-
     const {
+      id,            
       senderId,
       recipientId,
       encryptedContent,
@@ -152,6 +149,16 @@ app.post('/api/messages', async (req, res) => {
       ratchetId,
       messageKeys
     } = req.body;
+
+    if (!id) {
+      return res.status(400).json({ error: 'messageId is required' });
+    }
+
+    if (!senderId || !recipientId || !encryptedContent) {
+      return res.status(400).json({ 
+        error: 'Missing required fields: senderId, recipientId, encryptedContent' 
+      });
+    }
 
     const senderHash = hashNickName(senderId);
     const recipientHash = hashNickName(recipientId);
@@ -165,19 +172,17 @@ app.post('/api/messages', async (req, res) => {
     });
 
     if (!sender) {
-      console.error('❌ Sender not found:', senderId);
       return res.status(404).json({ error: 'Sender not found' });
     }
 
     if (!recipient) {
-      console.error('❌ Recipient not found:', recipientId);
+      return res.status(404).json({ error: 'Recipient not found' });
     }
 
     const messageKeysData = messageKeys?.map((mk, index) => {
       const targetNickname = mk.userId;
       
       if (!targetNickname) {
-        console.error(`❌ messageKey[${index}]: missing userId`, mk);
         return null;
       }
       
@@ -202,11 +207,25 @@ app.post('/api/messages', async (req, res) => {
     }).filter(Boolean) || [];
 
     if (messageKeysData.length === 0 && messageKeys?.length > 0) {
-      console.error('⚠️ All messageKeys were filtered out!');
+      return res.status(400).json({ 
+        error: 'No valid messageKeys provided' 
+      });
     }
-    
+
+    const existingMessage = await prisma.message.findUnique({
+      where: { id }
+    });
+
+    if (existingMessage) {
+      return res.status(409).json({ 
+        error: 'Message with this ID already exists',
+        message: existingMessage 
+      });
+    }
+
     const message = await prisma.message.create({
       data: {
+        id: id,
         senderId: sender.id,
         recipientId: recipient.id,
         encryptedContent,
@@ -222,11 +241,133 @@ app.post('/api/messages', async (req, res) => {
         messageKeys: true
       }
     });
+
+    return res.status(201).json(message);
     
+  } catch (error) {    
+    return res.status(500).json({ 
+      error: 'Failed to save message',
+      details: error.message 
+    });
+  }
+});
+
+app.put('/api/messages/:messageId', async (req, res) => {
+  try {
+    const { messageId } = req.params;
+    const {
+      encryptedContent,
+      ephemeralKey,
+      nonce,
+      messageNumber,
+      previousChainN,
+      ratchetId,
+      messageKeys
+    } = req.body;
+
+    const existingMessage = await prisma.message.findUnique({
+      where: { id: messageId },
+      include: { messageKeys: true }
+    });
+
+    if (!existingMessage) {
+      return res.status(404).json({ error: 'Message not found' });
+    }
+
+    await prisma.messageKey.deleteMany({
+      where: { messageId }
+    });
+
+    const messageKeysData = [];
+    for (const mk of messageKeys || []) {
+      const nickNameHash = hashNickName(mk.userId);
+      const user = await prisma.user.findUnique({
+        where: { nickName: nickNameHash }
+      });
+
+      if (user) {
+        messageKeysData.push({
+          userId: user.id,
+          encryptedKey: mk.encryptedKey,
+          ephemeralPublicKey: mk.ephemeralPublicKey,
+          chainKeySnapshot: mk.chainKeySnapshot,
+          keyIndex: mk.keyIndex
+        });
+      } else {
+        console.warn('⚠️ User not found for messageKey:', mk.userId);
+      }
+    }
+
+    const updatedMessage = await prisma.message.update({
+      where: { id: messageId },
+      data: {
+        encryptedContent,
+        ephemeralKey,
+        nonce,
+        messageNumber,
+        previousChainN,
+        isEdited: true,
+        editedAt: new Date(),
+        messageKeys: {
+          create: messageKeysData
+        }
+      },
+      include: {
+        messageKeys: true
+      }
+    });
+
+    res.json(updatedMessage);
   } catch (error) {
-    console.error('❌ Error saving message:', error);
-    console.error('Stack:', error.stack);
-    return res.status(500).json({ error: 'Failed to save message' });
+    res.status(500).json({ error: 'Failed to edit message' });
+  }
+});
+
+app.delete('/api/messages/:messageId', async (req, res) => {
+  try {
+    const { messageId } = req.params;
+    const { deleteType } = req.body;
+
+    if (!['soft', 'hard'].includes(deleteType)) {
+      return res.status(400).json({ error: 'Invalid deleteType. Must be "soft" or "hard"' });
+    }
+
+    const message = await prisma.message.findUnique({
+      where: { id: messageId },
+      include: { messageKeys: true }
+    });
+
+    if (!message) {
+      return res.status(404).json({ error: 'Message not found' });
+    }
+
+    if (deleteType === 'hard') {
+      await prisma.messageKey.deleteMany({
+        where: { messageId }
+      });
+
+      await prisma.message.delete({
+        where: { id: messageId }
+      });
+
+      res.json({ message: 'Message permanently deleted', deleteType: 'hard' });
+    } else {
+      const updatedMessage = await prisma.message.update({
+        where: { id: messageId },
+        data: {
+          deleteType: 'soft',
+          deletedAt: new Date()
+        }
+      });
+
+      res.json({ 
+        message: 'Message marked as deleted', 
+        deleteType: 'soft', 
+        data: updatedMessage 
+      });
+    }
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to delete message' });
   }
 });
 
@@ -256,7 +397,6 @@ app.get('/api/messages/history/:userId/:contactId', async (req, res) => {
 
     res.json(messages);
   } catch (error) {
-    console.error('Error fetching message history:', error);
     res.status(500).json({ error: 'Failed to fetch history' });
   }
 });
@@ -306,7 +446,6 @@ app.post('/api/ratchet-state', async (req, res) => {
 
     res.json(ratchetState);
   } catch (error) {
-    console.error('Error saving ratchet state:', error);
     res.status(500).json({ error: 'Failed to save ratchet state' });
   }
 });
@@ -315,38 +454,41 @@ app.get('/api/messages/:messageId/key', async (req, res) => {
   try {
     const { messageId } = req.params;
     const { userId } = req.query;
+        
+    if (!userId) {
+      return res.status(400).json({ error: 'userId is required' });
+    }
     
     const nickNameHash = hashNickName(userId);
     const user = await prisma.user.findUnique({
       where: { nickName: nickNameHash }
     });
     
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+   
     const message = await prisma.message.findUnique({
       where: { id: messageId },
       include: { messageKeys: true }
     });
     
     if (!message) {
-      console.error('❌ Message not found:', messageId);
       return res.status(404).json({ error: 'Message not found' });
     }
     
     const messageKey = message.messageKeys.find(mk => mk.userId === user.id);
     
     if (!messageKey) {
-      console.error('❌ MessageKey not found for user:', user.id);
-      console.error('Available MessageKeys:', message.messageKeys.map(mk => ({
-        userId: mk.userId,
-        keyIndex: mk.keyIndex
-      })));
       return res.status(404).json({ error: 'MessageKey not found for this user' });
     }
+    
     res.json(messageKey);
   } catch (error) {
-    console.error('❌ Error fetching MessageKey:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
+
 
 const PORT = process.env['PORT'] || 3000;
 app.listen(PORT, () => console.log(`🚀 Server running on http://localhost:${PORT}`));

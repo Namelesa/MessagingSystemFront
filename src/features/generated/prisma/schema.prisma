@@ -1,0 +1,86 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(uuid())
+  nickName  String   @unique
+  key       String   @unique
+  createdAt DateTime @default(now())
+
+  sentMessages     Message[]    @relation("SentMessages")
+  receivedMessages Message[]    @relation("ReceivedMessages")
+  messageKeys      MessageKey[]
+}
+
+model Message {
+  id               String   @id
+  senderId         String
+  recipientId      String
+  encryptedContent String   @db.Text
+  ephemeralKey     String?
+  nonce            String?
+  messageNumber    Int?
+  previousChainN   Int?
+  timestamp        DateTime @default(now())
+
+  isEdited   Boolean   @default(false)
+  editedAt   DateTime?
+  deleteType String? // 'soft' | 'hard' | null
+  deletedAt  DateTime?
+
+  sender      User         @relation("SentMessages", fields: [senderId], references: [id])
+  recipient   User         @relation("ReceivedMessages", fields: [recipientId], references: [id])
+  messageKeys MessageKey[]
+  replyToId   String?
+  replyTo     Message?     @relation("MessageReplies", fields: [replyToId], references: [id])
+  replies     Message[]    @relation("MessageReplies")
+
+  @@index([senderId, recipientId, timestamp])
+}
+
+model MessageKey {
+  id                 String   @id @default(uuid())
+  messageId          String
+  userId             String
+  encryptedKey       String
+  ephemeralPublicKey String?
+  chainKeySnapshot   String
+  keyIndex           Int
+  createdAt          DateTime @default(now())
+
+  message Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id])
+
+  @@unique([messageId, userId])
+  @@index([userId, createdAt])
+}
+
+model RatchetState {
+  id                String   @id @default(uuid())
+  userId            String
+  contactId         String
+  rootKey           String
+  sendingChainKey   String
+  receivingChainKey String
+  sendMessageNumber Int
+  recvMessageNumber Int
+  dhRatchetPrivate  String
+  dhRatchetPublic   String
+  remotePublicKey   String?
+  updatedAt         DateTime @updatedAt
+
+  @@unique([userId, contactId])
+}

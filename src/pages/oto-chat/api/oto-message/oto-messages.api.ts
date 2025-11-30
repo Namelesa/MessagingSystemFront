@@ -73,7 +73,9 @@ export class OtoMessagesService {
       if (!messageId) {
         throw new Error('messageId is required');
       }
-            
+      
+      await new Promise(resolve => setTimeout(resolve, 200));
+
       const messageKeyResponse = await firstValueFrom(
         this.http.get<{
           encryptedKey: string;
@@ -85,7 +87,7 @@ export class OtoMessagesService {
             
       const myKeys = this.e2eeService.getKeys();
       if (!myKeys) throw new Error('User keys not available');
-            
+      
       const messageKey = await this.e2eeService.importMessageKeyForUser(
         messageKeyResponse.encryptedKey,
         messageKeyResponse.ephemeralPublicKey,
@@ -114,81 +116,107 @@ export class OtoMessagesService {
         throw new Error('Current user ID not set');
       }
   
-      if (!this.hasE2EESession(recipient)) {
+      const hasSession = this.hasE2EESession(recipient);
+      if (!hasSession) {
         await this.initializeE2EESession(recipient);
       }
   
-      const connection = this.getConnection() || 
+      const connection = this.getConnection() ||
         await this.registry.waitForConnection('otoChat', 20, 150);
-            
+  
       const encrypted = await this.e2eeService.encryptMessageWithHistory(
-        recipient, 
+        recipient,
         content
       );
-              
-      const recipientKeyResponse = await firstValueFrom(
-        this.http.get<{ key: string }>(
-          `http://localhost:3000/api/users/nickName/${recipient}`
+  
+      const [recipientKeyResponse, senderKeyResponse] = await Promise.all([
+        firstValueFrom(
+          this.http.get<{ key: string }>(
+            `http://localhost:3000/api/users/nickName/${recipient}`
+          )
+        ),
+        firstValueFrom(
+          this.http.get<{ key: string }>(
+            `http://localhost:3000/api/users/nickName/${this.currentUserId}`
+          )
         )
-      );
-      
-      const senderKeyResponse = await firstValueFrom(
-        this.http.get<{ key: string }>(
-          `http://localhost:3000/api/users/nickName/${this.currentUserId}`
-        )
-      );
-      
+      ]);
+  
       const recipientPublicKey = this.e2eeService.fromBase64(recipientKeyResponse.key);
       const senderPublicKey = this.e2eeService.fromBase64(senderKeyResponse.key);
-        
+      
       const recipientMessageKey = this.e2eeService.exportMessageKeyForUser(
         recipient,
         recipientPublicKey
       );
-      
+  
       if (!recipientMessageKey) {
         throw new Error('Failed to export message key for recipient');
       }
-      
+  
       const senderMessageKey = this.e2eeService.exportMessageKeyForUser(
         recipient,
         senderPublicKey
       );
-      
+  
       if (!senderMessageKey) {
         throw new Error('Failed to export message key for sender');
       }
-            
-      const savedMessage = await this.saveMessageToHistory(
-        recipient,
-        encrypted,
-        recipientMessageKey,
-        senderMessageKey
-      );
-            
-      const encryptedMessage = JSON.stringify({
-        messageId: savedMessage.id, 
+  
+      const encryptedMessageData = {
         ciphertext: encrypted.ciphertext,
         ephemeralKey: encrypted.ephemeralKey,
         nonce: encrypted.nonce,
         messageNumber: encrypted.messageNumber,
         previousChainN: encrypted.previousChainN,
         ratchetId: encrypted.ratchetId
-      });
+      };
+  
+      const signalRResponse = await connection.invoke(
+        'SendMessageAsync', 
+        recipient, 
+        JSON.stringify(encryptedMessageData)
+      );
+  
+      let messageId: string;
       
-      await connection.invoke('SendMessageAsync', recipient, encryptedMessage);      
+      if (typeof signalRResponse === 'string') {
+        messageId = signalRResponse;
+      } else if (signalRResponse && typeof signalRResponse === 'object') {
+        messageId = (signalRResponse as any).messageId || 
+                    (signalRResponse as any).id ||
+                    JSON.stringify(signalRResponse);
+      } else {
+        throw new Error(`Invalid messageId type from SignalR: ${typeof signalRResponse}`);
+      }
+  
+      const savedMessage = await this.saveMessageToHistory(
+        messageId,
+        recipient,
+        encrypted,
+        recipientMessageKey,
+        senderMessageKey
+      );
+  
       return savedMessage;
+      
     } catch (error) {
       throw error;
     }
   }
-
+  
   private async saveMessageToHistory(
+    messageId: string,
     recipient: string,
     encrypted: any,
     recipientMessageKey: any,
     senderMessageKey: any
   ): Promise<any> {
+        
+    if (typeof messageId !== 'string') {
+      throw new Error(`messageId must be a string, got ${typeof messageId}`);
+    }
+  
     const encryptedContent = JSON.stringify({
       ciphertext: encrypted.ciphertext,
       ephemeralKey: encrypted.ephemeralKey,
@@ -199,6 +227,7 @@ export class OtoMessagesService {
     });
     
     const payload = {
+      id: messageId,
       senderId: this.currentUserId,
       recipientId: recipient,
       encryptedContent: encryptedContent,
@@ -224,12 +253,13 @@ export class OtoMessagesService {
         }
       ]
     };
-
+  
     const savedMessage = await firstValueFrom(
       this.http.post<any>('http://localhost:3000/api/messages', payload)
-    );    
+    );
+    
     return savedMessage;
-  }  
+  }
 
   hasE2EESession(contactNickName: string): boolean {
     const state = this.e2eeService.exportRatchetState(contactNickName);
