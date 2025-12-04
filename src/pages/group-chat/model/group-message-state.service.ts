@@ -56,19 +56,29 @@ export class GroupMessageStateService {
     this.stateSubject.next({ ...this.state, ...updates });
   }
 
+  private getGroupMemberIds(): string[] {
+    const members = this.userState.getGroupMembers();
+    if (!members || members.length === 0) {
+      console.warn('⚠️ No group members found');
+      return [];
+    }
+    return members.map(m => m.nickName);
+  }
+
   async sendMessage(content: string): Promise<void> {
     const groupId = this.userState.getSelectedGroupId();
+    var membersId = this.getGroupMemberIds();
     if (!groupId || !content.trim()) return;
     if (this.state.replyingToMessage) {
-      await this.messagesApi.replyToMessage(this.state.replyingToMessage.id, content, groupId);
+      await this.messagesApi.replyToMessage(this.state.replyingToMessage.id, content, groupId, membersId);
       this.cancelReply();
     } else {
-      await this.messagesApi.sendMessage(groupId, content);
+      await this.messagesApi.sendMessage(groupId, content, membersId);
     }
   }
 
   startEditMessage(message: GroupMessage): void { this.update({ editingMessage: message, replyingToMessage: undefined }); }
-  async completeEdit(messageId: string, content: string): Promise<void> { const gid = this.userState.getSelectedGroupId(); if (!gid) return; await this.messagesApi.editMessage(messageId, content, gid); this.cancelEdit(); }
+  async completeEdit(messageId: string, content: string): Promise<void> { const gid = this.userState.getSelectedGroupId(); if (!gid) return; await this.messagesApi.editMessage(messageId, content, gid, this.getGroupMemberIds()); this.cancelEdit(); }
   cancelEdit(): void { this.update({ editingMessage: undefined }); }
 
   startDeleteMessage(message: GroupMessage): void { this.update({ messageToDelete: message, isDeleteModalOpen: true }); }
@@ -93,14 +103,17 @@ export class GroupMessageStateService {
     const jsonContent = JSON.stringify(content);
   
     if (this.state.replyingToMessage) {
+      var membersId = this.getGroupMemberIds();
       await this.messagesApi.replyToMessage(
         this.state.replyingToMessage.id,
         jsonContent,
-        groupId
+        groupId,
+        membersId
       );
       this.cancelReply();
     } else {
-      await this.messagesApi.sendMessage(groupId, jsonContent);
+      var membersId = this.getGroupMemberIds();
+      await this.messagesApi.sendMessage(groupId, jsonContent, membersId);
     }
   }
 
@@ -128,8 +141,8 @@ export class GroupMessageStateService {
       
       finalContent = this.replaceFileInContent(content, oldFile, newFileData);
     }
-  
-    await this.messagesApi.editMessage(messageId, finalContent, gid);
+    var membersId = this.getGroupMemberIds();
+    await this.messagesApi.editMessage(messageId, finalContent, gid, membersId);
     this.cancelEdit();
   }
 
@@ -153,7 +166,7 @@ export class GroupMessageStateService {
       files: allFiles.length > 0 ? allFiles : undefined
     };
   
-    await this.messagesApi.editMessage(messageId, JSON.stringify(updatedContent), gid);
+    await this.messagesApi.editMessage(messageId, JSON.stringify(updatedContent), gid, this.getGroupMemberIds());
     this.cancelEdit();
   }
 
@@ -169,7 +182,7 @@ export class GroupMessageStateService {
       content = { text: newText.trim() };
     }
   
-    await this.messagesApi.editMessage(messageId, JSON.stringify(content), gid);
+    await this.messagesApi.editMessage(messageId, JSON.stringify(content), gid, this.getGroupMemberIds());
     this.cancelEdit();
   }
 

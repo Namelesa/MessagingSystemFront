@@ -160,6 +160,12 @@ app.post('/api/messages', async (req, res) => {
       });
     }
 
+    if (!messageKeys || messageKeys.length === 0) {
+      return res.status(400).json({ 
+        error: 'messageKeys array is required and cannot be empty' 
+      });
+    }
+
     const senderHash = hashNickName(senderId);
     const recipientHash = hashNickName(recipientId);
     
@@ -179,36 +185,46 @@ app.post('/api/messages', async (req, res) => {
       return res.status(404).json({ error: 'Recipient not found' });
     }
 
-    const messageKeysData = messageKeys?.map((mk, index) => {
+    const messageKeysData = [];
+    const notFoundUsers = [];
+
+    for (const mk of messageKeys) {
       const targetNickname = mk.userId;
       
       if (!targetNickname) {
-        return null;
+        continue;
       }
       
       const targetHash = hashNickName(targetNickname);
       
-      let targetUUID;
-      if (targetHash === senderHash) {
-        targetUUID = sender.id;
-      } else if (targetHash === recipientHash) {
-        targetUUID = recipient.id;
-      } else {
-        return null;
+      const targetUser = await prisma.user.findUnique({
+        where: { nickName: targetHash }
+      });
+      
+      if (!targetUser) {
+        notFoundUsers.push(targetNickname);
+        continue;
       }
       
-      return {
-        userId: targetUUID,
+      messageKeysData.push({
+        userId: targetUser.id,
         encryptedKey: mk.encryptedKey,
         ephemeralPublicKey: mk.ephemeralPublicKey,
         chainKeySnapshot: mk.chainKeySnapshot,
         keyIndex: mk.keyIndex
-      };
-    }).filter(Boolean) || [];
+      });
+    }
 
-    if (messageKeysData.length === 0 && messageKeys?.length > 0) {
+    if (notFoundUsers.length > 0) {
+      return res.status(404).json({ 
+        error: 'Some users not found',
+        notFoundUsers: notFoundUsers
+      });
+    }
+
+    if (messageKeysData.length === 0) {
       return res.status(400).json({ 
-        error: 'No valid messageKeys provided' 
+        error: 'No valid messageKeys processed. All users might be invalid.' 
       });
     }
 
@@ -244,7 +260,7 @@ app.post('/api/messages', async (req, res) => {
 
     return res.status(201).json(message);
     
-  } catch (error) {    
+  } catch (error) {
     return res.status(500).json({ 
       error: 'Failed to save message',
       details: error.message 
@@ -279,6 +295,8 @@ app.put('/api/messages/:messageId', async (req, res) => {
     });
 
     const messageKeysData = [];
+    const notFoundUsers = [];
+
     for (const mk of messageKeys || []) {
       const nickNameHash = hashNickName(mk.userId);
       const user = await prisma.user.findUnique({
@@ -294,7 +312,7 @@ app.put('/api/messages/:messageId', async (req, res) => {
           keyIndex: mk.keyIndex
         });
       } else {
-        console.warn('⚠️ User not found for messageKey:', mk.userId);
+        notFoundUsers.push(mk.userId);
       }
     }
 

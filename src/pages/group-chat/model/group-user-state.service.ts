@@ -79,6 +79,10 @@ export class GroupUserStateService {
     }
   }
 
+  getGroupMembers(): Array<{ nickName: string; image?: string }> {
+    return this.membersSubject.value || [];
+  }
+
   clearSelection(): void {
     this.setSelectedGroup(undefined, undefined, undefined);
   }

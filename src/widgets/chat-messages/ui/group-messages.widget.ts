@@ -27,6 +27,7 @@ export class GroupMessagesWidget extends BaseChatMessagesWidget<GroupMessage>
   @Input() messages$!: Observable<GroupMessage[]>;
   @Input() userInfoChanged$!: Observable<{ userName: string; image?: string; updatedAt: string; oldNickName: string }>;
   @Input() loadHistory!: (groupId: string, take: number, skip: number) => Observable<GroupMessage[]>;
+  @Input() messageDecryptor?: (groupId: string, sender: string, content: string, messageId?: string) => Promise<string>;
 
   @Output() editMessage = new EventEmitter<GroupMessage>();
   @Output() deleteMessage = new EventEmitter<GroupMessage>();
@@ -39,6 +40,7 @@ export class GroupMessagesWidget extends BaseChatMessagesWidget<GroupMessage>
   private fileRefreshQueue = new Map<string, Set<string>>();
   private fileRefreshTimer?: any;
   private latestMessageTime: number = 0;
+  private decryptionQueue: Map<string, Promise<void>> = new Map();
 
   private urlCheckInterval?: any;
 
@@ -53,6 +55,103 @@ export class GroupMessagesWidget extends BaseChatMessagesWidget<GroupMessage>
     return msg.id || '';
   }
 
+  private async decryptMessageQueued(msg: GroupMessage): Promise<void> {
+    const messageId = msg.id;
+    
+    const existingQueue = this.decryptionQueue.get(messageId);
+    if (existingQueue) {
+      await existingQueue;
+      return;
+    }
+    
+    const decryptionPromise = this.performDecryption(msg);
+    this.decryptionQueue.set(messageId, decryptionPromise);
+    
+    try {
+      await decryptionPromise;
+    } finally {
+      if (this.decryptionQueue.get(messageId) === decryptionPromise) {
+        this.decryptionQueue.delete(messageId);
+      }
+    }
+  }
+
+  private async performDecryption(msg: GroupMessage): Promise<void> {
+    const currentContent = msg.content;
+    const messageId = msg.id;
+
+    let attempts = 0;
+    while (!this.messageDecryptor && attempts < 50) {
+      await new Promise(resolve => setTimeout(resolve, 100));
+      attempts++;
+    }
+    
+    if (!this.messageDecryptor) {
+      const index = this.messages.findIndex(m => m.id === messageId);
+      if (index !== -1) {
+        this.messages[index] = {
+          ...this.messages[index],
+          content: '[No decryptor available]',
+          _isDecrypting: false,
+          _decryptionFailed: true
+        } as any;
+      }
+      this.cdr.detectChanges();
+      return;
+    }
+    
+    try {      
+      const decrypted = await this.messageDecryptor(
+        this.groupId,
+        msg.sender, 
+        currentContent,
+        messageId
+      );
+
+      const index = this.messages.findIndex(m => m.id === messageId);
+      if (index !== -1) {
+        this.messages[index] = {
+          ...this.messages[index],
+          content: decrypted,
+          _decrypted: true,
+          _isDecrypting: false,
+          _version: Date.now()
+        } as any;
+        
+        delete (this.messages[index] as any)._decryptionFailed;
+      }
+      
+      this.messageContentCache.delete(messageId);
+    
+      this.cdr.detectChanges();
+    
+      setTimeout(() => {
+        try {
+          const parsed = JSON.parse(decrypted);
+          if (parsed.files && parsed.files.length > 0) {
+            this.loadFilesForMessages([this.messages[index]]);
+          }
+        } catch (e) {}
+      }, 100);
+      
+    } catch (error: any) {
+
+      const index = this.messages.findIndex(m => m.id === messageId);
+      if (index !== -1) {
+        this.messages[index] = {
+          ...this.messages[index],
+          content: `[Decryption failed: ${error.message || 'Unknown error'}]`,
+          _isDecrypting: false,
+          _decryptionFailed: true
+        } as any;
+        delete (this.messages[index] as any)._decrypted;
+      }
+      
+      this.messageContentCache.delete(messageId);
+      this.cdr.detectChanges();
+    }
+  }
+  
   private queueFileUrlRefresh(file: any, messageId: string) {
     const cacheKey = file.uniqueFileName || file.fileName;
     
@@ -98,7 +197,6 @@ export class GroupMessagesWidget extends BaseChatMessagesWidget<GroupMessage>
   
       this.cdr.markForCheck();
     } catch (error) {
-      console.error('Failed to refresh file URLs:', error);
     }
   }
 
@@ -228,7 +326,6 @@ export class GroupMessagesWidget extends BaseChatMessagesWidget<GroupMessage>
                 this.invalidateMessageCache(item.messageId);
               }
             } catch (e) {
-              console.error('Error updating message:', e);
             }
           }
         }
@@ -236,57 +333,113 @@ export class GroupMessagesWidget extends BaseChatMessagesWidget<GroupMessage>
   
       this.cdr.markForCheck();
     }).catch(error => {
-      console.error('Failed to refresh expired URLs:', error);
     });
   }
 
   parseContent(msg: GroupMessage): { text: string; files: any[] } {
     const messageId = msg.id || '';
+    
     if (msg.isDeleted) {
       return {
         text: msg.content,
         files: []
       };
     }
+
     const currentContent = msg.content;
+    
+    const isDecrypted = (msg as any)._decrypted;
+    const isDecrypting = (msg as any)._isDecrypting;
+    const isFailed = (msg as any)._decryptionFailed;
+    
     const cachedData = this.messageContentCache.get(messageId);
     const needsReparse = !cachedData || 
                         cachedData.timestamp < (msg as any)._version ||
                         (msg as any).forceRefresh;
 
-    if (!needsReparse) return { text: cachedData.text, files: cachedData.files };
-  
+    if (!needsReparse && cachedData) {
+      return { text: cachedData.text, files: cachedData.files };
+    }
+
     delete (msg as any).forceRefresh;
     let result: { text: string; files: any[] };
+    
     try {
       const parsed = JSON.parse(currentContent);
-      if (typeof parsed === 'object' && parsed !== null &&
-          (parsed.hasOwnProperty('text') || parsed.hasOwnProperty('files'))) {
+      
+      if (parsed.ciphertext && 
+          parsed.ephemeralKey && 
+          parsed.nonce && 
+          parsed.messageNumber !== undefined) {
+                
+        if (!isDecrypting && !isDecrypted && !isFailed) {
+          (msg as any)._isDecrypting = true;
+          
+          this.decryptMessageQueued(msg).catch(err => {
+          });
+          
+          result = {
+            text: '[Decrypting...]',
+            files: []
+          };
+          
+          return result;
+        }
         
+        if (isDecrypting) {
+          return {
+            text: '[Decrypting...]',
+            files: []
+          };
+        }
+        
+        if (isFailed) {
+          return {
+            text: '[Decryption failed]',
+            files: []
+          };
+        }
+        
+        if (isDecrypted) {
+          delete (msg as any)._decrypted;
+          (msg as any)._isDecrypting = true;
+          this.decryptMessageQueued(msg).catch(err => {
+          });
+          return {
+            text: '[Retrying decryption...]',
+            files: []
+          };
+        }
+      }
+      
+      if (typeof parsed === 'object' && parsed !== null &&
+          !parsed.ciphertext &&
+          (parsed.hasOwnProperty('text') || parsed.hasOwnProperty('files'))) {
+                
         const filesWithType = (parsed.files || []).map((file: any, index: number) => {
           const cacheKey = file.uniqueFileName || file.fileName;
           const cachedUrl = this.urlCache.get(cacheKey);
-  
+
           if (cachedUrl && !this.isUrlExpired(cachedUrl.timestamp)) {
             file.url = cachedUrl.url;
           } else if (!file.url || (cachedUrl && this.isUrlExpired(cachedUrl.timestamp))) {
             file.needsLoading = true;
             this.queueFileUrlRefresh(file, messageId);
           }
-  
+
           if (!file.type && file.fileName) {
             file.type = this.detectFileType(file.fileName);
           }
-  
+
           if (!file.uniqueId) {
             file.uniqueId = file.uniqueFileName || file.url || `${file.fileName}_${Date.now()}_${index}`;
           }
-  
+
           file._version = file._version || Date.now();
-  
+
           return file;
         });
-  
+
         result = {
           text: parsed.text || '',
           files: filesWithType
@@ -303,13 +456,13 @@ export class GroupMessagesWidget extends BaseChatMessagesWidget<GroupMessage>
         files: []
       };
     }
-  
+
     this.messageContentCache.set(messageId, {
       ...result,
       timestamp: Date.now(),
       version: (msg as any)._version || Date.now()
     });
-  
+
     return result;
   }
 
@@ -348,7 +501,6 @@ export class GroupMessagesWidget extends BaseChatMessagesWidget<GroupMessage>
         const uniqueSenders = [...new Set(messages.map(m => m.sender))];
         const missing = uniqueSenders.filter(s => !this.localMembers.some(m => m.nickName === s));
         if (missing.length > 0) {
-          console.warn('Missing members:', missing);
         }
       });
   }
@@ -495,21 +647,24 @@ export class GroupMessagesWidget extends BaseChatMessagesWidget<GroupMessage>
     }
   }
   
-  private handleNewMessages(newMsgs: GroupMessage[]) {
+  private async handleNewMessages(newMsgs: GroupMessage[]) {
     if (!newMsgs || newMsgs.length === 0) return;
 
     const updatedMessages: GroupMessage[] = [];
     const messagesToRemove: string[] = [];
-  
-    newMsgs.forEach(msg => {
+
+    for (const msg of newMsgs) {
       const index = this.messages.findIndex(m => m.id === msg.id);
-  
+
       if (index !== -1) {
         const existing = this.messages[index];
     
         if (existing.content !== msg.content) {
           (msg as any).forceRefresh = true;
           (msg as any)._version = Date.now();
+          delete (msg as any)._decrypted;
+          delete (msg as any)._isDecrypting;
+          delete (msg as any)._decryptionFailed;
         }
         
         this.messages[index] = { ...existing, ...msg };
@@ -519,49 +674,37 @@ export class GroupMessagesWidget extends BaseChatMessagesWidget<GroupMessage>
         this.messages.push(msg);
         updatedMessages.push(msg);
       }
-    });
-  
+    }
+
     newMsgs.forEach(msg => {
       if (msg.isDeleted && !this.isMyMessage(msg)) {
         messagesToRemove.push(msg.id!);
       }
     });
-  
+
     const newIds = newMsgs.map(m => m.id);
     const hardDeleted = this.messages.filter(m => !newIds.includes(m.id));
     if (hardDeleted.length > 0) {
       messagesToRemove.push(...hardDeleted.map(m => m.id!));
     }
-  
+
     if (messagesToRemove.length > 0) {    
       this.messages = this.messages.filter(m => !messagesToRemove.includes(m.id!));
       messagesToRemove.forEach(id => {
         this.messageContentCache.delete(id);
-        const msg = newMsgs.find(m => m.id === id);
-        if (msg) {
-          try {
-            const parsed = JSON.parse(msg.content);
-            if (parsed.files?.length > 0) {
-              parsed.files.forEach((file: any) => {
-                const cacheKey = file.uniqueFileName || file.fileName;
-                this.urlCache.delete(cacheKey);
-              });
-            }
-          } catch (e) {}
-        }
       });
     }
-  
+
     this.messages.sort((a, b) => 
       new Date(a.sendTime).getTime() - new Date(b.sendTime).getTime()
     );
-  
+
     this.latestMessageTime = this.messages.length > 0
       ? Math.max(...this.messages.map(m => new Date(m.sendTime).getTime()))
       : 0;
-  
+
     this.cdr.markForCheck();
-  
+
     if (this.shouldScrollToBottom || this.isScrolledToBottom()) {
       setTimeout(() => {
         this.scrollToBottomBase(this.scrollContainer);
@@ -571,26 +714,26 @@ export class GroupMessagesWidget extends BaseChatMessagesWidget<GroupMessage>
 
   protected loadMore() {
     if (this.loading || this.allLoaded) return;
-  
+
     this.loading = true;
     const currentSkip = this.messages.length;
     const scrollContainer = this.scrollContainer?.nativeElement;
     const prevScrollHeight = scrollContainer ? scrollContainer.scrollHeight : 0;
     const prevScrollTop = scrollContainer ? scrollContainer.scrollTop : 0;
-  
+
     this.loadHistory(this.groupId, this.take, currentSkip)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
-        next: (newMsgs) => {          
+        next: async (newMsgs) => {          
           if (newMsgs.length === 0) {
             this.allLoaded = true;
             this.loading = false;
             this.cdr.markForCheck();
             return;
           }
-  
+
           const filtered = newMsgs.filter(m => !m.isDeleted || this.isMyMessage(m));
-  
+
           if (filtered.length === 0) {
             this.loading = false;
             if (newMsgs.length < this.take) {
@@ -601,10 +744,10 @@ export class GroupMessagesWidget extends BaseChatMessagesWidget<GroupMessage>
             this.cdr.markForCheck();
             return;
           }
-  
+
           const existingIds = new Set(this.messages.map(m => m.id));
           const unique = filtered.filter(m => !existingIds.has(m.id));
-  
+
           if (unique.length === 0) {
             if (filtered.length < this.take) {
               this.allLoaded = true;
@@ -615,18 +758,28 @@ export class GroupMessagesWidget extends BaseChatMessagesWidget<GroupMessage>
             this.cdr.markForCheck();
             return;
           }
-  
+
+          const encryptedMessages = unique.filter(msg => this.isEncryptedMessage(msg));
+          
+          if (encryptedMessages.length > 0) {
+            await Promise.all(
+              encryptedMessages.map(msg => this.decryptMessageQueued(msg))
+            );
+            
+            this.cdr.detectChanges();
+          }
+
           this.loadFilesForMessages(unique);
           this.messages = [...unique, ...this.messages];
           if (unique.length < this.take) {
             this.allLoaded = true;
           }
-  
+
           setTimeout(() => this.restoreScrollPosition(prevScrollHeight, prevScrollTop), 0);
           setTimeout(() => this.restoreScrollPosition(prevScrollHeight, prevScrollTop), 50);
           setTimeout(() => this.restoreScrollPosition(prevScrollHeight, prevScrollTop), 100);
           setTimeout(() => this.restoreScrollPosition(prevScrollHeight, prevScrollTop), 200);
-  
+
           this.loading = false;
           this.cdr.markForCheck();
         },
@@ -635,6 +788,18 @@ export class GroupMessagesWidget extends BaseChatMessagesWidget<GroupMessage>
           this.cdr.markForCheck();
         }
       });
+  }
+
+  private isEncryptedMessage(msg: GroupMessage): boolean {
+    try {
+      const parsed = JSON.parse(msg.content);
+      return !!(parsed.ciphertext && 
+                parsed.ephemeralKey && 
+                parsed.nonce && 
+                parsed.messageNumber !== undefined);
+    } catch {
+      return false;
+    }
   }
     
   private restoreScrollPosition(prevScrollHeight: number, prevScrollTop: number): void {

@@ -24,6 +24,7 @@ import { SendAreaComponent, FileDropDirective, FileDropOverlayComponent } from '
 import { GroupFileUploadService} from '../../model/group-file-state.service';
 import { GroupFileEditService } from '../../model/group-edit-file.service';
 import { GroupModalStateService } from '../../model/group-modal-state.service';
+import { E2eeService } from '../../../../features/keys-generator';
 
 @Component({
   selector: 'app-group-chat-page',
@@ -56,7 +57,8 @@ export class GroupChatPageComponent extends BaseChatPageComponent {
     private groupNavigation: GroupNavigationService,
     private groupSearch: GroupSearchService,
     public modalState: GroupModalStateService,
-    private router: Router
+    private router: Router,
+    private e2eeService: E2eeService
   ) {
     super();
     this.apiService = this.groupChatApi;
@@ -66,8 +68,22 @@ export class GroupChatPageComponent extends BaseChatPageComponent {
     });
   }
 
+  loadHistory = (groupId: string, take: number, skip: number) => {
+    return this.groupMessages.loadChatHistory(groupId, take, skip);
+  };
+  
+  decryptMessage = async (groupId: string, sender: string, content: string, messageId?: string): Promise<string> => {
+    try {
+      return await this.groupMessages.decryptMessageContent(groupId, sender, content, messageId);
+    } catch (error) {
+      console.error('Decryption error:', error);
+      throw error;
+    }
+  };
+
   override ngOnInit(): void {
     super.ngOnInit();
+    this.initializeUserKeys();
 
     this.groupChatApi.groupUpdated$.subscribe((updatedGroup: GroupChat) => {
       const selectedId = this.groupUserState.getSelectedGroupId();
@@ -75,6 +91,17 @@ export class GroupChatPageComponent extends BaseChatPageComponent {
         this.selectedChat = updatedGroup.groupName;
         this.selectedChatImage = updatedGroup.image;
       }
+    });
+  }
+
+  private async initializeUserKeys(): Promise<void> {
+    if (this.e2eeService.hasKeys()) {
+      return;
+    }
+  
+    console.warn('⚠️ No keys in memory - redirecting to login');
+    this.router.navigate(['/login'], { 
+      queryParams: { returnUrl: this.router.url } 
     });
   }
 

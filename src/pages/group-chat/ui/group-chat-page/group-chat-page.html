@@ -31,6 +31,7 @@
             [loadHistory]="groupMessages.loadChatHistory.bind(groupMessages)"
             (editMessage)="onEditMessage($event)"
             (deleteMessage)="onDeleteMessage($event)"
+            [messageDecryptor]="decryptMessage.bind(this)"
             (replyToMessage)="onReplyToMessage($event)">
           </widgets-group-messages>
         </div>

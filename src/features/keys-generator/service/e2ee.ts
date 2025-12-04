@@ -35,15 +35,6 @@ interface MessageKeyData {
   keyIndex: number;
 }
 
-interface EncryptedMessage {
-  ciphertext: string;
-  ephemeralKey: string;
-  nonce: string;
-  messageNumber: number;
-  previousChainN: number;
-  ratchetId: string;
-}
-
 @Injectable({ providedIn: 'root' })
 export class E2eeService {
   private ready = false;
@@ -90,6 +81,58 @@ export class E2eeService {
     
     return keyData;
   }
+
+  // Добавить в E2eeService:
+
+exportMessageKeyForGroupMember(
+  groupId: string,
+  memberPublicKey: Uint8Array,
+  chainIndex: number
+): {
+  encryptedKey: string;
+  ephemeralPublicKey: string;
+  chainKeySnapshot: string;
+  chainIndex: number;
+} | null {
+  this.ensureReady();
+  
+  const senderKeyState = this.senderKeys.get(groupId);
+  if (!senderKeyState) {
+    return null;
+  }
+  
+  // Получаем message key для этого индекса
+  const messageKey = sodium.crypto_generichash(
+    32,
+    new Uint8Array([...senderKeyState.chainKey, chainIndex])
+  );
+  
+  // Создаем ephemeral keypair для шифрования
+  const ephemeralKeyPair = sodium.crypto_box_keypair();
+  
+  // Создаем shared secret
+  const sharedSecret = sodium.crypto_scalarmult(
+    ephemeralKeyPair.privateKey,
+    memberPublicKey
+  );
+  
+  const encryptionKey = sodium.crypto_generichash(32, sharedSecret);
+  
+  // Шифруем message key
+  const nonce = sodium.randombytes_buf(sodium.crypto_secretbox_NONCEBYTES);
+  const encrypted = sodium.crypto_secretbox_easy(
+    messageKey,
+    nonce,
+    encryptionKey
+  );
+  
+  return {
+    encryptedKey: this.toBase64(new Uint8Array([...nonce, ...encrypted])),
+    ephemeralPublicKey: this.toBase64(ephemeralKeyPair.publicKey),
+    chainKeySnapshot: this.toBase64(senderKeyState.chainKey),
+    chainIndex: chainIndex
+  };
+}
 
   async getMessageKeyForHistory(
     contactId: string,
