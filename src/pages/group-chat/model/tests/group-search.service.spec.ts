@@ -1,8 +1,8 @@
 import { TestBed } from '@angular/core/testing';
 import { Subject } from 'rxjs';
-import { GroupSearchService } from './group-search.service';
-import { FindUserStore } from '../../../features/search-user';
-import { SearchUser } from '../../../entities/search-user';
+import { GroupSearchService } from '../group-search.service';
+import { FindUserStore } from '../../../../features/search-user';
+import { SearchUser } from '../../../../entities/search-user';
 
 describe('GroupSearchService', () => {
   let service: GroupSearchService;

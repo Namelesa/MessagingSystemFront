@@ -1,10 +1,10 @@
 import { TestBed } from '@angular/core/testing';
 import { BehaviorSubject, of, skip, throwError } from 'rxjs';
-import { GroupUserStateService } from './group-user-state.service';
-import { GroupInfoApiService } from '../api/group-chat/group-info.api';
-import { GroupChatApiService } from '../api/group-chat/group-chat-hub.api';
-import { AuthService } from '../../../entities/session';
-import { GroupMember } from './group-info.model';
+import { GroupUserStateService } from '../group-user-state.service';
+import { GroupInfoApiService } from '../../api/group-chat/group-info.api';
+import { GroupChatApiService } from '../../api/group-chat/group-chat-hub.api';
+import { AuthService } from '../../../../entities/session';
+import { GroupMember } from '../group-info.model';
 
 class MockGroupInfoApiService {
   getGroupInfo = jasmine.createSpy('getGroupInfo').and.returnValue(
@@ -327,5 +327,38 @@ describe('GroupUserStateService', () => {
         done();
       }
     });
-  });  
+  });
+  
+  describe('getGroupMembers', () => {
+    it('should return current members array', () => {
+      const mockMembers: GroupMember[] = [
+        { nickName: 'User1', image: 'image1.png' },
+        { nickName: 'User2', image: 'image2.png' }
+      ];
+      
+      service['membersSubject'].next(mockMembers);
+      
+      const result = service.getGroupMembers();
+      
+      expect(result).toEqual(mockMembers);
+      expect(result.length).toBe(2);
+      expect(result[0].nickName).toBe('User1');
+    });
+  
+    it('should return empty array when members is empty', () => {
+      service['membersSubject'].next([]);
+      
+      const result = service.getGroupMembers();
+      
+      expect(result).toEqual([]);
+    });
+  
+    it('should return empty array when membersSubject value is null', () => {
+      service['membersSubject'].next(null as any);
+      
+      const result = service.getGroupMembers();
+      
+      expect(result).toEqual([]);
+    });
+  });
 });

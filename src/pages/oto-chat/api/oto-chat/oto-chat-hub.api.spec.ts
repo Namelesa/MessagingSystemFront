@@ -2,170 +2,180 @@ import { TestBed } from '@angular/core/testing';
 import { OtoChatApiService } from './oto-chat-hub.api';
 import { AuthService } from '../../../../entities/session';
 import { SignalRConnectionRegistryService } from '../../../../shared/realtime';
-import { HubConnection } from '@microsoft/signalr';
+import { OtoMessagesService } from '../oto-message/oto-messages.api';
+import { BaseChatApiService } from '../../../../shared/realtime';
+import { BehaviorSubject } from 'rxjs';
+
+class BaseChatApiServiceMock<T> {
+  public connection = { mocked: true };
+  public chatsSubject = new BehaviorSubject<any[]>([]);
+  connect = jasmine.createSpy('connect');
+  disconnect = jasmine.createSpy('disconnect');
+  handleUserInfoChanged = jasmine.createSpy('handleUserInfoChanged');
+}
+
+class AuthServiceMock {
+  getNickName = jasmine.createSpy().and.returnValue('CurrentUser');
+}
+
+class RegistryMock {
+  setConnection = jasmine.createSpy('setConnection');
+}
+
+class OtoMessagesServiceMock {}
 
 describe('OtoChatApiService', () => {
+
   let service: OtoChatApiService;
-  let authService: jasmine.SpyObj<AuthService>;
-  let registry: jasmine.SpyObj<SignalRConnectionRegistryService>;
+  let registry: RegistryMock;
+  let auth: AuthServiceMock;
 
   beforeEach(() => {
-    authService = jasmine.createSpyObj('AuthService', ['getNickName']);
-    registry = jasmine.createSpyObj('SignalRConnectionRegistryService', ['setConnection']);
-
     TestBed.configureTestingModule({
       providers: [
         OtoChatApiService,
-        { provide: AuthService, useValue: authService },
-        { provide: SignalRConnectionRegistryService, useValue: registry },
-      ],
+        { provide: BaseChatApiService, useClass: BaseChatApiServiceMock },
+        { provide: AuthService, useClass: AuthServiceMock },
+        { provide: SignalRConnectionRegistryService, useClass: RegistryMock },
+        { provide: OtoMessagesService, useClass: OtoMessagesServiceMock }
+      ]
     });
 
     service = TestBed.inject(OtoChatApiService);
-
-    (service as any).connection = {
-      start: jasmine.createSpy('start'),
-      stop: jasmine.createSpy('stop').and.returnValue(Promise.resolve())
-    } as unknown as HubConnection;
-
-    (service as any).chatsSubject = {
-      value: [],
-      next: jasmine.createSpy('next')
-    } as any;
+    registry = TestBed.inject(SignalRConnectionRegistryService) as any;
+    auth = TestBed.inject(AuthService) as any;
   });
 
-  it('should create service', () => {
-    expect(service).toBeTruthy();
-  });
-
-  describe('connected', () => {
-    it('should connect and register connection if not connected', () => {
-      service.connected();
-      expect((service as any).isConnected).toBeTrue();
-      expect(registry.setConnection).toHaveBeenCalledWith('otoChat', (service as any).connection);
-    });
-
-    it('should not connect if already connected', () => {
-      (service as any).isConnected = true;
-      service.connected();
-      expect(registry.setConnection).not.toHaveBeenCalled();
-    });
-  });
-
-  describe('disconnect', () => {
-    it('should disconnect and clear registry', async () => {
-      (service as any).isConnected = true;
-
-      await service.disconnect();
-
-      expect((service as any).isConnected).toBeFalse();
-      expect((service as any).connection.stop).toHaveBeenCalled();
-      expect(registry.setConnection).toHaveBeenCalledWith('otoChat', undefined);
-    });
-
-    it('should do nothing if not connected', async () => {
-      await service.disconnect();
-      expect((service as any).connection.stop).not.toHaveBeenCalled();
-      expect(registry.setConnection).not.toHaveBeenCalled();
-    });
-  });
-
-  describe('getCurrentUser', () => {
-    it('should return nickname from AuthService', () => {
-      authService.getNickName.and.returnValue('Max');
-      const nick = (service as any).getCurrentUser();
-      expect(nick).toBe('Max');
-    });
-  });
-
-  describe('handleUserInfoChanged', () => {
-    it('should log error if NewUserName or OldNickName missing', () => {
-      spyOn(console, 'error');
-      (service as any).handleUserInfoChanged({ NewUserName: '', OldNickName: '', UpdatedAt: '123' });
-      expect(console.error).toHaveBeenCalled();
-    });
-  });
-
-  describe('updateChatUserInfo', () => {
-    it('should update chat info and call next if changed', () => {
-      (service as any).chatsSubject.value = [{ nickName: 'old', image: 'img', lastUserInfoUpdate: '' }];
-      (service as any).updateChatUserInfo({ NewUserName: 'new', OldNickName: 'old', Image: 'img2', UpdatedAt: '123' });
-      expect((service as any).chatsSubject.next).toHaveBeenCalledWith([
-        { nickName: 'new', image: 'img2', lastUserInfoUpdate: '123' }
-      ]);
-    });
-
-    it('should not call next if no changes', () => {
-      (service as any).chatsSubject.value = [{ nickName: 'same', image: 'img', lastUserInfoUpdate: '' }];
-      (service as any).updateChatUserInfo({ NewUserName: 'same', OldNickName: 'same', UpdatedAt: '123' });
-      expect((service as any).chatsSubject.next).not.toHaveBeenCalled();
-    });
-  });
-
-  describe('handleUserInfoChanged', () => {
-    it('should log error if NewUserName or OldNickName missing', () => {
-      spyOn(console, 'error');
-      (service as any).handleUserInfoChanged({ NewUserName: '', OldNickName: '', UpdatedAt: '123' });
-      expect(console.error).toHaveBeenCalled();
-    });
+  it('should connect only once', () => {
+    const spyConnect = spyOn<any>(BaseChatApiService.prototype, 'connect');
+    
+    (service as any).connection = { mocked: true };
   
-    it('should call super.handleUserInfoChanged and getCurrentUser if data is valid', () => {
-      const spySuper = spyOn(Object.getPrototypeOf(Object.getPrototypeOf(service)), 'handleUserInfoChanged');
-      spyOn(service as any, 'getCurrentUser').and.returnValue('Max');
+    service.connected();
+    service.connected(); 
   
-      (service as any).handleUserInfoChanged({
-        NewUserName: 'newName',
-        OldNickName: 'oldName',
-        UpdatedAt: '123',
-        Image: 'img'
-      });
-  
-      expect(spySuper).toHaveBeenCalledWith({
-        NewUserName: 'newName',
-        OldNickName: 'oldName',
-        UpdatedAt: '123',
-        Image: 'img'
-      });
-      expect((service as any).getCurrentUser).toHaveBeenCalled();
-    });
+    expect(spyConnect).toHaveBeenCalledTimes(1);
+    expect(registry.setConnection).toHaveBeenCalledTimes(1);
+    expect(registry.setConnection).toHaveBeenCalledWith('otoChat', { mocked: true });
   });
   
-  describe('updateChatUserInfo', () => {
-    it('should update chat info and call next if changed', () => {
-      (service as any).chatsSubject.value = [{ nickName: 'old', image: 'img', lastUserInfoUpdate: '' }];
-      (service as any).updateChatUserInfo({ NewUserName: 'new', OldNickName: 'old', Image: 'img2', UpdatedAt: '123' });
-      expect((service as any).chatsSubject.next).toHaveBeenCalledWith([
-        { nickName: 'new', image: 'img2', lastUserInfoUpdate: '123' }
-      ]);
-    });
+  it('should disconnect only when connected', () => {
+    const spyDisconnect = spyOn<any>(BaseChatApiService.prototype, 'disconnect');
   
-    it('should preserve image if new one is not provided', () => {
-      (service as any).chatsSubject.value = [{ nickName: 'old', image: 'keepImg', lastUserInfoUpdate: '' }];
-      (service as any).updateChatUserInfo({ NewUserName: 'new', OldNickName: 'old', UpdatedAt: '123' });
-      expect((service as any).chatsSubject.next).toHaveBeenCalledWith([
-        { nickName: 'new', image: 'keepImg', lastUserInfoUpdate: '123' }
-      ]);
-    });
+    service.connected();
   
-    it('should not call next if no changes', () => {
-      (service as any).chatsSubject.value = [{ nickName: 'same', image: 'img', lastUserInfoUpdate: '' }];
-      (service as any).updateChatUserInfo({ NewUserName: 'same', OldNickName: 'same', UpdatedAt: '123' });
-      expect((service as any).chatsSubject.next).not.toHaveBeenCalled();
-    });
-
-    it('should return chats unchanged if no nick matches OldNickName', () => {
-        const originalChats = [{ nickName: 'someone', image: 'img', lastUserInfoUpdate: '' }];
-        (service as any).chatsSubject.value = [...originalChats];
-      
-        (service as any).updateChatUserInfo({
-          NewUserName: 'new',
-          OldNickName: 'notExisting',
-          UpdatedAt: '123'
-        });
-      
-        expect((service as any).chatsSubject.next).not.toHaveBeenCalled();
-      
-        expect((service as any).chatsSubject.value).toEqual(originalChats);
-      });
+    service.disconnect(); 
+    service.disconnect(); 
+  
+    expect(spyDisconnect).toHaveBeenCalledTimes(1);
+    expect(registry.setConnection).toHaveBeenCalledWith('otoChat', undefined as any);
   });
+  
+  it('should call super.handleUserInfoChanged if userInfo is valid', () => {
+    const spyHandleUserInfoChanged = spyOn<any>(BaseChatApiService.prototype, 'handleUserInfoChanged');
+    const spyGet = spyOn<any>(service, 'getCurrentUser').and.returnValue('User');
+  
+    const info = {
+      NewUserName: 'New',
+      OldNickName: 'Old',
+      UpdatedAt: '2024',
+      Image: 'X'
+    };
+  
+    (service as any).handleUserInfoChanged(info);
+  
+    expect(spyHandleUserInfoChanged).toHaveBeenCalledWith(info);
+    expect(spyGet).toHaveBeenCalled();
+  });
+
+  it('should return current nickname', () => {
+    const result = (service as any).getCurrentUser();
+    expect(auth.getNickName).toHaveBeenCalled();
+    expect(result).toBe('CurrentUser');
+  });
+
+  it('should log error if userInfo invalid', () => {
+    spyOn(console, 'error');
+
+    (service as any).handleUserInfoChanged({ NewUserName: '', OldNickName: '', UpdatedAt: '', Image: '' });
+
+    expect(console.error).toHaveBeenCalled();
+  });
+
+  it('should update chat user info when nickname matches', () => {
+    const chats = [
+      { nickName: 'OldNick', image: 'img1', lastUserInfoUpdate: '' },
+      { nickName: 'Other',   image: 'img2', lastUserInfoUpdate: '' }
+    ];
+
+    const base = service as any as BaseChatApiServiceMock<any>;
+    base.chatsSubject.next(chats);
+
+    const info = {
+      OldNickName: 'OldNick',
+      NewUserName: 'UpdatedNick',
+      Image: 'newImg',
+      UpdatedAt: '2024-01-01'
+    };
+
+    (service as any).updateChatUserInfo(info);
+
+    const updated = base.chatsSubject.value;
+
+    expect(updated[0].nickName).toBe('UpdatedNick');
+    expect(updated[0].image).toBe('newImg');
+    expect(updated[0].lastUserInfoUpdate).toBe('2024-01-01');
+
+    expect(updated[1]).toEqual(chats[1]); 
+  });
+
+  it('should NOT update chatsSubject when nothing changed', () => {
+    const chats = [
+      { nickName: 'User', image: 'img' }
+    ];
+
+    const base = service as any as BaseChatApiServiceMock<any>;
+    base.chatsSubject.next(chats);
+
+    const nextSpy = spyOn(base.chatsSubject, 'next');
+
+    const info = {
+      OldNickName: 'AnotherUser',
+      NewUserName: 'NewName',
+      Image: '',
+      UpdatedAt: '2024'
+    };
+
+    (service as any).updateChatUserInfo(info);
+
+    expect(nextSpy).not.toHaveBeenCalled();
+  });
+
+  it('should keep old image if userInfo.Image is empty', () => {
+    const chats = [
+      { nickName: 'OldNick', image: 'old-img', lastUserInfoUpdate: '' }
+    ];
+  
+    const base = service as any as BaseChatApiServiceMock<any>;
+    base.chatsSubject.next(chats);
+  
+    const nextSpy = spyOn(base.chatsSubject, 'next').and.callThrough();
+  
+    const info = {
+      OldNickName: 'OldNick',
+      NewUserName: 'UpdatedNick',
+      Image: '',              
+      UpdatedAt: '2025'
+    };
+  
+    (service as any).updateChatUserInfo(info);
+  
+    expect(nextSpy).toHaveBeenCalled();
+  
+    const updated = base.chatsSubject.value[0];
+  
+    expect(updated.nickName).toBe('UpdatedNick');
+    expect(updated.image).toBe('old-img');
+    expect(updated.lastUserInfoUpdate).toBe('2025');
+  });  
 });

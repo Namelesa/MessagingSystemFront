@@ -46,6 +46,35 @@ describe('User Form Validation', () => {
     });
   });
 
+  describe('validateSingleField', () => {
+    it('should return no errors for valid firstName', () => {
+      expect(validateSingleField('firstName', 'John')).toEqual([]);
+    });
+  
+    it('should return error for invalid email', () => {
+      const errors = validateSingleField('email', 'not-an-email');
+      expect(errors.length).toBe(1);
+      expect(errors[0]).toContain('Email');
+    });
+  
+    it('should return empty array for unknown field', () => {
+      const errors = validateSingleField('unknownField' as any, 'some value');
+      expect(errors).toEqual([]);
+    });
+  
+    it('should validate imageFile correctly', () => {
+      const file = new File(['dummy content'], 'photo.bmp', { type: 'image/bmp' });
+      const errors = validateSingleField('imageFile', file);
+      expect(errors.length).toBe(1);
+      expect(errors[0]).toContain('must be a valid image file');
+    });
+  
+    it('should accept valid imageFile', () => {
+      const file = new File(['dummy content'], 'photo.png', { type: 'image/png' });
+      expect(validateSingleField('imageFile', file)).toEqual([]);
+    });
+  });
+
   describe('isFormValid', () => {
     it('should return false if data is invalid', () => {
       const data = { ...validData, login: '' };

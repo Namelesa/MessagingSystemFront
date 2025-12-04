@@ -497,8 +497,6 @@ onImageError(event: Event, file: any) {
       file.type === clickedFile.type
     );
 
-    if (mediaIndex === -1) return;
-
     this.imageViewerImages = mediaFiles.map(file => ({
       url: file.url,
       fileName: file.fileName,
@@ -569,6 +567,13 @@ onImageError(event: Event, file: any) {
   }
 
   protected override initChat() {
+
+    this.messages.forEach(msg => {
+      delete (msg as any)._isDecrypting;
+      delete (msg as any)._decrypted;
+      delete (msg as any)._decryptionFailed;
+    });
+
     this.messages = [];
     this.skip = 0;
     this.allLoaded = false;
@@ -578,12 +583,6 @@ onImageError(event: Event, file: any) {
     this.latestMessageTime = 0;
     this.decryptionQueue.clear();
     this.isDecryptingForContact.clear();
-  
-    this.messages.forEach(msg => {
-      delete (msg as any)._isDecrypting;
-      delete (msg as any)._decrypted;
-      delete (msg as any)._decryptionFailed;
-    });
   
     if (this.messages$) {
       this.messages$

@@ -1,10 +1,10 @@
 import { TestBed } from '@angular/core/testing';
 import { of } from 'rxjs';
-import { GroupNavigationService } from './group-navigation.service';
-import { GroupUserStateService } from './group-user-state.service';
-import { GroupMessageStateService } from './group-message-state.service';
-import { GroupMessagesApiService } from '../api/group-message/group-messages.api';
-import { GroupChat } from './group.chat';
+import { GroupNavigationService } from '../group-navigation.service';
+import { GroupUserStateService } from '../group-user-state.service';
+import { GroupMessageStateService } from '../group-message-state.service';
+import { GroupMessagesApiService } from '../../api/group-message/group-messages.api';
+import { GroupChat } from '../group.chat';
 
 describe('GroupNavigationService', () => {
   let service: GroupNavigationService;

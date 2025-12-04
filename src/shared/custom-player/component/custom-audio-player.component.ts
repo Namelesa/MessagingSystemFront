@@ -36,7 +36,7 @@ export class CustomAudioPlayerComponent implements OnInit, OnDestroy, AfterViewI
   Math = Math;
 
   private audio: HTMLAudioElement | null = null;
-  private lastVolumeBeforeMute = 1;
+  public lastVolumeBeforeMute = 1;
   private volumeHideTimeout: any;
   private isDraggingVolume = false;
   private volumeBarRect: DOMRect | null = null;

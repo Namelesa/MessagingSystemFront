@@ -40,9 +40,9 @@ export class E2eeService {
   private ready = false;
   private keys: StoredKeys | null = null;
   private ratchetStates = new Map<string, RatchetState>();
-  private senderKeys = new Map<string, SenderKeyState>(); 
-  private receivedSenderKeys = new Map<string, Map<string, SenderKeyState>>(); 
-  private messageKeysCache = new Map<string, MessageKeyData[]>();
+  public senderKeys = new Map<string, SenderKeyState>(); 
+  public receivedSenderKeys = new Map<string, Map<string, SenderKeyState>>(); 
+  public messageKeysCache = new Map<string, MessageKeyData[]>();
 
   private keysLoaded = false;
 
@@ -82,8 +82,6 @@ export class E2eeService {
     return keyData;
   }
 
-  // Добавить в E2eeService:
-
 exportMessageKeyForGroupMember(
   groupId: string,
   memberPublicKey: Uint8Array,
@@ -101,16 +99,13 @@ exportMessageKeyForGroupMember(
     return null;
   }
   
-  // Получаем message key для этого индекса
   const messageKey = sodium.crypto_generichash(
     32,
     new Uint8Array([...senderKeyState.chainKey, chainIndex])
   );
-  
-  // Создаем ephemeral keypair для шифрования
+
   const ephemeralKeyPair = sodium.crypto_box_keypair();
   
-  // Создаем shared secret
   const sharedSecret = sodium.crypto_scalarmult(
     ephemeralKeyPair.privateKey,
     memberPublicKey
@@ -118,7 +113,6 @@ exportMessageKeyForGroupMember(
   
   const encryptionKey = sodium.crypto_generichash(32, sharedSecret);
   
-  // Шифруем message key
   const nonce = sodium.randombytes_buf(sodium.crypto_secretbox_NONCEBYTES);
   const encrypted = sodium.crypto_secretbox_easy(
     messageKey,
@@ -261,8 +255,7 @@ exportMessageKeyForGroupMember(
     if (!state) {
       throw new Error('Ratchet state not initialized');
     }
-    if (!state) throw new Error('Ratchet state not initialized');
-    
+
     const remoteEphemeralKey = this.fromBase64(ephemeralKey);
     const isNewRatchet = ratchetId && state.ratchetId && ratchetId !== state.ratchetId;
     const isKeyChanged = !state.remotePublicKey || !this.arraysEqual(state.remotePublicKey, remoteEphemeralKey);

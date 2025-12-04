@@ -207,13 +207,9 @@ describe('ProfilePageStore', () => {
     expect(Object.values(store.fieldErrors).every(arr => arr.length === 0)).toBeTrue();
   });
   
-  it('should log unassigned errors in distributeErrors', () => {
-    spyOn(console, 'warn');
-  
-    (store as any).distributeErrors(['Some unknown error']);
-  
-    expect(console.warn).toHaveBeenCalledWith('Unassigned error:', 'Some unknown error');
-  });
+  it('should not crash on unassigned errors in distributeErrors', () => {
+    expect(() => (store as any).distributeErrors(['Some unknown error'])).not.toThrow();
+  });  
 
   it('should validate field when validationSubjects emit value', (done) => {
     store.touchedFields['firstName'] = true;

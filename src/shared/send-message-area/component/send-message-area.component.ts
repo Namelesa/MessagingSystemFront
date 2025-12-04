@@ -364,18 +364,17 @@ export class SendAreaComponent implements OnChanges {
   }
 
   emitMessage() {
-
     if (this.editFileUploading) {
       return;
     }
-
+  
     const text = this.message.trim();
     const hasFiles = this.editingFiles.length > 0;
   
-    if (!text && !hasFiles){
+    if (!this.isEditing && !text && !hasFiles) {
       return;
-    };
-    
+    }
+  
     if (this.isTooLong) return;
     if (new Blob([text]).size > this.maxBytes) return;
   
@@ -384,7 +383,7 @@ export class SendAreaComponent implements OnChanges {
   
     if (this.isEditing && this.editingMessage) {
       let content: string;
-    
+  
       if (hasFiles || text) {
         const filesForContent = this.editingFiles.map(file => ({
           fileName: file.fileName,
@@ -402,19 +401,20 @@ export class SendAreaComponent implements OnChanges {
       } else {
         content = '';
       }
-    
+  
       this.editComplete.emit({
-        messageId: (this.editingMessage.messageId || this.editingMessage.id)!,
+        messageId: (this.editingMessage.messageId || this.editingMessage.id) || '',
         content
       });
     } else {
       this.send.emit(text);
-    }    
+    }
   
     this.message = '';
     this.lastSentAt = now;
     this.draftTextChange.emit('');
   }
+  
   
   cancelEdit() {
     this.editCancel.emit();

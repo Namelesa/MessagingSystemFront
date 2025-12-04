@@ -72,18 +72,6 @@ describe('RegisterPageStore', () => {
     });
   });
 
-  it('should handle registration result - success', (done) => {
-    spyOn(window, 'setTimeout').and.callFake((fn: any) => fn());
-    store.handleRegisterResult({ message: 'User registered and need to confirm email' });
-
-    expect(mockToastService.show).toHaveBeenCalledWith(
-      'Registration successful. Please confirm email', 'success'
-    );
-    expect(formStoreMock.reset).toHaveBeenCalled();
-    expect(mockRouter.navigate).toHaveBeenCalledWith(['/login']);
-    done();
-  });
-
   it('should handle registration result - invalid form', () => {
     store.handleRegisterResult({ message: 'Invalid form' });
     expect(mockToastService.show).toHaveBeenCalledWith(
@@ -109,5 +97,27 @@ describe('RegisterPageStore', () => {
     spyOn(store['subs'], 'unsubscribe');
     store.dispose();
     expect(store['subs'].unsubscribe).toHaveBeenCalled();
+  });
+
+  it('should handle registration result - successful registration', (done) => {
+    jasmine.clock().install();
+    
+    store.handleRegisterResult({ message: 'User registered and need to confirm email' });
+    
+    expect(mockToastService.show).toHaveBeenCalledWith(
+      'Registration successful. Please confirm email', 'success'
+    );
+    expect(store.formData.firstName).toBe('');
+    expect(store.formData.email).toBe('');
+    expect(formStoreMock.reset).toHaveBeenCalled();
+    
+    expect(mockRouter.navigate).not.toHaveBeenCalled();
+    
+    jasmine.clock().tick(3000);
+    
+    expect(mockRouter.navigate).toHaveBeenCalledWith(['/login']);
+    
+    jasmine.clock().uninstall();
+    done();
   });
 });

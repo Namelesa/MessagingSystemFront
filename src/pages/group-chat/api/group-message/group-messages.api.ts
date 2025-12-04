@@ -21,9 +21,9 @@ export class GroupMessagesApiService {
   
   public userInfoChanged$ = this.userInfoChangedSubject.asObservable();
   
-  private currentGroupId: string | null = null;
+  public currentGroupId: string | null = null;
   private listenersSetup = false;
-  private currentUserId: string | null = null;
+  public currentUserId: string | null = null;
   private readonly API_URL = 'http://localhost:3000/api';
 
   private groupRatchetCache = new Map<string, boolean>();
@@ -33,7 +33,7 @@ export class GroupMessagesApiService {
               private http: HttpClient,
               private auth: AuthService) {}
 
-              private setupMessageListener() {
+              public setupMessageListener() {
                 this.currentUserId = this.auth.getNickName();
                 const connection = this.getConnection();
                 if (!connection || this.listenersSetup) return;
@@ -493,7 +493,7 @@ export class GroupMessagesApiService {
     return null;
   }
 
-  private async ensureConnection(): Promise<signalR.HubConnection> {
+  public async ensureConnection(): Promise<signalR.HubConnection> {
     let connection = this.getConnection();
     if (connection) return connection;
 
@@ -644,7 +644,7 @@ export class GroupMessagesApiService {
     }
   }
   
-  private async saveGroupMessageToHistory(
+  public async saveGroupMessageToHistory(
     messageId: string,
     groupId: string,
     senderId: string,

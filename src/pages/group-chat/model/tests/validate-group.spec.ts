@@ -1,7 +1,7 @@
-import { validateCreateGroupForm, validateEditGroupForm, validateImageFile, validateMembersCount } from './validate-group';
-import { validateGroupName as vName, validateGroupDescription as vDesc } from '../../../shared/validators';
-import { GroupCreateRequest } from '../api/group-chat/group-create';
-import { GroupInfoEditData } from './group-info-edit.model';
+import { validateCreateGroupForm, validateEditGroupForm, validateImageFile, validateMembersCount } from '../validate-group';
+import { validateGroupName as vName, validateGroupDescription as vDesc } from '../../../../shared/validators';
+import { GroupCreateRequest } from '../../api/group-chat/group-create';
+import { GroupInfoEditData } from '../group-info-edit.model';
 
 describe('Group Form Validators', () => {
   describe('validateCreateGroupForm', () => {

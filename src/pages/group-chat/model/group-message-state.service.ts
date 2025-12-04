@@ -255,9 +255,15 @@ export class GroupMessageStateService {
     const strategies = [
       (f: any) => f.uniqueFileName === targetFile.uniqueFileName,
       (f: any) => f.uniqueId === targetFile.uniqueId,
-      (f: any) => f.fileName === targetFile.fileName && f.type === targetFile.type,
+      (f: any) => {
+        if (f.fileName !== targetFile.fileName) return false;
+        return f.type === targetFile.type;
+      },
       (f: any) => f.fileName === targetFile.fileName,
-      (f: any) => f.url === targetFile.url && f.url
+      (f: any) => {
+        if (f.url !== targetFile.url) return false;
+        return Boolean(f.url);
+      }
     ];
   
     for (const strategy of strategies) {

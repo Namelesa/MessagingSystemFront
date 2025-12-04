@@ -254,4 +254,88 @@ describe('MessageStateService', () => {
       expect(messageServiceSpy.deleteMessage).not.toHaveBeenCalled();
     });
   });  
+
+  describe('widget methods', () => {
+    it('should set messages widget', () => {
+      const mockWidget = jasmine.createSpyObj('OtoChatMessagesWidget', [
+        'handleNewMessages',
+        'scrollToBottomAfterNewMessage',
+        'fullMessageRerender',
+        'scrollToMessage'
+      ]);
+      
+      service.setMessagesWidget(mockWidget);
+      
+      expect((service as any).messagesWidgetRef).toBe(mockWidget);
+    });
+  
+    it('should set messages widget to undefined', () => {
+      service.setMessagesWidget(undefined);
+      
+      expect((service as any).messagesWidgetRef).toBeUndefined();
+    });
+  
+    it('should handle new messages when widget is set', () => {
+      const mockWidget = jasmine.createSpyObj('OtoChatMessagesWidget', ['handleNewMessages']);
+      const messages = [{ messageId: '1' } as OtoMessage, { messageId: '2' } as OtoMessage];
+      
+      service.setMessagesWidget(mockWidget);
+      service.handleNewMessages(messages);
+      
+      expect(mockWidget.handleNewMessages).toHaveBeenCalledWith(messages);
+    });
+  
+    it('should not call handleNewMessages when widget is not set', () => {
+      const messages = [{ messageId: '1' } as OtoMessage];
+      
+      service.setMessagesWidget(undefined);
+      
+      expect(() => service.handleNewMessages(messages)).not.toThrow();
+    });
+  
+    it('should scroll to bottom when widget is set', () => {
+      const mockWidget = jasmine.createSpyObj('OtoChatMessagesWidget', ['scrollToBottomAfterNewMessage']);
+      
+      service.setMessagesWidget(mockWidget);
+      service.scrollToBottom();
+      
+      expect(mockWidget.scrollToBottomAfterNewMessage).toHaveBeenCalled();
+    });
+  
+    it('should not call scrollToBottom when widget is not set', () => {
+      service.setMessagesWidget(undefined);
+      
+      expect(() => service.scrollToBottom()).not.toThrow();
+    });
+  
+    it('should force message update when widget is set', () => {
+      const mockWidget = jasmine.createSpyObj('OtoChatMessagesWidget', ['fullMessageRerender']);
+      
+      service.setMessagesWidget(mockWidget);
+      service.forceMessageUpdate('msg123');
+      
+      expect(mockWidget.fullMessageRerender).toHaveBeenCalledWith('msg123');
+    });
+  
+    it('should not call forceMessageUpdate when widget is not set', () => {
+      service.setMessagesWidget(undefined);
+      
+      expect(() => service.forceMessageUpdate('msg123')).not.toThrow();
+    });
+  
+    it('should scroll to message when widget is set', () => {
+      const mockWidget = jasmine.createSpyObj('OtoChatMessagesWidget', ['scrollToMessage']);
+      
+      service.setMessagesWidget(mockWidget);
+      service.scrollToMessage('msg123');
+      
+      expect(mockWidget.scrollToMessage).toHaveBeenCalledWith('msg123');
+    });
+  
+    it('should not call scrollToMessage when widget is not set', () => {
+      service.setMessagesWidget(undefined);
+      
+      expect(() => service.scrollToMessage('msg123')).not.toThrow();
+    });
+  });
 });
