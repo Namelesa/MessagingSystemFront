@@ -33,12 +33,10 @@ export class GroupMessagesApiService {
               private http: HttpClient,
               private auth: AuthService) {}
 
-  private setupMessageListener() {
+              private setupMessageListener() {
                 this.currentUserId = this.auth.getNickName();
                 const connection = this.getConnection();
-                if (!connection || this.listenersSetup) {
-                  return;
-                }
+                if (!connection || this.listenersSetup) return;
                     
                 try {
                   connection.off('ReceiveMessage');
@@ -47,13 +45,13 @@ export class GroupMessagesApiService {
                   connection.off('MessageSoftDeleted');
                   connection.off('UserInfoChanged');
                   connection.off('UserInfoDeleted');
-                } catch (error) {
-                }
+                } catch (error) {}
                     
                 connection.on('ReceiveMessage', (msg: any) => {
                   if (msg.groupId === this.currentGroupId) {
                     const currentMessages = this.messages$.value;
                     const messageExists = currentMessages.some(m => m.id === msg.id);
+                    
                     if (!messageExists) {
                       const newMessage: GroupMessage = {
                         id: msg.id,
@@ -67,13 +65,20 @@ export class GroupMessagesApiService {
                         replyFor: msg.replyTo || undefined
                       };
                       this.messages$.next([...currentMessages, newMessage]);
+                    } else {
                     }
                   }
                 });
                     
                 connection.on('MessageEdited', (editInfo: any) => {
                   if (editInfo.messageId) {
-                    const updatedMessages = this.messages$.value.map(m => {
+                    const currentMessages = this.messages$.value;
+                    const existingMsg = currentMessages.find(m => m.id === editInfo.messageId);
+                    if (existingMsg && existingMsg.content === editInfo.newContent) {
+                      return;
+                    }
+                    
+                    const updatedMessages = currentMessages.map(m => {
                       if (m.id === editInfo.messageId) {
                         return {
                           ...m,
@@ -87,7 +92,7 @@ export class GroupMessagesApiService {
                     this.messages$.next(updatedMessages);
                   }
                 });
-                    
+              
                 connection.on('MessageSoftDeleted', (deleteInfo: any) => {
                   if (deleteInfo.messageId) {
                     const updatedMessages = this.messages$.value.map(m => {
@@ -105,7 +110,7 @@ export class GroupMessagesApiService {
                   const updatedMessages = this.messages$.value.filter(m => m.id !== messageId);
                   this.messages$.next(updatedMessages);
                 });
-                    
+              
                 connection.on('MessageReplied', (replyData: any) => {
                   if (replyData.groupId === this.currentGroupId) {
                     const currentMessages = this.messages$.value;
@@ -126,7 +131,7 @@ export class GroupMessagesApiService {
                     }
                   }
                 });
-                    
+              
                 connection.on('UserInfoChanged', (userInfo: any) => {
                   const normalizedUserInfo = {
                     NewUserName: userInfo.NewUserName || userInfo.newUserName,
@@ -136,14 +141,14 @@ export class GroupMessagesApiService {
                   };
                   this.handleUserInfoChanged(normalizedUserInfo);
                 });
-                    
+              
                 connection.on('UserInfoDeleted', (userInfo: any) => {
                   const userName = userInfo.UserName || userInfo.userName || userInfo.userInfo?.userName;
                   this.handleUserInfoDeleted(userName);
                 });  
                     
                 this.listenersSetup = true;
-  }
+              }
 
   async decryptMessageContent(
     groupId: string,
@@ -429,15 +434,6 @@ export class GroupMessagesApiService {
     }
     
     return hasState;
-  }
-
-  private async encryptMessageContent(groupId: string, content: string): Promise<{
-    ciphertext: string;
-    nonce: string;
-    senderKeyId: string;
-    chainIndex: number;
-  }> {
-    return await this.e2eeService.encryptGroupMessage(groupId, content);
   }
 
   private handleUserInfoDeleted(userName: string): void {
@@ -790,12 +786,94 @@ export class GroupMessagesApiService {
 
   async replyToMessage(messageId: string, content: string, groupId: string, memberIds: string[]) {
     try {
-      const result = await this.sendMessage(groupId, content, memberIds);
-      
+      if (!this.currentUserId) {
+        throw new Error('Current user ID not set');
+      }
+  
+      if (!this.hasGroupE2EESession(groupId)) {
+        await this.initializeGroupE2EE(groupId, memberIds);
+      }
+  
       const connection = await this.ensureConnection();
-      await connection.invoke('ReplyForMessageAsync', messageId, result.content, groupId);
       
-      return result;
+      const encrypted = await this.e2eeService.encryptMessageWithHistory(
+        groupId,
+        content
+      );
+  
+      const allMemberIds = [...new Set([...memberIds, this.currentUserId])];
+      const allMemberKeys = await Promise.all(
+        allMemberIds.map(memberId => 
+          firstValueFrom(
+            this.http.get<{ key: string }>(`${this.API_URL}/users/nickName/${memberId}`)
+          )
+        )
+      );
+  
+      const memberMessageKeys = allMemberIds.map((memberId, index) => {
+        const memberPublicKey = this.e2eeService.fromBase64(allMemberKeys[index].key);
+        
+        const messageKey = this.e2eeService.exportMessageKeyForUser(
+          groupId, 
+          memberPublicKey
+        );
+  
+        if (!messageKey) {
+          throw new Error(`Failed to export message key for member ${memberId}`);
+        }
+  
+        return {
+          userId: memberId,
+          encryptedKey: messageKey.encryptedKey,
+          ephemeralPublicKey: messageKey.ephemeralPublicKey,
+          chainKeySnapshot: messageKey.chainKeySnapshot,
+          keyIndex: messageKey.messageNumber
+        };
+      });
+  
+      const encryptedMessageData = {
+        ciphertext: encrypted.ciphertext,
+        ephemeralKey: encrypted.ephemeralKey,
+        nonce: encrypted.nonce,
+        messageNumber: encrypted.messageNumber,
+        previousChainN: encrypted.previousChainN,
+        ratchetId: encrypted.ratchetId
+      };
+  
+      const encryptedPayload = JSON.stringify(encryptedMessageData);
+
+      const signalRResponse = await connection.invoke(
+        'ReplyForMessageAsync',
+        messageId,
+        encryptedPayload,
+        groupId
+      );
+  
+      let newMessageId: string;
+      
+      if (typeof signalRResponse === 'string') {
+        newMessageId = signalRResponse;
+      } else if (signalRResponse && typeof signalRResponse === 'object') {
+        newMessageId = (signalRResponse as any).messageId || 
+                       (signalRResponse as any).id ||
+                       JSON.stringify(signalRResponse);
+      } else {
+        throw new Error(`Invalid messageId from SignalR: ${typeof signalRResponse}`);
+      }
+  
+      await new Promise(resolve => setTimeout(resolve, 100));
+  
+      await this.saveGroupMessageToHistory(
+        newMessageId,
+        groupId,
+        this.currentUserId,
+        memberIds[0],
+        encryptedMessageData,
+        memberMessageKeys
+      );
+  
+      return { messageId: newMessageId, content: encryptedPayload };
+  
     } catch (error) {
       throw error;
     }

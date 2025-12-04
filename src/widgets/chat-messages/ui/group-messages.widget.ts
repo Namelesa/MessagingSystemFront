@@ -79,7 +79,26 @@ export class GroupMessagesWidget extends BaseChatMessagesWidget<GroupMessage>
   private async performDecryption(msg: GroupMessage): Promise<void> {
     const currentContent = msg.content;
     const messageId = msg.id;
-
+  
+    try {
+      const parsed = JSON.parse(currentContent);
+      if (parsed.hasOwnProperty('text') || parsed.hasOwnProperty('files')) {
+        const index = this.messages.findIndex(m => m.id === messageId);
+        if (index !== -1) {
+          this.messages[index] = {
+            ...this.messages[index],
+            _decrypted: true,
+            _isDecrypting: false
+          } as any;
+          delete (this.messages[index] as any)._decryptionFailed;
+        }
+        this.messageContentCache.delete(messageId);
+        this.cdr.detectChanges();
+        return;
+      }
+    } catch (e) {
+    }
+  
     let attempts = 0;
     while (!this.messageDecryptor && attempts < 50) {
       await new Promise(resolve => setTimeout(resolve, 100));
@@ -107,7 +126,7 @@ export class GroupMessagesWidget extends BaseChatMessagesWidget<GroupMessage>
         currentContent,
         messageId
       );
-
+  
       const index = this.messages.findIndex(m => m.id === messageId);
       if (index !== -1) {
         this.messages[index] = {
@@ -122,20 +141,21 @@ export class GroupMessagesWidget extends BaseChatMessagesWidget<GroupMessage>
       }
       
       this.messageContentCache.delete(messageId);
-    
       this.cdr.detectChanges();
     
       setTimeout(() => {
         try {
           const parsed = JSON.parse(decrypted);
           if (parsed.files && parsed.files.length > 0) {
-            this.loadFilesForMessages([this.messages[index]]);
+            const messageToLoad = this.messages.find(m => m.id === messageId);
+            if (messageToLoad) {
+              this.loadFilesForMessages([messageToLoad]);
+            }
           }
         } catch (e) {}
       }, 100);
       
     } catch (error: any) {
-
       const index = this.messages.findIndex(m => m.id === messageId);
       if (index !== -1) {
         this.messages[index] = {
@@ -340,14 +360,10 @@ export class GroupMessagesWidget extends BaseChatMessagesWidget<GroupMessage>
     const messageId = msg.id || '';
     
     if (msg.isDeleted) {
-      return {
-        text: msg.content,
-        files: []
-      };
+      return { text: msg.content, files: [] };
     }
-
+  
     const currentContent = msg.content;
-    
     const isDecrypted = (msg as any)._decrypted;
     const isDecrypting = (msg as any)._isDecrypting;
     const isFailed = (msg as any)._decryptionFailed;
@@ -356,113 +372,89 @@ export class GroupMessagesWidget extends BaseChatMessagesWidget<GroupMessage>
     const needsReparse = !cachedData || 
                         cachedData.timestamp < (msg as any)._version ||
                         (msg as any).forceRefresh;
-
+  
     if (!needsReparse && cachedData) {
       return { text: cachedData.text, files: cachedData.files };
     }
-
+  
     delete (msg as any).forceRefresh;
     let result: { text: string; files: any[] };
     
     try {
       const parsed = JSON.parse(currentContent);
+
+      const isEncrypted = !!(parsed.ciphertext && 
+                            parsed.ephemeralKey && 
+                            parsed.nonce && 
+                            parsed.messageNumber !== undefined);
       
-      if (parsed.ciphertext && 
-          parsed.ephemeralKey && 
-          parsed.nonce && 
-          parsed.messageNumber !== undefined) {
-                
-        if (!isDecrypting && !isDecrypted && !isFailed) {
-          (msg as any)._isDecrypting = true;
-          
-          this.decryptMessageQueued(msg).catch(err => {
-          });
-          
-          result = {
-            text: '[Decrypting...]',
-            files: []
-          };
-          
-          return result;
-        }
-        
-        if (isDecrypting) {
-          return {
-            text: '[Decrypting...]',
-            files: []
-          };
-        }
-        
-        if (isFailed) {
-          return {
-            text: '[Decryption failed]',
-            files: []
-          };
-        }
-        
+      if (isEncrypted) {
         if (isDecrypted) {
           delete (msg as any)._decrypted;
           (msg as any)._isDecrypting = true;
-          this.decryptMessageQueued(msg).catch(err => {
-          });
-          return {
-            text: '[Retrying decryption...]',
-            files: []
+          this.decryptMessageQueued(msg);
+          return { text: '[Re-decrypting...]', files: [] };
+        }
+        
+        if (isDecrypting) {
+          return { text: '[Decrypting...]', files: [] };
+        }
+        
+        if (isFailed) {
+          return { 
+            text: currentContent.includes('[') ? currentContent : '[Decryption failed]', 
+            files: [] 
           };
         }
+        
+        (msg as any)._isDecrypting = true;
+        this.decryptMessageQueued(msg);
+        return { text: '[Decrypting...]', files: [] };
       }
       
       if (typeof parsed === 'object' && parsed !== null &&
-          !parsed.ciphertext &&
           (parsed.hasOwnProperty('text') || parsed.hasOwnProperty('files'))) {
-                
+        
         const filesWithType = (parsed.files || []).map((file: any, index: number) => {
           const cacheKey = file.uniqueFileName || file.fileName;
           const cachedUrl = this.urlCache.get(cacheKey);
-
+  
           if (cachedUrl && !this.isUrlExpired(cachedUrl.timestamp)) {
             file.url = cachedUrl.url;
           } else if (!file.url || (cachedUrl && this.isUrlExpired(cachedUrl.timestamp))) {
             file.needsLoading = true;
             this.queueFileUrlRefresh(file, messageId);
           }
-
+  
           if (!file.type && file.fileName) {
             file.type = this.detectFileType(file.fileName);
           }
-
+  
           if (!file.uniqueId) {
             file.uniqueId = file.uniqueFileName || file.url || `${file.fileName}_${Date.now()}_${index}`;
           }
-
+  
           file._version = file._version || Date.now();
-
           return file;
         });
-
+  
         result = {
           text: parsed.text || '',
           files: filesWithType
         };
       } else {
-        result = {
-          text: currentContent,
-          files: []
-        };
+        result = { text: currentContent, files: [] };
       }
     } catch (error) {
-      result = {
-        text: currentContent || '',
-        files: []
-      };
+      result = { text: currentContent || '', files: [] };
     }
-
+  
     this.messageContentCache.set(messageId, {
       ...result,
       timestamp: Date.now(),
       version: (msg as any)._version || Date.now()
     });
-
+  
     return result;
   }
 
@@ -647,68 +639,95 @@ export class GroupMessagesWidget extends BaseChatMessagesWidget<GroupMessage>
     }
   }
   
-  private async handleNewMessages(newMsgs: GroupMessage[]) {
+  private handleNewMessages(newMsgs: GroupMessage[]) {
     if (!newMsgs || newMsgs.length === 0) return;
-
-    const updatedMessages: GroupMessage[] = [];
+  
     const messagesToRemove: string[] = [];
-
-    for (const msg of newMsgs) {
+  
+    newMsgs.forEach(msg => {
       const index = this.messages.findIndex(m => m.id === msg.id);
-
+  
       if (index !== -1) {
         const existing = this.messages[index];
-    
+        
+        const existingDecrypted = (existing as any)._decrypted;
+        const existingDecrypting = (existing as any)._isDecrypting;
+        
+        const newIsEncrypted = this.isEncryptedMessage(msg);
+        const newIsDecrypted = !newIsEncrypted && this.isDecryptedMessage(msg.content);
+
+        if (existingDecrypted && newIsEncrypted) {
+          if (existing.isDeleted !== msg.isDeleted || existing.isEdited !== msg.isEdited) {
+            this.messages[index] = { 
+              ...existing, 
+              isDeleted: msg.isDeleted,
+              isEdited: msg.isEdited,
+              editTime: msg.editTime
+            };
+            this.invalidateMessageCache(msg.id!);
+            this.cdr.markForCheck();
+          }
+          return;
+        }
+        
+        if (newIsDecrypted) {
+          this.messages[index] = {
+            ...msg,
+            _decrypted: true,
+            _isDecrypting: false,
+            _version: Date.now()
+          } as any;
+          delete (this.messages[index] as any)._decryptionFailed;
+          this.invalidateMessageCache(msg.id!);
+          this.cdr.markForCheck();
+          return;
+        }
+        
         if (existing.content !== msg.content) {
           (msg as any).forceRefresh = true;
           (msg as any)._version = Date.now();
           delete (msg as any)._decrypted;
           delete (msg as any)._isDecrypting;
           delete (msg as any)._decryptionFailed;
+          
+          this.messages[index] = msg;
+          this.invalidateMessageCache(msg.id!);
+        } else {
+          this.messages[index] = {
+            ...existing,
+            ...msg,
+            _decrypted: existingDecrypted,
+            _isDecrypting: existingDecrypting,
+            _decryptionFailed: (existing as any)._decryptionFailed,
+            _version: (existing as any)._version
+          } as any;
         }
-        
-        this.messages[index] = { ...existing, ...msg };
-        this.invalidateMessageCache(msg.id!);
-        updatedMessages.push(this.messages[index]);
       } else {
         this.messages.push(msg);
-        updatedMessages.push(msg);
-      }
-    }
-
-    newMsgs.forEach(msg => {
-      if (msg.isDeleted && !this.isMyMessage(msg)) {
-        messagesToRemove.push(msg.id!);
       }
     });
-
-    const newIds = newMsgs.map(m => m.id);
-    const hardDeleted = this.messages.filter(m => !newIds.includes(m.id));
+  
+    const newIds = new Set(newMsgs.map(m => m.id));
+    const hardDeleted = this.messages.filter(m => !Array.from(newIds).includes(m.id));
     if (hardDeleted.length > 0) {
       messagesToRemove.push(...hardDeleted.map(m => m.id!));
     }
-
+  
     if (messagesToRemove.length > 0) {    
       this.messages = this.messages.filter(m => !messagesToRemove.includes(m.id!));
       messagesToRemove.forEach(id => {
         this.messageContentCache.delete(id);
       });
     }
-
+  
     this.messages.sort((a, b) => 
       new Date(a.sendTime).getTime() - new Date(b.sendTime).getTime()
     );
-
-    this.latestMessageTime = this.messages.length > 0
-      ? Math.max(...this.messages.map(m => new Date(m.sendTime).getTime()))
-      : 0;
-
+  
     this.cdr.markForCheck();
-
+  
     if (this.shouldScrollToBottom || this.isScrolledToBottom()) {
-      setTimeout(() => {
-        this.scrollToBottomBase(this.scrollContainer);
-      }, 100);
+      setTimeout(() => this.scrollToBottomBase(this.scrollContainer), 100);
     }
   }
 
@@ -797,6 +816,18 @@ export class GroupMessagesWidget extends BaseChatMessagesWidget<GroupMessage>
                 parsed.ephemeralKey && 
                 parsed.nonce && 
                 parsed.messageNumber !== undefined);
+    } catch {
+      return false;
+    }
+  }
+
+  private isDecryptedMessage(content: string): boolean {
+    try {
+      const parsed = JSON.parse(content);
+      return !!(typeof parsed === 'object' && 
+               parsed !== null &&
+               (parsed.hasOwnProperty('text') || parsed.hasOwnProperty('files')) &&
+               !parsed.ciphertext);
     } catch {
       return false;
     }
