@@ -1,0 +1,70 @@
+<div *ngIf="isVisible" class="fixed inset-0 z-50 bg-black/95 backdrop-blur-sm flex items-center justify-center animate-fade-in" (click)="close()">
+  
+  <button class="absolute top-6 right-6 z-[60] text-white hover:text-gray-300 transition-all duration-300 hover:scale-110 bg-black/40 rounded-full p-3"
+          (click)="close()">
+    ✕
+  </button>
+
+  <button *ngIf="images.length > 1 && currentIndex > 0" (click)="previousImage()" class="absolute left-6 top-1/2 -translate-y-1/2 z-[60] text-white p-3">←</button>
+  <button *ngIf="images.length > 1 && currentIndex < images.length - 1" (click)="nextImage()" class="absolute right-6 top-1/2 -translate-y-1/2 z-[60] text-white p-3">→</button>
+
+  <div class="relative max-w-full max-h-full flex items-center justify-center p-4" (click)="$event.stopPropagation()">
+    <img *ngIf="isImageFile()"
+         [src]="currentImage?.url"
+         [alt]="currentImage?.fileName"
+         class="max-w-full max-h-full object-contain rounded-lg shadow-lg"
+         [class]="getImageCursorClass()"
+         [style.transform]="getImageTransform()"
+         (click)="toggleZoom($event)"
+         (mousedown)="onMouseDown($event)"
+         (mousemove)="onMouseMove($event)"
+         (mouseup)="onMouseUp()"
+         (mouseleave)="onMouseUp()"
+         draggable="false">
+
+    <video *ngIf="isVideoFile()"
+           [src]="currentImage?.url"
+           controls
+           class="max-w-full max-h-[90vh] rounded-lg shadow-lg"
+           preload="metadata"
+           autoplay
+           muted
+           playsinline
+           webkit-playsinline
+           controlsList="nodownload"
+           style="max-width: 100vw; max-height: 90vh;">
+      Your browser does not support the video tag.
+    </video>
+
+    <div *ngIf="isAudioFile()" class="flex flex-col items-center justify-center p-8 text-white text-center">
+      <svg class="w-24 h-24 mb-6 opacity-50" fill="currentColor" viewBox="0 0 24 24">
+        <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/>
+      </svg>
+      <audio controls class="w-full max-w-md mb-6" autoplay>
+        <source [src]="currentImage?.url" [type]="currentImage?.type" />
+        Your browser does not support the audio element.
+      </audio>
+      <button class="bg-blue-600 hover:bg-blue-700 px-6 py-2 rounded-lg transition-colors"
+              (click)="downloadCurrent()">
+        Download
+      </button>
+    </div>
+
+    <div *ngIf="!isImageFile() && !isVideoFile() && !isAudioFile()" 
+         class="flex flex-col items-center justify-center p-8 text-white text-center">
+      <svg class="w-24 h-24 mb-6 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+      </svg>
+      <p class="text-gray-300 mb-6">This file cannot be previewed</p>
+      <button class="bg-blue-600 hover:bg-blue-700 px-6 py-2 rounded-lg transition-colors"
+              (click)="downloadCurrent()">
+        Download
+      </button>
+    </div>
+  </div>
+
+  <div class="absolute bottom-6 right-6 flex gap-3 z-[60]">
+    <button class="text-white bg-black/50 rounded-full p-3" (click)="downloadCurrent()">⤓</button>
+  </div>
+
+</div>

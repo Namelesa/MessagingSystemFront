@@ -1,0 +1,329 @@
+<app-chat-layout
+  [selectedChat]="displayChatName"
+  [selectedChatImage]="displayChatImage"
+  (fileDrop)="onFileDrop($event)"
+  (dragStateChange)="isDragOver = $event"
+>
+  <app-oto-chat-list
+    chat-sidebar
+    [accessToken]="accessToken || ''"
+    [user$]="user$"
+    (userSearchQueryChange)="onUserSearchQueryChange($event)"
+    (userSearchFocus)="onUserSearchFocus()"
+    (userSearchClear)="onUserSearchClear()"
+    [currentUserNickName]="currentUserNickName"
+    [selectedNickname]="selectedOtoChat?.nickName"
+    (chatSelected)="onOtoChatSelected($event)"
+    (foundedUser)="onFoundedUser($event)"
+    (userInfoUpdated)="onUserInfoUpdated($event)"
+    (selectedChatUserUpdated)="onSelectedChatUserUpdated($event)"
+    (userDeleted)="onUserDeleted($event)"
+    (chatClosedDueToUserDeletion)="onChatClosedDueToUserDeletion()"
+  ></app-oto-chat-list>
+
+  <ng-container chat-content>
+    <ng-container *ngIf="selectedOtoChat; else noChatSelected">
+      <div class="flex flex-col h-full">
+        <div class="flex-1 overflow-hidden">
+          <widgets-oto-chat-messages 
+            #messagesComponent
+            [loadHistory]="loadHistoryMethod"
+            [messageDecryptor]="decryptMessageMethod.bind(this)"
+            [messageDecryptor]="decryptMessageMethod"
+            [chatNickName]="selectedOtoChat.nickName" 
+            [currentUserNickName]="currentUserNickName"
+            [messages$]="otoChatApi.messages$"
+            [userInfoDeleted$]="otoChatApi.userInfoDeleted$"
+            [loadHistory]="otoChatApi.loadChatHistory.bind(otoChatApi)"
+            (editMessage)="onEditMessage($event)"
+            (deleteMessage)="onDeleteMessage($event)"
+            (replyToMessage)="onReplyToMessage($event)"
+            (chatUserDeleted)="onChatUserDeletedFromMessages()">
+          </widgets-oto-chat-messages>
+        </div>
+        
+        <shared-send-message-area
+          [editingMessage]="editingMessage"
+          [replyingToMessage]="replyingToMessage"
+          [maxFileSize]="fileUploadStateService.getMaxFileSize()"
+          (send)="onSendMessage($event)"
+          (editComplete)="onEditComplete($event)"
+          (editFile)="onEditFile($event)"
+          (editCancel)="onEditCancel()"
+          (replyCancel)="onCancelReply()"
+          (fileUpload)="onFileUpload($event)"
+          (fileValidationError)="onFileValidationError($event)"
+          [editFileUploading]="isEditFileUploading"
+          [(draftText)]="draftText"
+        ></shared-send-message-area>
+      </div>
+    </ng-container>
+    
+    <ng-template #noChatSelected>
+    </ng-template>
+  </ng-container>
+</app-chat-layout>
+
+<div 
+  *ngIf="(uploadState$ | async)?.showErrorNotification && (uploadState$ | async)?.fileValidationErrors!.length! > 0"
+  class="fixed top-4 right-4 z-50 max-w-md"
+>
+</div>
+
+<div 
+  *ngIf="showUserDeletedNotification"
+  class="fixed top-4 right-4 z-50 max-w-md"
+>
+  <div class="border rounded-lg p-4 shadow-lg"
+       style="background-color: rgba(234, 179, 8, 0.1); border-color: rgba(234, 179, 8, 0.3);">
+    <div class="flex items-start">
+      <div class="flex-shrink-0">
+        <svg class="w-5 h-5" style="color: #eab308;" fill="currentColor" viewBox="0 0 20 20">
+          <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+        </svg>
+      </div>
+      <div class="ml-3 flex-1">
+        <h3 class="text-sm font-medium" style="color: #eab308;">
+          {{'otoPage.userDeleted' | translate}}
+        </h3>
+        <p class="mt-1 text-sm" style="color: #ca8a04;">
+          {{'otoPage.chatClosed' | translate}}
+        </p>
+        <div class="mt-3">
+          <button
+            (click)="showUserDeletedNotification = false"
+            class="text-sm px-3 py-1 rounded-md transition-colors"
+            style="background-color: rgba(234, 179, 8, 0.2); color: #eab308;"
+          >
+          {{'otoPage.dissmiss' | translate}}
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div 
+  *ngIf="isDeleteModalOpen" 
+  class="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50"
+  (click)="closeDeleteModal()"
+>
+  <div 
+    class="rounded-2xl p-6 max-w-sm w-full mx-4 shadow-2xl"
+    style="background-color: var(--bg-secondary);"
+    (click)="$event.stopPropagation()"
+  >
+    <div class="flex items-center mb-4">
+      <div class="relative mr-3">
+        <img 
+          [src]="displayChatImage || 'assets/default-avatar.png'" 
+          [alt]="displayChatName"
+          class="w-12 h-12 rounded-full object-cover border-2"
+          style="border-color: var(--border-color);"
+        >
+      </div>
+      <h3 class="text-lg font-semibold" style="color: var(--text-primary);">
+        {{'otoPage.deleteMessage' | translate}}
+      </h3>
+    </div>
+    
+    <p class="mb-4" style="color: var(--text-secondary);">
+      {{'otoPage.deleteMessageSubtitle' | translate}}
+    </p>
+    
+    <label class="flex items-center mb-6 cursor-pointer">
+      <input 
+        type="checkbox" 
+        [(ngModel)]="deleteForBoth"
+        class="w-4 h-4 rounded focus:ring-2"
+        style="accent-color: var(--accent);"
+      >
+      <span class="ml-3 text-sm" style="color: var(--text-secondary);">
+        {{'otoPage.both' | translate}}
+      </span>
+    </label>
+    
+    <div class="flex justify-end space-x-3">
+      <button
+        (click)="closeDeleteModal()"
+        class="px-4 py-2 text-sm font-medium transition-colors"
+        style="color: var(--accent);"
+      >
+      {{'otoPage.cancel' | translate}}
+      </button>
+      <button
+        (click)="onConfirmDelete()"
+        class="px-4 py-2 text-sm font-medium transition-colors"
+        style="color: #ef4444;"
+      >
+      {{'otoPage.delete' | translate}}
+      </button>
+    </div>
+  </div>
+</div>
+
+<file-drop-overlay 
+  *ngIf="selectedOtoChat && isDragOver"
+  [isVisible]="isDragOver">
+</file-drop-overlay>
+
+<div 
+  *ngIf="(uploadState$ | async)?.isUploadModalOpen" 
+  class="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50"
+  (click)="closeUploadModal()"
+>
+
+<app-toast></app-toast>
+  <div 
+    class="rounded-2xl p-6 w-full max-w-lg mx-4 shadow-2xl relative"
+    style="background-color: var(--bg-secondary);"
+    (click)="$event.stopPropagation()"
+    fileDrop
+    (fileDrop)="onFileDrop($event)"
+    (dragStateChange)="isDragOver = $event"
+  >
+
+    <div class="flex items-center justify-between mb-4">
+      <h3 class="text-lg font-semibold" style="color: var(--text-primary);">
+        {{'otoPage.send' | translate}} {{(uploadState$ | async)?.uploadItems!.length}} {{'otoPage.file' | translate}} {{(uploadState$ | async)?.uploadItems!.length! > 1 ? 's' : ''}}
+      </h3>
+    </div>
+
+    <div class="space-y-0.5 max-h-64 overflow-auto pr-2 mb-4">
+      <div *ngFor="let item of (uploadState$ | async)?.uploadItems; let i = index" class="flex items-start gap-3 p-3 rounded-lg">
+        <div class="w-8 h-8 rounded-full flex items-center justify-center text-white flex-shrink-0"
+             style="background-color: var(--accent);">
+             <ng-container *ngIf="fileUploadStateService.isImageFile(item.file); else fileIcon">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/>
+            </svg>
+          </ng-container>
+          <ng-template #fileIcon>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/>
+            </svg>
+          </ng-template>
+        </div>
+        
+        <div class="flex-1 min-w-0">
+          <div class="text-sm font-medium truncate" [title]="item.name"
+               style="color: var(--text-primary);">
+            {{ item.name }}
+          </div>
+          <div class="text-xs mt-1" style="color: var(--text-secondary);">
+            {{ fileUploadStateService.formatFileSize(item.size) }}
+          </div>
+          
+          <div class="w-full h-2 rounded-full mt-2 overflow-hidden"
+               style="background-color: var(--bg-tertiary);">
+            <div 
+              class="h-2 transition-all duration-300 ease-out" 
+              style="background-color: var(--accent);"
+              [style.width.%]="item.progress"
+            ></div>
+          </div>
+          
+          <div class="mt-1 text-xs">
+            <span *ngIf="item.progress === 100 && !item.error" style="color: #22c55e;">
+              ✓ {{'otoPage.uploaded' | translate}}
+            </span>
+            <span *ngIf="item.progress > 0 && item.progress < 100 && !item.error" style="color: var(--accent);">
+              {{'otoPage.uploading' | translate}}%
+            </span>
+            <span *ngIf="item.error" style="color: #ef4444;" [title]="item.error">
+              ✗ {{'otoPage.error' | translate}}: {{ item.error }}
+            </span>
+          </div>
+        </div>
+        
+        <button 
+          (click)="removeFileFromList(i)"
+          class="w-6 h-6 flex items-center justify-center transition-colors flex-shrink-0"
+          style="color: var(--text-secondary);"
+          title="Remove file"
+          [disabled]="(uploadState$ | async)?.isUploading"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M18 6L6 18M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <div class="flex items-center gap-3 w-full">
+      <div class="flex-1 relative">
+        <input 
+          type="text" 
+          [ngModel]="(uploadState$ | async)?.uploadCaption"
+          (ngModelChange)="fileUploadStateService.setUploadCaption($event)"
+          [placeholder]="'otoPage.caption' | translate"
+          class="w-full h-12 py-3 px-4 border rounded-3xl resize-none text-sm outline-none disabled:opacity-50 transition-all duration-200"
+          style="background-color: var(--bg-tertiary); border-color: var(--border-color); color: var(--text-primary);"
+          (click)="$event.stopPropagation()"       
+          (mousedown)="$event.stopPropagation()"    
+          (keydown)="onUploadEnter($event)" 
+        />
+      </div>
+
+      <input 
+        #modalFileInput
+        type="file" 
+        multiple 
+        (change)="onModalFileInputChange($event)"
+        [disabled]="(uploadState$ | async)?.isUploading"
+        class="hidden"
+      >
+      
+      <button
+        (click)="modalFileInput.click()"
+        [disabled]="(uploadState$ | async)?.isUploading"
+        class="flex-shrink-0 w-10 h-10 hover:scale-105 rounded-full flex items-center justify-center transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+        style="color: var(--text-secondary);"
+        type="button"
+        title="Add more files"
+      >
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66L9.64 16.2a2 2 0 0 1-2.83-2.83l8.49-8.49"/>
+        </svg>
+      </button>
+
+      <button
+        class="flex-shrink-0 w-10 h-10 text-white rounded-full flex items-center justify-center transition-colors disabled:opacity-50"
+        style="background-color: var(--accent);"
+        type="button"
+        (click)="startUploadAndSend()"
+        [disabled]="(uploadState$ | async)?.isUploading || (uploadState$ | async)?.uploadItems!.length === 0"
+        [title]="(uploadState$ | async)?.isUploading ? 'Uploading...' : 'Send files'"
+      >
+        <svg *ngIf="!(uploadState$ | async)?.isUploading" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M22 2L11 13"/>
+          <path d="M22 2L15 22L11 13L2 9L22 2Z"/>
+        </svg>
+        
+        <svg *ngIf="!(uploadState$ | async)?.isUploading" width="20" height="20" viewBox="0 0 24 24" fill="none" class="animate-spin">
+          <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" class="opacity-25"/>
+          <path fill="currentColor" class="opacity-75" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"/>
+        </svg>
+      </button>
+    </div>
+
+    <div 
+      *ngIf="isDragOver" 
+      class="absolute inset-0 bg-opacity-10 border-2 border-dashed rounded-2xl flex items-center justify-center pointer-events-none"
+      style="background-color: var(--accent); border-color: var(--accent);"
+    >
+      <div class="px-4 py-2 rounded-lg shadow-lg"
+           style="background-color: var(--bg-secondary);">
+        <div class="text-lg font-medium flex items-center gap-2"
+             style="color: var(--accent);">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="7,10 12,15 17,10"/>
+            <line x1="12" y1="15" x2="12" y2="3"/>
+          </svg>
+          {{'otoPage.drop' | translate}}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

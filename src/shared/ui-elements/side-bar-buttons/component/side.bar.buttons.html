@@ -1,19 +1,19 @@
 <a
   [routerLink]="route"
-  routerLinkActive="!bg-gray-400 !dark:bg-gray-700"
+  routerLinkActive="bg-theme-active text-theme-primary"
   [routerLinkActiveOptions]="{ exact: true }"
   class="w-12 h-12 flex items-center justify-center transition-colors
-         hover:bg-gray-300 dark:hover:bg-gray-600"
+         hover:bg-theme-tertiary active:brightness-90"
   [ngClass]="{
-    'rounded-xl bg-gray-200 dark:bg-gray-950': !isAvatar,
-    'rounded-full bg-blue-500 text-white dark:bg-blue-600': isAvatar && !avatarUrl,
+    'rounded-xl bg-theme-secondary text-theme-primary': !isAvatar,
+    'rounded-full bg-theme-accent text-theme-primary': isAvatar && !avatarUrl,
     'rounded-full overflow-hidden': isAvatar && avatarUrl
   }"
 >
   <ng-container *ngIf="!isAvatar">
     <ng-container *ngIf="icon">
-        <lucide-icon [name]="icon" size="20"></lucide-icon>
-      </ng-container>
+      <lucide-icon [name]="icon" size="20" class="text-theme-primary"></lucide-icon>
+    </ng-container>
   </ng-container>
 
   <ng-container *ngIf="isAvatar">
@@ -23,8 +23,7 @@
       [alt]="avatarText"
       class="w-full h-full object-cover"
     />
-
-    <span *ngIf="!avatarUrl" class="font-bold text-lg">
+    <span *ngIf="!avatarUrl" class="font-bold text-lg text-theme-primary">
       {{ avatarText }}
     </span>
   </ng-container>

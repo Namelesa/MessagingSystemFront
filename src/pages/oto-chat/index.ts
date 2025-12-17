@@ -1,4 +1,3 @@
-export * from './ui/oto-chat-page';
-export * from './ui/oto-chat.list.component';
-export * from './api/oto-chat-hub.api';
-export * from './api/oto-messages.api';
+export * from './ui/page/oto-chat-page';
+export * from './ui/list/oto-chat.list.component';
+export * from './model/chat-facade';

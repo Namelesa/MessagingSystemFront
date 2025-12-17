@@ -1,14 +1,17 @@
 <app-toast></app-toast>
 
-<div *ngIf="isLoading" class="text-center text-gray-600 dark:text-gray-300 transition-colors duration-300">
-  Loading...
+<div *ngIf="store.isLoading" class="text-center transition-colors duration-300"
+     style="color: var(--text-secondary);">
+  {{ 'profile.loading' | translate }}
 </div>
-<div *ngIf="hasError" class="text-center text-red-600 dark:text-red-400 transition-colors duration-300">
-  Error loading profile
+<div *ngIf="store.hasError" class="text-center transition-colors duration-300"
+     style="color: #ef4444;">
+  {{ 'profile.errorLoading' | translate }}
 </div>
 
-<div *ngIf="userProfile && !isLoading && !hasError"
-     class="px-4 py-8 dark:bg-gray-900 text-gray-900 dark:text-white transition-colors duration-300">
+<div *ngIf="store.userProfile && !store.isLoading && !store.hasError"
+     class="px-4 py-8 transition-colors duration-300"
+     style="background-color: var(--bg-secondary); color: var(--text-primary);">
 
   <div class="max-w-3xl mx-auto">
 
@@ -16,27 +19,28 @@
       <div class="relative mb-6">
         <div class="relative w-32 h-32 rounded-full overflow-hidden"
              [ngClass]="{
-               'ring-2 ring-red-400': hasFieldError('imageFile'),
-               'ring-2 ring-green-400': isFieldValid('imageFile')
+               'ring-2 ring-red-400': store.hasFieldError('imageFile'),
+               'ring-2 ring-green-400': store.isFieldValid('imageFile')
              }">
           <img
-            *ngIf="userProfile.image; else initials"
-            [src]="userProfile.image"
+            *ngIf="store.userProfile.image; else initials"
+            [src]="store.userProfile.image"
             alt="Avatar"
             class="object-cover w-full h-full rounded-full"
           />
           <ng-template #initials>
             <div
-              class="w-full h-full flex items-center justify-center bg-blue-500 dark:bg-blue-600 text-white text-4xl font-bold rounded-full"
+              class="w-full h-full flex items-center justify-center text-white text-4xl font-bold rounded-full"
+              style="background-color: var(--accent);"
             >
-              {{ userProfile.nickName }}
+              {{ store.userProfile.nickName }}
             </div>
           </ng-template>
         
           <label
-            *ngIf="isEditing"
+            *ngIf="store.isEditing"
             for="avatarInput"
-            class="absolute inset-0 bg-black bg-opacity-40 dark:bg-opacity-60 rounded-full flex flex-col items-center justify-center
+            class="absolute inset-0 bg-black bg-opacity-40 rounded-full flex flex-col items-center justify-center
                    text-white opacity-0 hover:opacity-100 cursor-pointer transition-opacity duration-300"
           >
             <svg
@@ -50,59 +54,65 @@
               <path stroke-linecap="round" stroke-linejoin="round" d="M3 7h4l3-3h4l3 3h4v12H3V7z" />
               <path stroke-linecap="round" stroke-linejoin="round" d="M16 13a4 4 0 01-8 0" />
             </svg>
-            <span class="text-xs select-none">Change</span>
+            <span class="text-xs select-none">{{ 'profile.change' | translate }}</span>
           </label>
           <input
             type="file"
             id="avatarInput"
-            (change)="onAvatarChange($event)"
+            (change)="store.updateAvatar($event)"
             accept="image/*"
             class="hidden"
           />
         </div>
         
-        <div *ngIf="hasFieldError('imageFile')" 
+        <div *ngIf="store.hasFieldError('imageFile')" 
              class="absolute -top-2 -right-2 group">
           <div class="w-6 h-6 bg-red-500 rounded-full flex items-center justify-center cursor-help">
             <span class="text-white text-xs">!</span>
           </div>
           <div class="absolute bottom-full right-0 mb-2 px-2 py-1 bg-red-500 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-10">
-            <div *ngFor="let error of getFieldErrors('imageFile')">{{ error }}</div>
+            <div *ngFor="let error of store.getFieldErrors('imageFile')">{{ error }}</div>
           </div>
         </div>
       </div>
-      <p class="text-gray-700 dark:text-gray-300 mb-2 transition-colors duration-300">
-        {{ userProfile.nickName }}
+      <p class="mb-2 transition-colors duration-300"
+         style="color: var(--text-primary);">
+        {{ store.userProfile.nickName }}
       </p>
-      <p class="text-green-500 dark:text-green-400 text-sm font-medium transition-colors duration-300">
-        Online
+      <p class="text-sm font-medium transition-colors duration-300"
+         style="color: #22c55e;">
+        {{ 'profile.online' | translate }}
       </p>
     </div>
 
     <div
-      class="relative max-w-lg mx-auto px-6 mt-4 bg-white dark:bg-gray-800 rounded-2xl p-6 shadow transition-colors duration-300">
+      class="relative max-w-lg mx-auto px-6 mt-4 rounded-2xl p-6 shadow transition-colors duration-300"
+      style="background-color: var(--bg-primary);">
 
       <h3
-        class="text-xl font-medium flex items-center gap-3 mb-2 text-gray-800 dark:text-white select-none transition-colors duration-300">
-        📋 Personal Information
+        class="text-xl font-medium flex items-center gap-3 mb-2 select-none transition-colors duration-300"
+        style="color: var(--text-primary);">
+        📋 {{ 'profile.personalInfo' | translate }}
         <button
           type="button"
-          (click)="toggleEdit()"
+          (click)="store.toggleEdit()"
           aria-label="Edit profile"
-          *ngIf="!isEditing"
-          class="ml-auto text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-colors duration-200"
+          *ngIf="!store.isEditing"
+          class="ml-auto transition-colors duration-200"
+          style="color: var(--text-secondary);"
         >
         ✏️
         </button>
       </h3>
 
-      <div *ngIf="isEditing"
+      <div *ngIf="store.isEditing"
            class="absolute top-4 right-4 flex gap-2">
         <button
           type="button"
-          (click)="saveChanges()"
+          (click)="store.saveChanges()"
           aria-label="Save"
-          class="text-green-600 hover:text-green-800 dark:text-green-400 dark:hover:text-green-600 transition-colors duration-200"
+          class="transition-colors duration-200"
+          style="color: #22c55e;"
         >
           <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
                stroke="currentColor" stroke-width="2">
@@ -111,9 +121,10 @@
         </button>
         <button
           type="button"
-          (click)="cancelEdit()"
+          (click)="store.cancelEdit()"
           aria-label="Cancel"
-          class="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-600 transition-colors duration-200"
+          class="transition-colors duration-200"
+          style="color: #ef4444;"
         >
           <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
                stroke="currentColor" stroke-width="2">
@@ -125,106 +136,115 @@
       <div class="space-y-6">
 
         <div class="flex items-center">
-          <span class="text-gray-500 dark:text-gray-400 w-24 transition-colors duration-300">First Name</span>
+          <span class="w-24 transition-colors duration-300"
+                style="color: var(--text-secondary);">{{ 'user.firstName' | translate }}</span>
           <div class="flex flex-1 justify-end">
-            <ng-container *ngIf="isEditing; else firstNameView">
+            <ng-container *ngIf="store.isEditing; else firstNameView">
               <app-input
-                [ngModel]="editableProfile.firstName"
-                (ngModelChange)="onFieldChange('firstName', $event)"
-                (blur)="onFieldBlur('firstName')"
+                [ngModel]="store.editableProfile.firstName"
+                (ngModelChange)="store.updateField('firstName', $event)"
+                (blur)="store.onFieldBlur('firstName')"
                 name="firstName"
                 [required]="true"
-                placeholder="First Name"
-                [errors]="getFieldErrors('firstName')"
+                [placeholder]="'user.firstName' | translate"
+                [errors]="store.getFieldErrors('firstName')"
                 class="max-w-xs"
               ></app-input>          
             </ng-container>
             <ng-template #firstNameView>
-              <span class="text-gray-900 dark:text-white transition-colors duration-300">
-                {{ userProfile.firstName }}
+              <span class="transition-colors duration-300"
+                    style="color: var(--text-primary);">
+                {{ store.userProfile.firstName }}
               </span>
             </ng-template>
           </div>
         </div>
 
         <div class="flex items-center">
-          <span class="text-gray-500 dark:text-gray-400 w-24 transition-colors duration-300">Last Name</span>
+          <span class="w-24 transition-colors duration-300"
+                style="color: var(--text-secondary);">{{ 'user.lastName' | translate }}</span>
           <div class="flex flex-1 justify-end">
-            <ng-container *ngIf="isEditing; else lastNameView">
+            <ng-container *ngIf="store.isEditing; else lastNameView">
               <app-input
-                [ngModel]="editableProfile.lastName"
-                (ngModelChange)="onFieldChange('lastName', $event)"
-                (blur)="onFieldBlur('lastName')"
+                [ngModel]="store.editableProfile.lastName"
+                (ngModelChange)="store.updateField('lastName', $event)"
+                (blur)="store.onFieldBlur('lastName')"
                 name="lastName"
                 [required]="true"
-                placeholder="Last Name"
-                [errors]="getFieldErrors('lastName')"
+                [placeholder]="'user.lastName' | translate"
+                [errors]="store.getFieldErrors('lastName')"
                 class="max-w-xs"
               ></app-input>         
             </ng-container>
             <ng-template #lastNameView>
-              <span class="text-gray-900 dark:text-white transition-colors duration-300">
-                {{ userProfile.lastName }}
+              <span class="transition-colors duration-300"
+                    style="color: var(--text-primary);">
+                {{ store.userProfile.lastName }}
               </span>
             </ng-template>
           </div>
         </div>
 
         <div class="flex items-center">
-          <span class="text-gray-500 dark:text-gray-400 w-24 transition-colors duration-300">NickName</span>
+          <span class="w-24 transition-colors duration-300"
+                style="color: var(--text-secondary);">{{ 'user.nickName' | translate }}</span>
           <div class="flex flex-1 justify-end">
-            <ng-container *ngIf="isEditing; else nickNameView">
+            <ng-container *ngIf="store.isEditing; else nickNameView">
               <app-input
-                [ngModel]="editableProfile.nickName"
-                (ngModelChange)="onFieldChange('nickName', $event)"
-                (blur)="onFieldBlur('nickName')"
+                [ngModel]="store.editableProfile.nickName"
+                (ngModelChange)="store.updateField('nickName', $event)"
+                (blur)="store.onFieldBlur('nickName')"
                 name="nickName"
                 [required]="true"
-                placeholder="NickName"
-                [errors]="getFieldErrors('nickName')"
+                [placeholder]="'user.nickName' | translate"
+                [errors]="store.getFieldErrors('nickName')"
                 class="max-w-xs"
               ></app-input>
             </ng-container>
             <ng-template #nickNameView>
-              <span class="text-gray-900 dark:text-white transition-colors duration-300">
-                {{ userProfile.nickName }}
+              <span class="transition-colors duration-300"
+                    style="color: var(--text-primary);">
+                {{ store.userProfile.nickName }}
               </span>
             </ng-template>
           </div>
         </div>
 
         <div class="flex items-center">
-          <span class="text-gray-500 dark:text-gray-400 w-24 transition-colors duration-300">Email</span>
+          <span class="w-24 transition-colors duration-300"
+                style="color: var(--text-secondary);">{{ 'user.email' | translate }}</span>
           <div class="flex flex-1 justify-end">
-            <ng-container *ngIf="isEditing; else emailView">
+            <ng-container *ngIf="store.isEditing; else emailView">
               <app-input
-                [ngModel]="editableProfile.email"
-                (ngModelChange)="onFieldChange('email', $event)"
-                (blur)="onFieldBlur('email')"
+                [ngModel]="store.editableProfile.email"
+                (ngModelChange)="store.updateField('email', $event)"
+                (blur)="store.onFieldBlur('email')"
                 name="email"
                 [required]="true"
-                placeholder="Email"
-                [errors]="getFieldErrors('email')"
+                [placeholder]="'user.email' | translate"
+                [errors]="store.getFieldErrors('email')"
                 type="email"
                 class="max-w-xs"
               ></app-input>
             </ng-container>
             <ng-template #emailView>
-              <span class="text-gray-900 dark:text-white transition-colors duration-300">
-                {{ userProfile.email }}
+              <span class="transition-colors duration-300"
+                    style="color: var(--text-primary);">
+                {{ store.userProfile.email }}
               </span>
             </ng-template>
           </div>
         </div>
 
-        <ng-container *ngIf="!isEditing">
+        <ng-container *ngIf="!store.isEditing">
           <div class="pt-6">
             <button
               type="button"
-              (click)="onDeleteAccount()"
-              class="w-full py-3 text-sm font-semibold rounded-xl border border-red-600 text-red-600 
-                     hover:bg-red-600 hover:text-white transition-colors duration-300 dark:border-red-500 dark:text-red-400 dark:hover:bg-red-500">
-              🗑️ Delete Account
+              (click)="store.showDeleteConfirmation()"
+              class="w-full py-3 text-sm font-semibold rounded-xl border transition-colors duration-300"
+              style="border-color: #ef4444; color: #ef4444;"
+            >
+              🗑️ {{ 'profile.deleteAccount' | translate }}
             </button>
           </div>
         </ng-container>        
@@ -233,43 +253,47 @@
   </div>
 </div>
 
-<div *ngIf="showDeleteModal" class="fixed inset-0 z-50 flex items-center justify-center">
+<div *ngIf="store.showDeleteModal" class="fixed inset-0 z-50 flex items-center justify-center">
   <div class="absolute inset-0 bg-black bg-opacity-50 backdrop-blur-sm transition-opacity duration-300" 
-       (click)="cancelDelete()"></div>
+       (click)="store.cancelDelete()"></div>
   
-  <div class="relative bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-md w-full mx-4 p-6 transform transition-all duration-300 scale-100 animate-in fade-in-0 zoom-in-95">
-    <div class="flex items-center justify-center w-16 h-16 mx-auto mb-6 bg-red-100 dark:bg-red-900/20 rounded-full">
-      <svg class="w-8 h-8 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+  <div class="relative rounded-2xl shadow-2xl max-w-md w-full mx-4 p-6 transform transition-all duration-300 scale-100 animate-in fade-in-0 zoom-in-95"
+       style="background-color: var(--bg-tertiary);">
+    <div class="flex items-center justify-center w-16 h-16 mx-auto mb-6 rounded-full"
+         style="background-color: rgba(239, 68, 68, 0.1);">
+      <svg class="w-8 h-8" style="color: #ef4444;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
               d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
       </svg>
     </div>
     
     <div class="text-center mb-6">
-      <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-        Delete Account
+      <h3 class="text-xl font-semibold mb-2"
+          style="color: var(--text-primary);">
+        {{ 'profile.deleteAccount' | translate }}
       </h3>
-      <p class="text-gray-600 dark:text-gray-300 leading-relaxed">
-        Are you sure you want to permanently delete your account? This action cannot be undone and all your data will be lost forever.
+      <p class="leading-relaxed"
+         style="color: var(--text-secondary);">
+        {{ 'profile.deleteSubtitle' | translate }}
       </p>
     </div>
     
     <div class="flex gap-3">
       <button
         type="button"
-        (click)="cancelDelete()"
-        class="flex-1 px-4 py-3 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 
-               hover:bg-gray-200 dark:hover:bg-gray-600 rounded-xl transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-gray-300"
+        (click)="store.cancelDelete()"
+        class="flex-1 px-4 py-3 text-sm font-medium rounded-xl transition-colors duration-200 focus:outline-none focus:ring-2"
+        style="background-color: var(--bg-secondary); color: var(--text-primary);"
       >
-        Cancel
+      {{ 'profile.cancel' | translate }}
       </button>
       <button
         type="button"
-        (click)="confirmDelete()"
-        class="flex-1 px-4 py-3 text-sm font-medium text-white bg-red-600 hover:bg-red-700 
-               rounded-xl transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-red-500 shadow-lg"
+        (click)="store.confirmDelete()"
+        class="flex-1 px-4 py-3 text-sm font-medium text-white rounded-xl transition-colors duration-200 focus:outline-none focus:ring-2 shadow-lg"
+        style="background-color: #ef4444;"
       >
-        Delete Account
+        {{ 'profile.deleteAccount' | translate }}
       </button>
     </div>
   </div>

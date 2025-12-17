@@ -5,6 +5,8 @@ import { HttpClientModule, HTTP_INTERCEPTORS } from '@angular/common/http';
 import { LucideAngularModule, MessageSquare, Users, Settings, User, LogOutIcon } from 'lucide-angular';
 import { routes } from './app.routes';
 import { UnauthorizedRedirectInterceptor } from './unauthorized-redirect.interceptor';
+import { provideTranslateLoader, provideTranslateService } from '@ngx-translate/core';
+import { CustomTranslateLoader } from '../assets';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -21,5 +23,10 @@ export const appConfig: ApplicationConfig = {
     ),
     provideRouter(routes),
     { provide: HTTP_INTERCEPTORS, useClass: UnauthorizedRedirectInterceptor, multi: true },
+
+    provideTranslateService({
+      loader: provideTranslateLoader(CustomTranslateLoader),
+      fallbackLang: 'en',
+    }),
   ],
 };

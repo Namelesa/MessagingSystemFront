@@ -7,8 +7,9 @@
     "types": []
   },
   "include": [
-    "src/**/*.ts"
-  ],
+    "src/**/*.ts",
+    "src/types/**/*.d.ts", 
+    "src/features/keys-generator/api/index.js"  ],
   "exclude": [
     "src/**/*.spec.ts"
   ]

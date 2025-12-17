@@ -1,10 +1,11 @@
 <button 
   (click)="toggleTheme()"
-  class="w-14 h-14 bg-white dark:bg-gray-800 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center group hover:scale-110"
+  class="w-14 h-14 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center group hover:scale-110
+         bg-theme-primary text-theme-primary"
 >
   <svg 
     *ngIf="!isDark" 
-    class="w-6 h-6 text-gray-700 transition-transform duration-300 group-hover:rotate-180"
+    class="w-6 h-6 transition-transform duration-300 group-hover:rotate-180 text-theme-primary"
     fill="currentColor" 
     viewBox="0 0 24 24"
   >
@@ -13,7 +14,7 @@
   
   <svg 
     *ngIf="isDark" 
-    class="w-6 h-6 text-yellow-500 transition-transform duration-300 group-hover:rotate-180"
+    class="w-6 h-6 transition-transform duration-300 group-hover:rotate-180 text-theme-accent"
     fill="currentColor" 
     viewBox="0 0 24 24"
   >

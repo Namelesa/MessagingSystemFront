@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter, ContentChild, TemplateRef, AfterContentInit } from '@angular/core';
+import { Component, Input, Output, EventEmitter, ContentChild, TemplateRef, AfterContentInit, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
 @Component({
@@ -18,6 +18,15 @@ import { CommonModule } from '@angular/common';
 
     hasIconContent(): boolean {
       return !!this.iconContent;
+    }
+
+    @HostListener('document:keydown.escape')
+      onEscapePressed() {
+      this.resetSelectedChat();
+    }
+
+    private resetSelectedChat(): void {
+      this.active = false;
     }
   }
   

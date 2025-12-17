@@ -1,15 +1,25 @@
-<label class="relative inline-block w-10 h-5">
-    <input
-      type="checkbox"
-      class="peer sr-only"
-      [checked]="checked"
-      (change)="onChange($event)"
-    />
-    <div
-      class="block bg-gray-400 peer-checked:bg-blue-600 dark:peer-checked:bg-blue-500 w-10 h-5 rounded-full"
-    ></div>
-    <div
-      class="absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full transition peer-checked:translate-x-5"
-    ></div>
-  </label>
-  
+<label class="relative inline-block w-10 h-5 cursor-pointer select-none">
+  <input
+    type="checkbox"
+    class="peer sr-only"
+    [checked]="checked"
+    (change)="onChange($event)"
+  />
+
+  <div
+    class="block w-10 h-5 rounded-full 
+           bg-theme-tertiary 
+           peer-checked:bg-theme-active
+           transition-all duration-300
+           peer-checked:shadow-[0_0_8px_var(--bg-active)]"
+  ></div>
+
+  <div
+    class="absolute top-0.5 left-0.5 w-4 h-4 rounded-full 
+           bg-white dark:bg-theme-primary 
+           shadow-sm 
+           transition-all duration-300 
+           peer-checked:translate-x-5 
+           peer-active:scale-95"
+  ></div>
+</label>

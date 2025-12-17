@@ -33,7 +33,6 @@ const FIELD_VALIDATORS: Record<keyof EditUserContract, {
 export function validateSingleField(fieldName: keyof EditUserContract, value: any): string[] {
   const fieldConfig = FIELD_VALIDATORS[fieldName];
   if (!fieldConfig) {
-    console.warn(`No validator found for field: ${String(fieldName)}`);
     return [];
   }
   const error = fieldConfig.validator(value);

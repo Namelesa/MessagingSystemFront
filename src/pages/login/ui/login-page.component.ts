@@ -1,120 +1,112 @@
-import { Subscription } from 'rxjs';
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Component, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
-import { LucideAngularModule, Eye, EyeOff } from 'lucide-angular';
-import { AuthService } from '../../../entities/session';
-import { LoginApi, LoginContract, LoginFormStore } from '../../../entities/user';
+import { TranslateModule } from '@ngx-translate/core';
+import { LucideAngularModule, Eye, EyeOff, Upload } from 'lucide-angular';
 import { AuthPageLayoutComponent } from '../../../widgets/auth-layout';
-import { ButtonComponent, InputComponent, ToastComponent, ToastService } from '../../../shared/ui-elements';
+import { ButtonComponent, InputComponent, ToastComponent } from '../../../shared/ui-elements';
+import { LoginPageStore } from '../model/login.store';
 
 @Component({
   selector: 'app-login-page',
   standalone: true,
-  imports: [AuthPageLayoutComponent, ButtonComponent, InputComponent, ToastComponent, CommonModule, FormsModule, LucideAngularModule],
+  imports: [
+    AuthPageLayoutComponent,
+    ButtonComponent,
+    InputComponent,
+    CommonModule,
+    FormsModule,
+    LucideAngularModule,
+    ToastComponent,
+    TranslateModule
+  ],
+  providers: [LoginPageStore],
   templateUrl: './login-page.component.html',
 })
-export class LoginPageComponent implements OnInit, OnDestroy {
+export class LoginPageComponent implements OnDestroy {
   isPasswordVisible = false;
-  passwordLength = 0;
-
+  showBackupModal = false;
+  backupPassword = '';
+  selectedFile: File | null = null;
+  
   readonly EyeIcon = Eye;
   readonly EyeOffIcon = EyeOff;
+  readonly UploadIcon = Upload;
 
-  formData: LoginContract = {
-    login: '',
-    nickName: '',
-    password: '',
-  };
+  constructor(public store: LoginPageStore) {}
 
-  fieldErrors: { [key: string]: string[] } = {
-    login: [],
-    nickName: [],
-    password: [],
-  };
-
-  isSubmitting = false;
-  isFormValid = false;
-
-  private store: LoginFormStore;
-  private subs = new Subscription();
-
-  constructor(
-    api: LoginApi,
-    private toastService: ToastService,
-    private router: Router,
-    private authService: AuthService,
-  ) {
-    this.store = new LoginFormStore(api);
+  get formData() {
+    return this.store.formData;
   }
 
-  ngOnInit(): void {
-    this.subs.add(this.store.allErrors$.subscribe(e => this.fieldErrors = e));
-    this.subs.add(this.store.isSubmitting$.subscribe(v => this.isSubmitting = v));
-    this.subs.add(this.store.isFormValid$.subscribe(v => this.isFormValid = v));
-  }
-
-  ngOnDestroy(): void {
-    this.subs.unsubscribe();
+  get passwordLength() {
+    return this.store.passwordLength;
   }
 
   getFieldErrors(fieldName: string): string[] {
-    return this.fieldErrors[fieldName] || [];
-  }
-
-  onLoginChange(value: string) {
-    this.formData.login = value;
-    this.store.updateField('login', value);
-  }
-
-  onNickNameChange(value: string) {
-    this.formData.nickName = value;
-    this.store.updateField('nickName', value);
-  }
-
-  onPasswordInput(value: string) {
-    this.formData.password = value;
-    this.passwordLength = value.length;
-    this.store.updateField('password', value);
+    return this.store.getFieldErrors(fieldName);
   }
 
   togglePasswordVisibility() {
     this.isPasswordVisible = !this.isPasswordVisible;
   }
 
+  onLoginChange(value: string) {
+    this.store.updateField('login', value);
+  }
+
+  onNickNameChange(value: string) {
+    this.store.updateField('nickName', value);
+  }
+
+  onPasswordChange(value: string) {
+    this.store.updateField('password', value);
+  }
+
+  onFileSelected(event: Event) {
+    const input = event.target as HTMLInputElement;
+    if (input.files && input.files[0]) {
+      this.selectedFile = input.files[0];
+    }
+  }
+
   onSubmit() {
-    this.store.markAllTouched();
     this.store.submit().subscribe({
       next: (result) => {
         if (result?.message === 'True') {
-          this.toastService.show('Login successful', 'success');
-          const nick = this.formData.nickName;
-          if (nick) {
-            this.authService.setNickName(nick).then(() => {
-              this.authService.getUserProfile().subscribe({
-                next: () => {
-                  this.authService.setLoggedIn(true);
-                  this.router.navigate(['/profile']);
-                },
-                error: () => {
-                  this.authService.setLoggedIn(true);
-                  this.router.navigate(['/profile']);
-                }
-              });
-            });
-          } else {
-            this.router.navigate(['/profile']);
-          }
-        } else if (result?.message === 'Invalid form') {
-          this.toastService.show('Please fix form errors before submitting', 'error');
+          this.showBackupModal = true;
         } else {
-          this.toastService.show('Login failed. Please try again.', 'error');
+          this.store.handleLoginError(result);
         }
       },
       error: () => {
-        this.toastService.show('An error occurred. Please try again later.', 'error');
+        this.store.toastService.show('An error occurred. Please try again later.', 'error');
       }
     });
+  }
+
+  async confirmBackup() {
+    if (!this.selectedFile) {
+      this.store.toastService.show('Please select a backup file', 'error');
+      return;
+    }
+
+    try {
+      const fileContent = await this.selectedFile.text();
+      const backupJson = JSON.parse(fileContent);
+      
+      await this.store.restoreKeysFromBackup(backupJson, this.backupPassword);
+      
+      this.showBackupModal = false;
+      this.store.toastService.show('Login successful', 'success');
+      this.store.navigateToProfile();
+    } catch (error) {
+      console.error('Backup restore error:', error);
+      this.store.toastService.show('Invalid backup file or password', 'error');
+    }
+  }
+
+  ngOnDestroy(): void {
+    this.store.dispose();
   }
 }

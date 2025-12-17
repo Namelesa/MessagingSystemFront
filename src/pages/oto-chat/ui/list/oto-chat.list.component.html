@@ -1,0 +1,99 @@
+<aside class="w-64 h-full text-black flex flex-col"
+       style="background-color: var(--bg-secondary); color: var(--text-primary);">
+  
+  <div #searchContainer class="p-4"
+       style="border-color: var(--border-color);">
+    <shared-search-input
+      [query]="search"
+      (queryChange)="onSearchQueryChange($event)"
+      (focus)="onSearchFocused()"
+      (clear)="onSearchActiveChange(false)"
+      [placeholder]="'otoList.search' | translate">
+    </shared-search-input>
+
+    <ng-container *ngIf="search.trim()">
+      <ng-container *ngIf="user$ | async as user; else notFound">
+        <div
+          class="p-2 rounded-xl cursor-pointer transition flex items-center gap-2 mt-2"
+          style="color: var(--text-primary);"
+          (click)="onFoundedUser({nick: user.nickName, image: user.image})"
+        >
+          <img
+            [src]="user.image"
+            alt="Avatar"
+            class="w-10 h-10 rounded-full object-cover"
+          />
+          <span class="font-medium">{{ user.nickName }}</span>
+        </div>
+      </ng-container>
+      <ng-template #notFound>
+        <div class="flex items-center justify-center p-4"
+             style="color: var(--text-secondary);">
+          {{'otoList.notFound' | translate}}
+        </div>
+      </ng-template>
+    </ng-container>
+  </div>  
+
+  <ng-container *ngIf="searchQuery && isSearchFocused; else fallback">
+    <div class="flex-1 overflow-y-auto p-2">
+      <div
+        *ngFor="let result of searchResults"
+        (click)="onStartChat(result, image)"
+        class="p-2 rounded-xl cursor-pointer transition flex items-center gap-2"
+        style="color: var(--text-primary);"
+      >
+        <span style="color: var(--accent);">🔎</span>
+        <span class="font-medium">{{ result }}</span>
+      </div>
+    </div>
+  </ng-container>
+
+  <ng-template #fallback>
+    <ng-container *ngIf="loading$ | async; else notLoading">
+      <div class="flex-grow flex items-center justify-center"
+           style="color: var(--text-secondary);">
+        {{'otoList.loading' | translate}}
+      </div>
+    </ng-container>
+
+    <ng-template #notLoading>
+      <ng-container *ngIf="error$ | async as error; else showChats">
+        <div class="flex-grow flex items-center justify-center px-4"
+             style="color: #ef4444;">
+          {{'otoList.error' | translate }}: {{ error }}
+        </div>
+      </ng-container>
+    </ng-template>
+
+    <ng-template #showChats>
+      <ul
+        *ngIf="!isSearchFocused"
+        class="flex-grow overflow-y-auto"
+        style="border-color: var(--border-color);"
+      >
+        <li *ngIf="(chats$ | async)?.length === 0" class="p-4 text-center"
+            style="color: var(--text-secondary);">
+          {{ emptyListText }}
+        </li>
+    
+        <shared-list-item
+          *ngFor="let chat of sortedChats$ | async; trackBy: trackByFn"
+          [name]="getChatDisplayName(chat)"
+          [image]="getChatImage(chat) ?? 'default-image.png'"
+          [active]="isChatActive(chat)"
+          (click)="onChatClick(chat)"
+        >
+          <ng-container *ngIf="isSavedMessagesChat(chat)" icon>
+            <svg width="40" height="40" fill="none" viewBox="0 0 24 24" stroke="currentColor"
+              class="w-10 h-10 rounded-full mr-3 p-2"
+              style="background-color: var(--accent);">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M5 5v14l7-7 7 7V5a2 2 0 00-2-2H7a2 2 0 00-2 2z"/>
+            </svg>
+          </ng-container>
+        </shared-list-item>
+      </ul>
+    </ng-template>    
+  </ng-template>
+</aside>

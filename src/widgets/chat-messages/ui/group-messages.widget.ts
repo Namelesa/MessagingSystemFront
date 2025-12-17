@@ -1,65 +1,264 @@
-import { Component, Input, Output, EventEmitter, ViewChild, ElementRef, OnChanges, SimpleChanges, AfterViewInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
+import { Component, Input, Output, EventEmitter, OnChanges,
+  SimpleChanges, AfterViewInit, OnDestroy, ChangeDetectorRef,
+  ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Observable, Subject } from 'rxjs';
+import { TranslateModule } from '@ngx-translate/core';
+import { Observable } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
+import { BaseChatMessagesWidget } from '../shared/widget';
 import { GroupMessage } from '../../../entities/group-message';
-import { isToday, truncateText, computeContextMenuPosition } from '../../../shared/chat';
+import { FileUploadApiService } from '../../../features/file-sender';
+import { isToday, truncateText, computeContextMenuPosition } from '../../../shared/realtime';
+import { ImageViewerComponent } from '../../../shared/image-viewer';
+import { CustomAudioPlayerComponent } from "../../../shared/custom-player";
 
 @Component({
   selector: 'widgets-group-messages',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, TranslateModule, ImageViewerComponent, CustomAudioPlayerComponent],
   templateUrl: './group-messages.widget.html',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class GroupMessagesWidget implements OnChanges, AfterViewInit, OnDestroy {
+export class GroupMessagesWidget extends BaseChatMessagesWidget<GroupMessage> 
+  implements OnChanges, AfterViewInit, OnDestroy {
+
   @Input() groupId!: string;
   @Input() members: { nickName: string; image: string }[] = [];
-  @Input() currentUserNickName!: string;
   @Input() messages$!: Observable<GroupMessage[]>;
   @Input() userInfoChanged$!: Observable<{ userName: string; image?: string; updatedAt: string; oldNickName: string }>;
   @Input() loadHistory!: (groupId: string, take: number, skip: number) => Observable<GroupMessage[]>;
+  @Input() messageDecryptor?: (groupId: string, sender: string, content: string, messageId?: string) => Promise<string>;
 
   @Output() editMessage = new EventEmitter<GroupMessage>();
   @Output() deleteMessage = new EventEmitter<GroupMessage>();
   @Output() replyToMessage = new EventEmitter<GroupMessage>();
 
-  @ViewChild('scrollContainer') scrollContainer!: ElementRef<HTMLDivElement>;
-
   messages: GroupMessage[] = [];
   private localMembers: { nickName: string; image: string }[] = [];
+  private avatarCache = new Map<string, string | undefined>();
 
-  take = 20;
-  skip = 0;
-  allLoaded = false;
-  loading = false;
-  private prevScrollHeight = 0;
-  contextMenuMessageId: string | null = null;
-  contextMenuPosition = { x: 0, y: 0 };
-  showContextMenu = false;
-  highlightedMessageId: string | null = null;
-  isMessageHighlighted(id: string): boolean {
-    return this.highlightedMessageId === id;
+  private fileRefreshQueue = new Map<string, Set<string>>();
+  private fileRefreshTimer?: any;
+  private latestMessageTime: number = 0;
+  private decryptionQueue: Map<string, Promise<void>> = new Map();
+
+  private urlCheckInterval?: any;
+
+  constructor(
+    protected override cdr: ChangeDetectorRef,
+    protected override fileUploadApi: FileUploadApiService
+  ) {
+    super(cdr, fileUploadApi);
   }
 
-  private destroy$ = new Subject<void>();
-  private shouldScrollToBottom = false;
-  private avatarCache = new Map<string, string | undefined>();
-  private hideContextMenuHandler?: () => void;
+  override getMessageIdFromMessage(msg: GroupMessage): string {
+    return msg.id || '';
+  }
 
-  constructor(private cdr: ChangeDetectorRef) {}
+  private async decryptMessageQueued(msg: GroupMessage): Promise<void> {
+    const messageId = msg.id;
+    
+    const existingQueue = this.decryptionQueue.get(messageId);
+    if (existingQueue) {
+      await existingQueue;
+      return;
+    }
+    
+    const decryptionPromise = this.performDecryption(msg);
+    this.decryptionQueue.set(messageId, decryptionPromise);
+    
+    try {
+      await decryptionPromise;
+    } finally {
+      if (this.decryptionQueue.get(messageId) === decryptionPromise) {
+        this.decryptionQueue.delete(messageId);
+      }
+    }
+  }
+
+  private async performDecryption(msg: GroupMessage): Promise<void> {
+    const currentContent = msg.content;
+    const messageId = msg.id;
+  
+    try {
+      const parsed = JSON.parse(currentContent);
+      if (parsed.hasOwnProperty('text') || parsed.hasOwnProperty('files')) {
+        const index = this.messages.findIndex(m => m.id === messageId);
+        if (index !== -1) {
+          this.messages[index] = {
+            ...this.messages[index],
+            _decrypted: true,
+            _isDecrypting: false
+          } as any;
+          delete (this.messages[index] as any)._decryptionFailed;
+        }
+        this.messageContentCache.delete(messageId);
+        this.cdr.detectChanges();
+        return;
+      }
+    } catch (e) {
+    }
+  
+    let attempts = 0;
+    while (!this.messageDecryptor && attempts < 50) {
+      await new Promise(resolve => setTimeout(resolve, 100));
+      attempts++;
+    }
+    
+    if (!this.messageDecryptor) {
+      const index = this.messages.findIndex(m => m.id === messageId);
+      if (index !== -1) {
+        this.messages[index] = {
+          ...this.messages[index],
+          content: '[No decryptor available]',
+          _isDecrypting: false,
+          _decryptionFailed: true
+        } as any;
+      }
+      this.cdr.detectChanges();
+      return;
+    }
+    
+    try {      
+      const decrypted = await this.messageDecryptor(
+        this.groupId,
+        msg.sender, 
+        currentContent,
+        messageId
+      );
+  
+      const index = this.messages.findIndex(m => m.id === messageId);
+      if (index !== -1) {
+        this.messages[index] = {
+          ...this.messages[index],
+          content: decrypted,
+          _decrypted: true,
+          _isDecrypting: false,
+          _version: Date.now()
+        } as any;
+        
+        delete (this.messages[index] as any)._decryptionFailed;
+      }
+      
+      this.messageContentCache.delete(messageId);
+      this.cdr.detectChanges();
+    
+      setTimeout(() => {
+        try {
+          const parsed = JSON.parse(decrypted);
+          if (parsed.files && parsed.files.length > 0) {
+            const messageToLoad = this.messages.find(m => m.id === messageId);
+            if (messageToLoad) {
+              this.loadFilesForMessages([messageToLoad]);
+            }
+          }
+        } catch (e) {}
+      }, 100);
+      
+    } catch (error: any) {
+      const index = this.messages.findIndex(m => m.id === messageId);
+      if (index !== -1) {
+        this.messages[index] = {
+          ...this.messages[index],
+          content: `[Decryption failed: ${error.message || 'Unknown error'}]`,
+          _isDecrypting: false,
+          _decryptionFailed: true
+        } as any;
+        delete (this.messages[index] as any)._decrypted;
+      }
+      
+      this.messageContentCache.delete(messageId);
+      this.cdr.detectChanges();
+    }
+  }
+  
+  private queueFileUrlRefresh(file: any, messageId: string) {
+    const cacheKey = file.uniqueFileName || file.fileName;
+    
+    if (!this.fileRefreshQueue.has(cacheKey)) {
+      this.fileRefreshQueue.set(cacheKey, new Set());
+    }
+    this.fileRefreshQueue.get(cacheKey)!.add(messageId);
+  
+    if (this.fileRefreshTimer) {
+      clearTimeout(this.fileRefreshTimer);
+    }
+  
+    this.fileRefreshTimer = setTimeout(() => {
+      this.processPendingFileRefreshes();
+    }, 100);
+  }
+  
+  private async processPendingFileRefreshes() {
+    if (this.fileRefreshQueue.size === 0) return;
+  
+    const fileNames = Array.from(this.fileRefreshQueue.keys());
+    this.fileRefreshQueue.clear();
+  
+    try {
+      const fileUrls = await this.fileUploadApi.getDownloadUrls(fileNames);
+      
+      fileUrls.forEach(fileUrl => {
+        const cacheKey = fileUrl.uniqueFileName || fileUrl.originalName;
+        this.urlCache.set(cacheKey, {
+          url: fileUrl.url,
+          timestamp: Date.now()
+        });
+      });
+  
+      this.messages.forEach(msg => {
+        try {
+          const parsed = JSON.parse(msg.content);
+          if (parsed.files?.some((f: any) => fileNames.includes(f.fileName))) {
+            this.invalidateMessageCache(this.getMessageIdFromMessage(msg));
+          }
+        } catch (e) {}
+      });
+  
+      this.cdr.markForCheck();
+    } catch (error) {
+    }
+  }
 
   ngAfterViewInit() {
-    setTimeout(() => this.scrollToBottom(), 0);
-    const hideContextMenu = () => (this.showContextMenu = false);
-    document.addEventListener('click', hideContextMenu);
-    this.hideContextMenuHandler = hideContextMenu;
+    setTimeout(() => {
+      this.scrollToBottomBase(this.scrollContainer);
+    }, 200);
+    
+    this.setupContextMenuListener();
     this.subscribeToUserInfoUpdates();
+    this.startUrlExpirationCheck();
+
+    setTimeout(() => {
+      if (this.messages && this.messages.length > 0) {
+        const messagesWithFiles = this.messages.filter(msg => {
+          try {
+            const parsed = JSON.parse(msg.content);
+            if (!parsed.files || parsed.files.length === 0) return false;
+            
+            return parsed.files.some((file: any) => {
+              if (!file.url) return true;
+              const cacheKey = file.uniqueFileName || file.fileName;
+              const cachedUrl = this.urlCache.get(cacheKey);
+              return !cachedUrl;
+            });
+          } catch {
+            return false;
+          }
+        });
+        
+        if (messagesWithFiles.length > 0) {
+          this.loadFilesForMessages(messagesWithFiles);
+        }
+      }
+    }, 2000);
   }
 
   ngOnChanges(changes: SimpleChanges) {
     if (changes['groupId'] && this.groupId) {
       this.initChat();
     }
+
     if (changes['members'] && this.members) {
       this.localMembers = [...this.members];
       this.clearAvatarCache();
@@ -68,11 +267,217 @@ export class GroupMessagesWidget implements OnChanges, AfterViewInit, OnDestroy 
   }
 
   ngOnDestroy() {
-    this.destroy$.next();
-    this.destroy$.complete();
-    if (this.hideContextMenuHandler) {
-      document.removeEventListener('click', this.hideContextMenuHandler);
+    this.baseDestroy();
+    
+    if (this.urlCheckInterval) {
+      clearInterval(this.urlCheckInterval);
     }
+    
+    if (this.fileRefreshTimer) {
+      clearTimeout(this.fileRefreshTimer);
+    }
+  }
+
+  private startUrlExpirationCheck() {
+    this.urlCheckInterval = setInterval(() => {
+      this.checkAndRefreshExpiredUrls();
+    }, 5 * 60 * 1000);
+  }
+
+  private checkAndRefreshExpiredUrls() {
+    if (!this.messages || this.messages.length === 0) return;
+  
+    const filesToRefresh: { 
+      fileName: string; 
+      uniqueFileName: string; 
+      messageId: string; 
+      fileIndex: number 
+    }[] = [];
+  
+    this.messages.forEach(msg => {
+      try {
+        const parsed = JSON.parse(msg.content);
+        if (parsed.files?.length > 0) {
+          parsed.files.forEach((file: any, fileIndex: number) => {
+            if (file.url) {
+              const cacheKey = file.uniqueFileName || file.fileName;
+              const cachedUrl = this.urlCache.get(cacheKey);
+              
+              if (cachedUrl && this.isUrlExpired(cachedUrl.timestamp)) {
+                filesToRefresh.push({
+                  fileName: file.fileName,
+                  uniqueFileName: file.uniqueFileName,
+                  messageId: this.getMessageIdFromMessage(msg),
+                  fileIndex
+                });
+              }
+            }
+          });
+        }
+      } catch (e) {}
+    });
+  
+    if (filesToRefresh.length === 0) return;
+  
+    const uniqueFileNames = [...new Set(filesToRefresh.map(f => f.fileName))];
+    
+    this.fileUploadApi.getDownloadUrls(uniqueFileNames).then(fileUrls => {
+      const urlMap = new Map<string, string>();
+      fileUrls.forEach(fu => {
+        urlMap.set(fu.originalName, fu.url);
+        const cacheKey = fu.uniqueFileName || fu.originalName;
+        this.urlCache.set(cacheKey, {
+          url: fu.url,
+          timestamp: Date.now()
+        });
+      });
+  
+      filesToRefresh.forEach(item => {
+        const newUrl = urlMap.get(item.fileName);
+        if (newUrl) {
+          const message = this.messages.find(m => this.getMessageIdFromMessage(m) === item.messageId);
+          if (message) {
+            try {
+              const parsed = JSON.parse(message.content);
+              if (parsed.files?.[item.fileIndex]) {
+                parsed.files[item.fileIndex].url = newUrl;
+                parsed.files[item.fileIndex]._version = Date.now();
+                message.content = JSON.stringify(parsed);
+                this.invalidateMessageCache(item.messageId);
+              }
+            } catch (e) {
+            }
+          }
+        }
+      });
+  
+      this.cdr.markForCheck();
+    }).catch(error => {
+    });
+  }
+
+  parseContent(msg: GroupMessage): { text: string; files: any[] } {
+    const messageId = msg.id || '';
+    
+    if (msg.isDeleted) {
+      return { text: msg.content, files: [] };
+    }
+  
+    const currentContent = msg.content;
+    const isDecrypted = (msg as any)._decrypted;
+    const isDecrypting = (msg as any)._isDecrypting;
+    const isFailed = (msg as any)._decryptionFailed;
+    
+    const cachedData = this.messageContentCache.get(messageId);
+    const needsReparse = !cachedData || 
+                        cachedData.timestamp < (msg as any)._version ||
+                        (msg as any).forceRefresh;
+  
+    if (!needsReparse && cachedData) {
+      return { text: cachedData.text, files: cachedData.files };
+    }
+  
+    delete (msg as any).forceRefresh;
+    let result: { text: string; files: any[] };
+    
+    try {
+      const parsed = JSON.parse(currentContent);
+
+      const isEncrypted = !!(parsed.ciphertext && 
+                            parsed.ephemeralKey && 
+                            parsed.nonce && 
+                            parsed.messageNumber !== undefined);
+      
+      if (isEncrypted) {
+        if (isDecrypted) {
+          delete (msg as any)._decrypted;
+          (msg as any)._isDecrypting = true;
+          this.decryptMessageQueued(msg);
+          return { text: '[Re-decrypting...]', files: [] };
+        }
+        
+        if (isDecrypting) {
+          return { text: '[Decrypting...]', files: [] };
+        }
+        
+        if (isFailed) {
+          return { 
+            text: currentContent.includes('[') ? currentContent : '[Decryption failed]', 
+            files: [] 
+          };
+        }
+        
+        (msg as any)._isDecrypting = true;
+        this.decryptMessageQueued(msg);
+        return { text: '[Decrypting...]', files: [] };
+      }
+      
+      if (typeof parsed === 'object' && parsed !== null &&
+          (parsed.hasOwnProperty('text') || parsed.hasOwnProperty('files'))) {
+        
+        const filesWithType = (parsed.files || []).map((file: any, index: number) => {
+          const cacheKey = file.uniqueFileName || file.fileName;
+          const cachedUrl = this.urlCache.get(cacheKey);
+  
+          if (cachedUrl && !this.isUrlExpired(cachedUrl.timestamp)) {
+            file.url = cachedUrl.url;
+          } else if (!file.url || (cachedUrl && this.isUrlExpired(cachedUrl.timestamp))) {
+            file.needsLoading = true;
+            this.queueFileUrlRefresh(file, messageId);
+          }
+  
+          if (!file.type && file.fileName) {
+            file.type = this.detectFileType(file.fileName);
+          }
+  
+          if (!file.uniqueId) {
+            file.uniqueId = file.uniqueFileName || file.url || `${file.fileName}_${Date.now()}_${index}`;
+          }
+  
+          file._version = file._version || Date.now();
+          return file;
+        });
+  
+        result = {
+          text: parsed.text || '',
+          files: filesWithType
+        };
+      } else {
+        result = { text: currentContent, files: [] };
+      }
+    } catch (error) {
+      result = { text: currentContent || '', files: [] };
+    }
+  
+    this.messageContentCache.set(messageId, {
+      ...result,
+      timestamp: Date.now(),
+      version: (msg as any)._version || Date.now()
+    });
+  
+    return result;
+  }
+
+  openFileViewer(fileIndex: number, messageId: string) {
+    this.openFileViewerBase(
+      fileIndex,
+      messageId,
+      this.messages,
+      (msg) => this.parseContent(msg),
+      (msg) => msg.sender
+    );
+  }
+
+  onImageViewerClosed() {
+    this.onImageViewerClosedBase();
+  }
+
+  onScrollToReplyMessage(messageId: string) {
+    this.scrollToMessage(messageId);
+  }
+
+  private async loadFilesForMessages(messages: GroupMessage[]) {
+    await this.loadFilesForMessagesBase(messages);
   }
 
   private subscribeToUserInfoUpdates() {
@@ -110,15 +515,26 @@ export class GroupMessagesWidget implements OnChanges, AfterViewInit, OnDestroy 
   private updateLocalMembers(userInfo: { userName: string; image?: string; updatedAt: string; oldNickName: string }) {
     const cleanOld = userInfo.oldNickName.trim().toLowerCase();
     const cleanNew = userInfo.userName.trim().toLowerCase();
-    let index = this.localMembers.findIndex(m => m.nickName.toLowerCase().trim() === cleanOld || m.nickName.toLowerCase().trim() === cleanNew);
+
+    let index = this.localMembers.findIndex(m =>
+      m.nickName.toLowerCase().trim() === cleanOld ||
+      m.nickName.toLowerCase().trim() === cleanNew
+    );
+
     const image = userInfo.image?.trim() || '';
+
     if (index !== -1) {
       this.localMembers[index] = { nickName: userInfo.userName, image };
     } else {
       this.localMembers.push({ nickName: userInfo.userName, image });
     }
+
     this.avatarCache.delete(cleanOld);
-    if (image) this.avatarCache.set(cleanNew, image); else this.avatarCache.set(cleanNew, undefined);
+    if (image) {
+      this.avatarCache.set(cleanNew, image);
+    } else {
+      this.avatarCache.set(cleanNew, undefined);
+    }
   }
 
   private clearAvatarCache(specific?: { oldNick?: string; newNick?: string }) {
@@ -131,60 +547,54 @@ export class GroupMessagesWidget implements OnChanges, AfterViewInit, OnDestroy 
   }
 
   get groupedMessages() {
-    const groups: { date: string; messages: GroupMessage[] }[] = [];
-    let lastDate = '';
-    const filtered = this.messages.filter(m => !m.isDeleted || this.isMyMessage(m));
-    const sorted = [...filtered].sort((a, b) => new Date(a.sendTime).getTime() - new Date(b.sendTime).getTime());
-    for (const msg of sorted) {
-      const d = new Date(msg.sendTime).toDateString();
-      if (d !== lastDate) { groups.push({ date: d, messages: [msg] }); lastDate = d; }
-      else { groups[groups.length - 1].messages.push(msg); }
-    }
-    return groups;
+    return this.groupMessagesByDate(this.messages, msg => msg.sendTime);
   }
 
+  trackByGroup = this.trackByGroupBase;
+  trackByMessageId = this.trackByMessageBase;
   isToday = isToday;
   truncateText = truncateText;
 
   onScroll() {
-    if (this.showContextMenu) this.showContextMenu = false;
-    if (!this.scrollContainer || this.loading || this.allLoaded) return;
-    const el = this.scrollContainer.nativeElement;
-    if (el.scrollTop < 300) {
-      this.prevScrollHeight = el.scrollHeight;
-      this.loadMore();
-    }
+    this.onScrollBase(this.scrollContainer);
   }
 
   scrollToMessage(messageId: string) {
-    if (!this.scrollContainer) return;
-    const el = this.scrollContainer.nativeElement.querySelector(`[data-message-id="${messageId}"]`) as HTMLElement;
-    if (!el) {
-      setTimeout(() => {
-        const retry = this.scrollContainer!.nativeElement.querySelector(`[data-message-id="${messageId}"]`) as HTMLElement;
-        if (retry) { retry.scrollIntoView({ behavior: 'smooth', block: 'center' }); this.highlightMessage(messageId); }
-      }, 1000);
-      return;
-    }
-    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    setTimeout(() => this.highlightMessage(messageId), 300);
+    this.scrollToMessageBase(messageId, this.scrollContainer);
   }
 
-  getRepliedMessage(messageId: string): GroupMessage | null {
-    return this.messages.find(m => m.id === messageId) || null;
+  private isScrolledToBottom(): boolean {
+    return this.isScrolledToBottomBase(this.scrollContainer);
+  }  
+
+  public scrollToBottomAfterNewMessage() {
+    requestAnimationFrame(() => {
+      setTimeout(() => {
+        this.scrollToBottomBase(this.scrollContainer);
+      }, 150);
+    });
+  }
+
+  getRepliedMessage(messageId: string): GroupMessage | undefined {
+    return this.messages.find(m => m.id === messageId) || undefined;
   }
 
   onMessageRightClick(event: MouseEvent, msg: GroupMessage) {
     event.preventDefault();
     event.stopPropagation();
+
     const target = event.target as HTMLElement;
     const messageContainer = target.closest('.message-container') as HTMLElement;
+
     if (!messageContainer || !this.scrollContainer) return;
+
     const messageBlock = messageContainer.querySelector('[class*="px-3 py-2 rounded-2xl"]') as HTMLElement;
     if (!messageBlock) return;
+
     const blockRect = messageBlock.getBoundingClientRect();
     const containerRect = this.scrollContainer.nativeElement.getBoundingClientRect();
     const pos = computeContextMenuPosition(blockRect, containerRect, this.isMyMessage(msg));
+
     this.contextMenuMessageId = msg.id;
     this.contextMenuPosition = pos;
     this.showContextMenu = true;
@@ -209,107 +619,308 @@ export class GroupMessagesWidget implements OnChanges, AfterViewInit, OnDestroy 
   }
 
   canEditOrDelete(): boolean {
-    const msg = this.messages.find(m => m.id === this.contextMenuMessageId);
-    if (!msg) return false;
-    if (this.isMessageDeleted(msg)) return false;
-    return this.isMyMessage(msg);
+    return this.canEditOrDeleteBase(this.messages);
   }
 
-  private initChat() {
+  protected initChat() {
     this.messages = [];
     this.skip = 0;
     this.allLoaded = false;
     this.shouldScrollToBottom = true;
-    this.loadMore();
-    this.messages$
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(newMsgs => {
-        const filtered = newMsgs.filter(m => !m.isDeleted || !this.isMyMessage(m));
-        const newMap = new Map(filtered.map(m => [m.id, m]));
-        const oldMap = new Map(this.messages.map(m => [m.id, m]));
-        for (const m of filtered) oldMap.set(m.id, m);
-        for (const id of Array.from(oldMap.keys())) if (!newMap.has(id)) oldMap.delete(id);
-        this.messages = Array.from(oldMap.values()).sort((a, b) => new Date(a.sendTime).getTime() - new Date(b.sendTime).getTime());
-        this.skip = this.messages.length;
-        if (this.isScrolledToBottom() || this.shouldScrollToBottom) {
-          setTimeout(() => this.scrollToBottom(), 0);
-          this.shouldScrollToBottom = false;
+    this.invalidateAllCache();
+    this.latestMessageTime = 0;
+  
+    if (this.messages$) {
+      this.messages$
+        .pipe(takeUntil(this.destroy$))
+        .subscribe((newMsgs: GroupMessage[]) => {
+          this.handleNewMessages(newMsgs);
+        });
+    }
+  }
+  
+  private handleNewMessages(newMsgs: GroupMessage[]) {
+    if (!newMsgs || newMsgs.length === 0) return;
+  
+    const messagesToRemove: string[] = [];
+  
+    newMsgs.forEach(msg => {
+      const index = this.messages.findIndex(m => m.id === msg.id);
+  
+      if (index !== -1) {
+        const existing = this.messages[index];
+        
+        const existingDecrypted = (existing as any)._decrypted;
+        const existingDecrypting = (existing as any)._isDecrypting;
+        
+        const newIsEncrypted = this.isEncryptedMessage(msg);
+        const newIsDecrypted = !newIsEncrypted && this.isDecryptedMessage(msg.content);
+
+        if (existingDecrypted && newIsEncrypted) {
+          if (existing.isDeleted !== msg.isDeleted || existing.isEdited !== msg.isEdited) {
+            this.messages[index] = { 
+              ...existing, 
+              isDeleted: msg.isDeleted,
+              isEdited: msg.isEdited,
+              editTime: msg.editTime
+            };
+            this.invalidateMessageCache(msg.id!);
+            this.cdr.markForCheck();
+          }
+          return;
         }
+        
+        if (newIsDecrypted) {
+          this.messages[index] = {
+            ...msg,
+            _decrypted: true,
+            _isDecrypting: false,
+            _version: Date.now()
+          } as any;
+          delete (this.messages[index] as any)._decryptionFailed;
+          this.invalidateMessageCache(msg.id!);
+          this.cdr.markForCheck();
+          return;
+        }
+        
+        if (existing.content !== msg.content) {
+          (msg as any).forceRefresh = true;
+          (msg as any)._version = Date.now();
+          delete (msg as any)._decrypted;
+          delete (msg as any)._isDecrypting;
+          delete (msg as any)._decryptionFailed;
+          
+          this.messages[index] = msg;
+          this.invalidateMessageCache(msg.id!);
+        } else {
+          this.messages[index] = {
+            ...existing,
+            ...msg,
+            _decrypted: existingDecrypted,
+            _isDecrypting: existingDecrypting,
+            _decryptionFailed: (existing as any)._decryptionFailed,
+            _version: (existing as any)._version
+          } as any;
+        }
+      } else {
+        this.messages.push(msg);
+      }
+    });
+  
+    const newIds = new Set(newMsgs.map(m => m.id));
+    const hardDeleted = this.messages.filter(m => !Array.from(newIds).includes(m.id));
+    if (hardDeleted.length > 0) {
+      messagesToRemove.push(...hardDeleted.map(m => m.id!));
+    }
+  
+    if (messagesToRemove.length > 0) {    
+      this.messages = this.messages.filter(m => !messagesToRemove.includes(m.id!));
+      messagesToRemove.forEach(id => {
+        this.messageContentCache.delete(id);
       });
+    }
+  
+    this.messages.sort((a, b) => 
+      new Date(a.sendTime).getTime() - new Date(b.sendTime).getTime()
+    );
+  
+    this.cdr.markForCheck();
+  
+    if (this.shouldScrollToBottom || this.isScrolledToBottom()) {
+      setTimeout(() => this.scrollToBottomBase(this.scrollContainer), 100);
+    }
   }
 
-  private loadMore() {
+  protected loadMore() {
     if (this.loading || this.allLoaded) return;
+
     this.loading = true;
-    this.loadHistory(this.groupId, this.take, this.skip)
+    const currentSkip = this.messages.length;
+    const scrollContainer = this.scrollContainer?.nativeElement;
+    const prevScrollHeight = scrollContainer ? scrollContainer.scrollHeight : 0;
+    const prevScrollTop = scrollContainer ? scrollContainer.scrollTop : 0;
+
+    this.loadHistory(this.groupId, this.take, currentSkip)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
-        next: (newMsgs) => {
+        next: async (newMsgs) => {          
+          if (newMsgs.length === 0) {
+            this.allLoaded = true;
+            this.loading = false;
+            this.cdr.markForCheck();
+            return;
+          }
+
           const filtered = newMsgs.filter(m => !m.isDeleted || this.isMyMessage(m));
+
+          if (filtered.length === 0) {
+            this.loading = false;
+            if (newMsgs.length < this.take) {
+              this.allLoaded = true;
+            } else {
+              setTimeout(() => this.loadMore(), 100);
+            }
+            this.cdr.markForCheck();
+            return;
+          }
+
           const existingIds = new Set(this.messages.map(m => m.id));
           const unique = filtered.filter(m => !existingIds.has(m.id));
+
           if (unique.length === 0) {
-            this.allLoaded = true;
-          } else {
-            this.messages = [...unique, ...this.messages];
-            this.skip = this.messages.length;
-            setTimeout(() => {
-              if (this.scrollContainer) {
-                const el = this.scrollContainer.nativeElement;
-                el.scrollTop = el.scrollHeight - this.prevScrollHeight;
-              }
-            }, 0);
+            if (filtered.length < this.take) {
+              this.allLoaded = true;
+            } else {
+              setTimeout(() => this.loadMore(), 100);
+            }
+            this.loading = false;
+            this.cdr.markForCheck();
+            return;
           }
+
+          const encryptedMessages = unique.filter(msg => this.isEncryptedMessage(msg));
+          
+          if (encryptedMessages.length > 0) {
+            await Promise.all(
+              encryptedMessages.map(msg => this.decryptMessageQueued(msg))
+            );
+            
+            this.cdr.detectChanges();
+          }
+
+          this.loadFilesForMessages(unique);
+          this.messages = [...unique, ...this.messages];
+          if (unique.length < this.take) {
+            this.allLoaded = true;
+          }
+
+          setTimeout(() => this.restoreScrollPosition(prevScrollHeight, prevScrollTop), 0);
+          setTimeout(() => this.restoreScrollPosition(prevScrollHeight, prevScrollTop), 50);
+          setTimeout(() => this.restoreScrollPosition(prevScrollHeight, prevScrollTop), 100);
+          setTimeout(() => this.restoreScrollPosition(prevScrollHeight, prevScrollTop), 200);
+
           this.loading = false;
+          this.cdr.markForCheck();
         },
-        error: () => {
+        error: (err) => {
           this.loading = false;
+          this.cdr.markForCheck();
         }
       });
   }
 
-  private isScrolledToBottom(): boolean {
-    if (!this.scrollContainer) return false;
-    const el = this.scrollContainer.nativeElement;
-    return el.scrollHeight - el.scrollTop <= el.clientHeight + 10;
+  private isEncryptedMessage(msg: GroupMessage): boolean {
+    try {
+      const parsed = JSON.parse(msg.content);
+      return !!(parsed.ciphertext && 
+                parsed.ephemeralKey && 
+                parsed.nonce && 
+                parsed.messageNumber !== undefined);
+    } catch {
+      return false;
+    }
   }
 
-  private scrollToBottom() {
+  private isDecryptedMessage(content: string): boolean {
+    try {
+      const parsed = JSON.parse(content);
+      return !!(typeof parsed === 'object' && 
+               parsed !== null &&
+               (parsed.hasOwnProperty('text') || parsed.hasOwnProperty('files')) &&
+               !parsed.ciphertext);
+    } catch {
+      return false;
+    }
+  }
+    
+  private restoreScrollPosition(prevScrollHeight: number, prevScrollTop: number): void {
     if (!this.scrollContainer) return;
+  
     const el = this.scrollContainer.nativeElement;
-    el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
+    const newScrollHeight = el.scrollHeight;
+    const heightDiff = newScrollHeight - prevScrollHeight;
+  
+    if (heightDiff > 0) {
+      el.scrollTop = prevScrollTop + heightDiff;
+    }
   }
 
   isMyMessage(msg: GroupMessage): boolean {
-    return msg.sender?.trim().toLowerCase() === this.currentUserNickName.trim().toLowerCase();
+    return this.isMyMessageBase(msg);
   }
 
   isMessageDeleted(msg: GroupMessage): boolean {
-    return msg.isDeleted === true;
+    return this.isMessageDeletedBase(msg);
   }
 
   getMessageContent(msg: GroupMessage): string {
-    return msg.content;
+    return this.getMessageContentBase(msg);
+  }
+
+  isMessageHighlighted(id: string): boolean {
+    return this.isMessageHighlightedBase(id);
+  }
+
+  highlightMessage(messageId: string) {
+    this.highlightMessageBase(messageId);
+  }
+
+  shouldShowSenderName(messages: GroupMessage[], idx: number): boolean {
+    return this.shouldShowSenderNameBase(messages, idx);
   }
 
   getMemberAvatar(nick: string, oldNick?: string, forceRefresh = false): string | undefined {
     if (!nick) return undefined;
+
     const cleanNick = nick.trim().toLowerCase();
     const cleanOld = oldNick?.trim().toLowerCase();
+
     if (forceRefresh) {
       this.avatarCache.delete(cleanNick);
       if (cleanOld) this.avatarCache.delete(cleanOld);
     }
-    if (!forceRefresh && this.avatarCache.has(cleanNick)) return this.avatarCache.get(cleanNick) ?? undefined;
+
+    if (!forceRefresh && this.avatarCache.has(cleanNick)) {
+      return this.avatarCache.get(cleanNick) ?? undefined;
+    }
+
     if (!forceRefresh && cleanOld && this.avatarCache.has(cleanOld)) {
       const cached = this.avatarCache.get(cleanOld);
-      if (cached) { this.avatarCache.set(cleanNick, cached); return cached; }
+      if (cached) {
+        this.avatarCache.set(cleanNick, cached);
+        return cached;
+      }
     }
-    const mLocal = this.localMembers.find(m => m.nickName.trim().toLowerCase() === cleanNick || (cleanOld && m.nickName.trim().toLowerCase() === cleanOld));
-    if (mLocal?.image) { const image = mLocal.image.trim(); this.avatarCache.set(cleanNick, image); if (cleanOld) this.avatarCache.set(cleanOld, image); return image; }
-    const mOriginal = this.members.find(m => m.nickName.trim().toLowerCase() === cleanNick || (cleanOld && m.nickName.trim().toLowerCase() === cleanOld));
-    if (mOriginal?.image) { const image = mOriginal.image.trim(); this.avatarCache.set(cleanNick, image); if (cleanOld) this.avatarCache.set(cleanOld, image); return image; }
-    if (this.localMembers.length > 0) { this.avatarCache.set(cleanNick, undefined); if (cleanOld) this.avatarCache.set(cleanOld, undefined); }
+
+    const mLocal = this.localMembers.find(m =>
+      m.nickName.trim().toLowerCase() === cleanNick ||
+      (cleanOld && m.nickName.trim().toLowerCase() === cleanOld)
+    );
+
+    if (mLocal?.image) {
+      const image = mLocal.image.trim();
+      this.avatarCache.set(cleanNick, image);
+      if (cleanOld) this.avatarCache.set(cleanOld, image);
+      return image;
+    }
+
+    const mOriginal = this.members.find(m =>
+      m.nickName.trim().toLowerCase() === cleanNick ||
+      (cleanOld && m.nickName.trim().toLowerCase() === cleanOld)
+    );
+
+    if (mOriginal?.image) {
+      const image = mOriginal.image.trim();
+      this.avatarCache.set(cleanNick, image);
+      if (cleanOld) this.avatarCache.set(cleanOld, image);
+      return image;
+    }
+
+    if (this.localMembers.length > 0) {
+      this.avatarCache.set(cleanNick, undefined);
+      if (cleanOld) this.avatarCache.set(cleanOld, undefined);
+    }
+
     return undefined;
   }
 
@@ -319,14 +930,40 @@ export class GroupMessagesWidget implements OnChanges, AfterViewInit, OnDestroy 
     return this.getMemberAvatar(msg.sender, oldSender, force);
   }
 
-  shouldShowSenderName(messages: GroupMessage[], idx: number): boolean {
-    if (idx === 0) return true;
-    return messages[idx].sender !== messages[idx - 1].sender;
+  isImageFile(file: any): boolean {
+    return file.type?.startsWith('image/') || /\.(jpg|jpeg|png|gif|webp|bmp|svg)$/i.test(file.fileName);
   }
 
-  highlightMessage(messageId: string) {
-    this.highlightedMessageId = null;
-    this.highlightedMessageId = messageId;
-    setTimeout(() => { if (this.highlightedMessageId === messageId) this.highlightedMessageId = null; }, 1500);
+  isVideoFile(file: any): boolean {
+    return file.type?.startsWith('video/') || /\.(mp4|webm|ogg|mov|avi|mkv)$/i.test(file.fileName);
+  }
+
+  isAudioFile(file: any): boolean {
+    return file.type?.startsWith('audio/') || /\.(mp3|wav|ogg|m4a|flac|aac)$/i.test(file.fileName);
+  }
+
+  override formatFileSize(bytes: number): string {
+    if (!bytes) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return `${(bytes / Math.pow(k, i)).toFixed(2)} ${sizes[i]}`;
+  }
+
+  downloadFile(file: any): void {
+    if (file.url) {
+      const link = document.createElement('a');
+      link.href = file.url;
+      link.download = file.fileName || 'download';
+      link.target = '_blank';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+  }
+
+  markFileAsRefreshing(file: any, isRefreshing: boolean): void {
+    file.isRefreshing = isRefreshing;
+    this.cdr.markForCheck();
   }
 }

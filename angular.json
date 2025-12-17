@@ -15,12 +15,13 @@
         }
       },
       "root": "",
-      "sourceRoot": "src/app",
+      "sourceRoot": "src",
       "prefix": "app",
       "architect": {
         "build": {
           "builder": "@angular/build:application",
           "options": {
+            "index": "src/app/index.html",
             "browser": "src/app/main.ts",
             "polyfills": [
               "zone.js"
@@ -28,13 +29,12 @@
             "tsConfig": "tsconfig.app.json",
             "inlineStyleLanguage": "scss",
             "assets": [
-              {
-                "glob": "**/*",
-                "input": "public"
-              }
-            ],
+                "src/assets",       
+                { "glob": "favicon.ico", "input": "public", "output": "/" } 
+              ],
             "styles": [
-              "src/shared/styles/tailwind.scss"
+              "src/shared/styles/tailwind.scss",
+              "src/shared/styles/theme.scss"
             ]
           },
           "configurations": {
@@ -86,13 +86,12 @@
             "tsConfig": "tsconfig.spec.json",
             "inlineStyleLanguage": "scss",
             "assets": [
-              {
-                "glob": "**/*",
-                "input": "public"
-              }
-            ],
+                "src/assets",       
+                { "glob": "favicon.ico", "input": "public", "output": "/" } 
+              ],
             "styles": [
-              "src/shared/styles/tailwind.scss"
+              "src/shared/styles/tailwind.scss",
+              "src/shared/styles/theme.scss"
             ]
           }
         }

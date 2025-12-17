@@ -1,0 +1,126 @@
+{
+    "auth":{
+        "signInTitle": "Sign in to WhisperNet",
+        "signInSubtitle": "Access your secure chats and contacts",
+        "bottomText": "Do not have an account?",
+        "signUp": "Sign up",
+        "signIn": "Sign in",
+
+        "createAccountTitle": "Create Account",
+        "signUpSubtitle": "Join to start secure conversations",
+        "clickToChange": "Click to change",
+        "clickToSelectValidImage": "Click to select a valid image",
+        "siginUp": "Signing up",
+        "uploadAvatar": "Upload Avatar",
+        "imageLoadError": "Fix image error",
+        "format": "JPEG, PNG, GIF, WebP, SVG (max 5MB)"
+    },
+
+    "profile":{
+        "loading": "Loading...",
+        "errorLoading": "Error loading profile",
+        "change": "Change",
+        "online": "Online",
+        "personalInfo": "Personal Information",
+        "deleteAccount": "Delete Account",
+        "deleteSubtitle": "Are you sure you want to permanently delete your account? This action cannot be undone and all your data will be lost forever.",
+        "cancel": "Cancel"
+    },
+
+    "user":{
+        "email": "Email",
+        "firstName": "First Name",
+        "lastName": "Last Name",
+        "nickName": "Nickname",
+        "password": "Password",
+        "login": "Login"
+    },
+
+    "messages":{
+        "file": "File",
+        "errorLoadingFile": "Failed to load",
+        "edited": "edited",
+        "reply": "Reply",
+        "edit" : "Edit",
+        "delete": "Delete",
+        "editPlaceholder": "Edit message...",
+        "replyToPlaceholder": "Reply to ...",
+        "sendPlaceholder": "Send message..."
+    },
+
+    "otoList":{
+        "search": "Search...",
+        "notFound": "Not found users ;(",
+        "loading": "Loading...",
+        "error": "Error"
+    },
+
+    "otoPage":{
+        "userDeleted": "User Deleted",
+        "chatClosed": "User has been deleted. The chat has been closed.",
+        "dissmiss": "Dismiss",
+        "deleteMessage": "Delete message",
+        "deleteMessageSubtitle": "Are you sure you want to delete this message?",
+        "both": "Also delete for both",
+        "cancel": "CANCEL",
+        "delete": "DELETE",
+        "send": "Send",
+        "file": "File",
+        "uploaded": "Uploaded",
+        "error": "Error",
+        "uploading": "Uploading...",
+        "caption": "Add a caption...",
+        "drop": "Drop files here to add them"
+    },
+
+    "settings":{
+        "notification": "Notifications",
+        "appearance": "Appearance",
+        "theme": "Theme",
+        "themeSubtitle": "Choose theme",
+        "language": "Language",
+        "languageSubtitle": "Select your preferred language",
+
+        "messageNotifications": {
+            "title": "Message Notifications",
+            "desc": "Receive notifications for new messages"
+          },
+          "soundNotifications": {
+            "title": "Sound Notifications",
+            "desc": "Play sound when receiving messages"
+          }
+    },
+
+    "sendMessageArea":{
+        "editMessage": "Edit Message",
+        "dropFile": "Drop files here to upload",
+        "dropFileSubtitle": "Drag and drop your files anywhere in this area"
+    },
+
+    "groupInfoModal":{
+        "validationError": "Validation Errors",
+        "loading": "Loading...",
+        "groupName": "Group Name",
+        "groupDescription": "Description",
+        "admin": "Admin",
+        "members": "Members",
+        "userNotFound": "User not found ;(",
+        "deleteGroup": "🗑️ Delete Group",
+        "groupInfo": "Group Info",
+        "editGroup": "Edit Group",
+        "manageMembers": "Manage Members",
+        "searchUsers": "Search users...",
+        "error": "Error"
+    },
+
+    "groupList":{
+        "searchPlaceholder": "Search groups...",
+        "emptyListText": "Not found groups ;(",
+        "createGroup": "Create Group",
+        "change": "Change",
+        "uploadAvatar": "Upload Group Avatar",
+        "notFound": "No groups found for",
+        "clearSearch": "Clear search",
+        "deleteForAll": "Also delete for all"
+    }
+}

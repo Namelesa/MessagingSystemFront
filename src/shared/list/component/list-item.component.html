@@ -1,12 +1,12 @@
 <li
-        (click)="click.emit()"
-        class="flex items-center cursor-pointer px-4 py-2 transition-colors rounded-xl hover:bg-gray-300 dark:hover:bg-gray-700"
-        [class.bg-gray-200]="active"
-        [class.dark:bg-gray-700]="active"
-      >
-        <ng-content select="[icon]"></ng-content>
-        <ng-container *ngIf="!hasIconContent() && image">
-        <img [src]="image" [alt]="name" class="w-10 h-10 rounded-full mr-3 object-cover" loading="lazy" />
-        </ng-container>
-        <span class="truncate min-w-0 flex-1">{{ name }}</span>
-      </li>
+  (click)="click.emit()"
+  class="flex items-center cursor-pointer px-4 py-2 transition-colors rounded-xl
+         hover:bg-theme-active"
+  [class.bg-theme-active]="active"
+>
+  <ng-content select="[icon]"></ng-content>
+  <ng-container *ngIf="!hasIconContent() && image">
+    <img [src]="image" [alt]="name" class="w-10 h-10 rounded-full mr-3 object-cover" loading="lazy" />
+  </ng-container>
+  <span class="truncate min-w-0 flex-1 text-theme-primary">{{ name }}</span>
+</li>

@@ -175,13 +175,7 @@ export abstract class BaseChatApiService<TChat> {
   protected handleUserInfoDeleted(userInfo: { UserName?: string, userName?: string }): void {
     
     const userName = userInfo.UserName || userInfo.userName || (userInfo as any).userInfo?.userName;
-    
-    if (!userName) {
-      console.error('No valid userName found in userInfo:', userInfo);
-      return;
-    }
-    
-    
+        
     const currentChats = this.chatsSubject.value;
     const updatedChats = currentChats.filter(chat => {
       const chatAny = chat as any;
@@ -226,9 +220,7 @@ export abstract class BaseChatApiService<TChat> {
     }
     this.updateChatUserInfo(userInfo);
     
-    setTimeout(() => {
-      this.refreshChats();
-    }, 50);
+    queueMicrotask(() => this.refreshChats());
 
     const mappedUserInfo = {
       userName: userInfo.NewUserName,
@@ -349,9 +341,7 @@ export abstract class BaseChatApiService<TChat> {
     
     this.updateChatUserInfo(normalizedUserInfo);
     
-    setTimeout(() => {
-      this.refreshChats();
-    }, 50);
+    queueMicrotask(() => this.refreshChats());
     
     this.userInfoUpdatedSubject.next(userInfo);
   }
